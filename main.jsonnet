@@ -4,8 +4,9 @@ local num_control_nodes = 1;
 local indices_control_nodes = std.range(0, num_control_nodes - 1);
 local indices_worker_nodes = std.range(num_control_nodes, num_control_nodes + num_worker_nodes - 1);
 
-local ssh_key = importstr sshkey;
-local ssh_key_pub = importstr sshkey.pub;
+local ssh_key = importstr './ssh_key';
+local ssh_key_pub = importstr './ssh_key.pub';
+local credentials = import './credentials.libsonnet';
 
 local Node(i=0) = {
   name: 'node' + i,
@@ -50,7 +51,7 @@ local proxmox = {
 
 local cloudflare = {
   email: 'tibor@pilz.berlin',
-  api_token: std.extVar('CLOUDFLARE_API_TOKEN'),
+  api_token: std.extVar('CLOUDFLARE_API_KEY'),
 };
 
 local proxmox_vms = {
