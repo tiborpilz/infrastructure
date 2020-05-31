@@ -33,8 +33,8 @@ jobs:
     - uses: actions/setup-go@v2
     - name: Install terraform modules
       run: |
-        go install github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provider-proxmox
-        go install github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provisioner-proxmox
+        go get github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provider-proxmox
+        go get github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provisioner-proxmox
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1.0.1
