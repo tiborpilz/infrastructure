@@ -4,6 +4,12 @@ type: docker
 name: default
 
 steps:
+- name: gen_ssh_key
+  image: lgatica/openssh-client
+  commands:
+    - ssh-keygen -b 2048 -t rsa -f secrets/ssh_key -q -N ""
+
 - name: jsonnet
   image: bitnami/jsonnet
-  commands: [jsonnet -m . main.jsonnet]
+  commands:
+    - jsonnet -m . main.jsonnet
