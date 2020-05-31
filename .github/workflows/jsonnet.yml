@@ -12,5 +12,10 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build:
-  - name: jsonnet-render
-    uses: alexdglover/jsonnet-render@v1
+    name: jsonnet-render
+    runs-on: ubuntu-latest
+    steps:
+    - name: jsonnet-render
+      uses: alexdglover/jsonnet-render@v1
+      with:
+        file: path/to/file.jsonnet
