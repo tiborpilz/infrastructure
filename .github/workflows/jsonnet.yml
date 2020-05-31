@@ -18,4 +18,4 @@ jobs:
     - name: jsonnet-render
       uses: alexdglover/jsonnet-render@v1
       with:
-        file: path/to/file.jsonnet
+        file: main.jsonnet
