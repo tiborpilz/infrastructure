@@ -46,7 +46,7 @@ local proxmox = {
   pm_password: std.extVar('PM_PASSWORD'),
   pm_parallel: 1,
   pm_tls_insecure: true,
-} + std.extVar('SETTINGS_PROXMOX');
+};
 
 local cloudflare = {
   email: std.extVar('CLOUDFLARE_EMAIL'),
