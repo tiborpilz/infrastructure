@@ -29,15 +29,6 @@ jobs:
       with:
         file: main.jsonnet
         output_dir: ./
-    - name: Upload cluster.yml
-      uses: actions/upload-artifact@v1
-      with:
-        name: cluster.yml
-        path: ./cluster.yml
-    - name: Upload main.tf.json
-      uses: actions/upload-artifact@v1
-      with:
-        name: main.tf.json
         
     - uses: actions/setup-go@v2
     - name: Get terraform modules
