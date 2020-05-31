@@ -4,8 +4,8 @@ local num_control_nodes = 1;
 local indices_control_nodes = std.range(0, num_control_nodes - 1);
 local indices_worker_nodes = std.range(num_control_nodes, num_control_nodes + num_worker_nodes - 1);
 
-local ssh_key = std.extVar('SSH_KEY');
-local ssh_key_pub = std.extVar('SSH_KEY_PUB');
+local ssh_key = importstr sshkey;
+local ssh_key_pub = importstr sshkey.pub;
 
 local Node(i=0) = {
   name: 'node' + i,
@@ -41,15 +41,15 @@ local nodes = control_nodes + worker_nodes;
 local proxmox_node = 'dc12';
 
 local proxmox = {
-  pm_api_url: std.extVar('PM_API_URL'),
-  pm_user: std.extVar('PM_USER'),
+  pm_api_url: 'https://dc12.tibor.host:8006/api2/json',
+  pm_user: 'root@pam',
   pm_password: std.extVar('PM_PASSWORD'),
   pm_parallel: 1,
   pm_tls_insecure: true,
 };
 
 local cloudflare = {
-  email: std.extVar('CLOUDFLARE_EMAIL'),
+  email: 'tibor@pilz.berlin',
   api_token: std.extVar('CLOUDFLARE_API_TOKEN'),
 };
 
@@ -131,7 +131,6 @@ local proxmox_vms = {
           workspaces: {
             name: 'tibor_host',
           },
-          token: std.extVar('TERRAFORM_TOKEN'),
         },
       },
     },

@@ -7,24 +7,12 @@ steps:
 - name: jsonnet
   image: sparkprime/jsonnet
   environment:
-    TERRAFORM_TOKEN:
-      from_secret: TERRAFORM_TOKEN
-    CLOUDFLARE_EMAIL:
-      from_secret: CLOUDFLARE_EMAIL
     CLOUDFLARE_API_TOKEN:
       from_secret: CLOUDFLARE_API_TOKEN
-    SSH_KEY:
-      from_secret: SSH_KEY
-    SSH_KEY_PUB:
-      from_secret: SSH_KEY_PUB
-    PM_API_URL:
-      from_secret: PM_API_URL
-    PM_USER:
-      from_secret: PM_USER
     PM_PASSWORD:
       from_secret: PM_PASSWORD
   commands:
-    - jsonnet -m . main.jsonnet -V TERRAFORM_TOKEN -V CLOUDFLARE_EMAIL -V CLOUDFLARE_API_TOKEN -V SSH_KEY -V SSH_KEY_PUB -V PM_PASSWORD -V PM_API_URL -V PM_USER -V PM_PASSWORD
+    - jsonnet -m . main.jsonnet -V TERRAFORM_TOKEN -V CLOUDFLARE_API_TOKEN
     - cat main.tf.json
 
 - name: terraform
