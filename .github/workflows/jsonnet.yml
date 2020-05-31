@@ -28,10 +28,22 @@ jobs:
       uses: alexdglover/jsonnet-render@v1
       with:
         file: main.jsonnet
+        output_dir: ./
+    - name: Upload cluster.yml
+      uses: actions/upload-artifact@v1
+      with:
+        name: cluster.yml
+        path: ./cluster.yml
+    - name: Upload main.tf.json
+      uses: actions/upload-artifact@v1
+      with:
+        name: main.tf.json
+        path: ./main.tf.json
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1.0.1
       with:
         cli_config_credentials_hostname: app.terraform.io # optional, default is app.terraform.io
         cli_config_credentials_token: ${{ secrets.TERRAFORM_TOKEN }} # optional
-    - name: Terraform plan
+    - name: Terraform
       run: terraform plan
