@@ -45,7 +45,7 @@ jobs:
       with:
         cli_config_credentials_hostname: app.terraform.io # optional, default is app.terraform.io
         cli_config_credentials_token: ${{ secrets.TERRAFORM_TOKEN }} # optional
-    - name: Terraform
-      run: |
-        terraform init
-        terraform plan
+    - name: Terraform Init
+      run: terraform init
+    - name: Terraform Plan
+      run: terraform plan
