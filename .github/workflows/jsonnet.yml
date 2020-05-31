@@ -31,8 +31,6 @@ jobs:
         output_dir: ./
         
     - uses: actions/setup-go@v2
-    - name: Get terraform modules
-      run: go get github.com/telmate/terraform-provider-proxmox
     - name: Install terraform modules
       run: |
         go install github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provider-proxmox
