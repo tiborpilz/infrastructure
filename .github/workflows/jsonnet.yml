@@ -45,6 +45,7 @@ jobs:
         go get github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provisioner-proxmox
         go install github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provider-proxmox
         go install github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provisioner-proxmox
+        mkdir -p ~/.terraform.d/plugins
         cp ~/go/bin/* ~/.terraform.d/plugins
         
     - name: Terraform Init
