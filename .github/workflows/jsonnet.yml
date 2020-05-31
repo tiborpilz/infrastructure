@@ -30,6 +30,14 @@ jobs:
         file: main.jsonnet
         output_dir: ./
         
+        
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1.0.1
+      with:
+        cli_config_credentials_hostname: app.terraform.io # optional, default is app.terraform.io
+        cli_config_credentials_token: ${{ secrets.TERRAFORM_TOKEN }} # optional
+
     - uses: actions/setup-go@v2
     - name: Install terraform modules
       run: |
@@ -37,12 +45,8 @@ jobs:
         go get github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provisioner-proxmox
         go install github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provider-proxmox
         go install github.com/Telmate/terraform-provider-proxmox/cmd/terraform-provisioner-proxmox
-
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1.0.1
-      with:
-        cli_config_credentials_hostname: app.terraform.io # optional, default is app.terraform.io
-        cli_config_credentials_token: ${{ secrets.TERRAFORM_TOKEN }} # optional
+        cp ~/go/bin/* ~/.terraform.d/plugins
+        
     - name: Terraform Init
       run: terraform init
     - name: Terraform Plan
