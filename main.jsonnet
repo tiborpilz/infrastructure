@@ -44,14 +44,14 @@ local proxmox_node = 'dc12';
 local proxmox = {
   pm_api_url: 'https://dc12.tibor.host:8006/api2/json',
   pm_user: 'root@pam',
-  pm_password: std.extVar('PM_PASSWORD'),
+  pm_password: credentials.pm_password,
   pm_parallel: 1,
   pm_tls_insecure: true,
 };
 
 local cloudflare = {
   email: 'tibor@pilz.berlin',
-  api_token: std.extVar('CLOUDFLARE_API_KEY'),
+  api_token: credentials.cloudflare_api_token,
 };
 
 local proxmox_vms = {
