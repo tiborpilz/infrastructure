@@ -4,16 +4,15 @@ local num_control_nodes = 1;
 local indices_control_nodes = std.range(0, num_control_nodes - 1);
 local indices_worker_nodes = std.range(num_control_nodes, num_control_nodes + num_worker_nodes - 1);
 
-local ssh_key = importstr './test';
+local ssh_key = std.extVar('SSH_KEY');
+local ssh_key_pub = std.extVar('SSH_KEY_PUB');
 
 local Node(i=0) = {
   name: 'node' + i,
   hostname: 'node' + i + '.kube.tibor.host',
   user: 'debian',
   ip_external: '5.9.178.' + std.toString(192 + i),
-  ip_internal: '10.10.10' + std.toString(2 + i),
-  gw_external: '${var.external_ip_gw}',
-  gw_inernal: '${var.internal_ip_gw}',
+  gw_external: '136.243.40.226',
   role: ['worker'],
   memory: 32768,
   cores: 4,
@@ -39,12 +38,27 @@ local worker_nodes = [
 
 local nodes = control_nodes + worker_nodes;
 
+local proxmox_node = 'dc12';
+
+local proxmox = {
+  pm_api_url: std.extVar('PM_API_URL'),
+  pm_user: std.extVar('PM_USER'),
+  pm_password: std.extVar('PM_PASSWORD'),
+  pm_parallel: 1,
+  pm_tls_insecure: true,
+} + std.extVar('SETTINGS_PROXMOX');
+
+local cloudflare = {
+  email: std.extVar('CLOUDFLARE_EMAIL'),
+  api_token: std.extVar('CLOUDFLARE_API_TOKEN'),
+};
+
 local proxmox_vms = {
   [node.name]: {
     agent: 1,
     name: node.hostname,
     desc: 'Kubernetes Node ' + node.name,
-    target_node: '${var.proxmox_node}',
+    target_node: proxmox_node,
     full_clone: true,
     clone: 'debian-template',
     pool: 'Kubernetes',
@@ -81,7 +95,7 @@ local proxmox_vms = {
     bootdisk: 'scsi0',
     nameserver: '1.1.1.1',
     ciuser: node.user,
-    sshkeys: '${file("${path.module}/ssh_key.pub")}',
+    sshkeys: ssh_key_pub,
     os_type: 'cloud-init',
     ipconfig0: 'ip=' + node.ip_external + '/32,gw=' + node.gw_external,
     searchdomain: '.local',
@@ -93,7 +107,7 @@ local proxmox_vms = {
     connection: {
       host: node.hostname,
       user: node.user,
-      private_key: '${file("${path.module}/ssh_key")}',
+      private_key: ssh_key,
     },
 
     provisioner: [
@@ -117,22 +131,15 @@ local proxmox_vms = {
           workspaces: {
             name: 'tibor_host',
           },
-          token: '7AWKsOGzpdPu9g.atlasv1.vQMvdertzhEVBe4q8qAZRisiupoq3Dzzbge2B2Hh1JZAuue6zGzMh90gfnxYKVfjRn8',
+          token: std.extVar('TERRAFORM_TOKEN'),
         },
       },
     },
     provider: {
-      proxmox: {
-        pm_api_url: 'https://${var.proxmox_host}:8006/api2/json',
-        pm_user: '${var.proxmox_user}',
-        pm_password: '${var.proxmox_password}',
-        pm_parallel: 1,
-        pm_tls_insecure: true,
-      },
+      proxmox: proxmox,
       cloudflare: {
-        version: '~> 2.0',
-        email: '${var.cloudflare_email}',
-        api_token: '${var.cloudflare_api_key}',
+        email: cloudflare.email,
+        api_token: cloudflare.api_token,
       },
     },
     data: {
