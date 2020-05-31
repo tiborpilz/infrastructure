@@ -28,7 +28,6 @@ steps:
     - cat main.tf.json
 
 - name: terraform
-  image: tiborpilz/docker-terraform-proxmox
-  commands:
-    - terraform init
-    - terraform plan
+  image: jmccann/drone-terraform:5
+  actions:
+    - validate
