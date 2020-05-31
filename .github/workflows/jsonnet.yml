@@ -24,7 +24,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Add credentials
       run: |
-        echo ${{ secrets.CREDENTIALS }} > secrets/credentials.libsonnet
+        echo "${{ secrets.CREDENTIALS }}" > secrets/credentials.libsonnet
     - name: jsonnet-render
       uses: alexdglover/jsonnet-render@v1
       with:
