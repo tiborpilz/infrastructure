@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: infrastructure
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -11,7 +11,7 @@ on:
     branches: [ master ]
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build:
+  render-jsonnet:
     name: jsonnet-render
     runs-on: ubuntu-latest
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
@@ -20,8 +20,7 @@ jobs:
         shell: bash
     # Checkout the repository to the GitHub Actions runner
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
     - name: Add credentials
       run: |
         echo "${{ secrets.CREDENTIALS }}" > secrets/credentials.libsonnet
@@ -29,3 +28,10 @@ jobs:
       uses: alexdglover/jsonnet-render@v1
       with:
         file: main.jsonnet
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1.0.1
+      with:
+        cli_config_credentials_hostname: app.terraform.io # optional, default is app.terraform.io
+        cli_config_credentials_token: ${{ secrets.TERRAFORM_TOKEN }} # optional
+    - name: Terraform plan
+      run: terraform plan
