@@ -1,7 +1,7 @@
 local nodes = import './nodes.jsonnet';
 local credentials = import './secrets/credentials.libsonnet';
-local ssh_key = importstr './ssh_key';
-local ssh_key_pub = importstr './ssh_key.pub';
+local ssh_key = importstr './secrets/ssh_key';
+local ssh_key_pub = importstr './secrets/ssh_key.pub';
 
 local proxmox_node = 'dc12';
 
@@ -87,45 +87,43 @@ local proxmox_vms = {
 };
 
 {
-  'main.tf.json': {
-    terraform: {
-      backend: {
-        remote: {
-          hostname: 'app.terraform.io',
-          organization: 'tiborpilz',
-          workspaces: {
-            name: 'tibor_host',
-          },
+  terraform: {
+    backend: {
+      remote: {
+        hostname: 'app.terraform.io',
+        organization: 'tiborpilz',
+        workspaces: {
+          name: 'tibor_host',
         },
       },
     },
-    provider: {
-      proxmox: proxmox,
-      cloudflare: {
-        email: cloudflare.email,
-        api_token: cloudflare.api_token,
-      },
+  },
+  provider: {
+    proxmox: proxmox,
+    cloudflare: {
+      email: cloudflare.email,
+      api_token: cloudflare.api_token,
     },
-    data: {
-      cloudflare_zones: {
-        tibor_host: {
-          filter: {
-            name: 'tibor.host*',
-          },
+  },
+  data: {
+    cloudflare_zones: {
+      tibor_host: {
+        filter: {
+          name: 'tibor.host*',
         },
       },
     },
-    resource: {
-      cloudflare_record: {
-        [node.name]: {
-          zone_id: '${lookup(data.cloudflare_zones.tibor_host.zones[0], "id")}',
-          name: node.hostname,
-          type: 'A',
-          value: node.ip_external,
-        }
-        for node in nodes
-      },
-      proxmox_vm_qemu: proxmox_vms,
+  },
+  resource: {
+    cloudflare_record: {
+      [node.name]: {
+        zone_id: '${lookup(data.cloudflare_zones.tibor_host.zones[0], "id")}',
+        name: node.hostname,
+        type: 'A',
+        value: node.ip_external,
+      }
+      for node in nodes
     },
+    proxmox_vm_qemu: proxmox_vms,
   },
 }

@@ -1,5 +1,5 @@
 local nodes = import './nodes.jsonnet';
-local ssh_key = importstr './ssh_key';
+local ssh_key = importstr './secrets/ssh_key';
 
 {
   nodes: [

@@ -4,8 +4,8 @@ local num_control_nodes = 1;
 local indices_control_nodes = std.range(0, num_control_nodes - 1);
 local indices_worker_nodes = std.range(num_control_nodes, num_control_nodes + num_worker_nodes - 1);
 
-local ssh_key = importstr './ssh_key';
-local ssh_key_pub = importstr './ssh_key.pub';
+local ssh_key = importstr './secrets/ssh_key';
+local ssh_key_pub = importstr './secrets/ssh_key.pub';
 local credentials = import './secrets/credentials.libsonnet';
 
 local Node(i=0) = {
