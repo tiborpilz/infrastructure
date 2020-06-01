@@ -1,43 +1,4 @@
-local num_worker_nodes = 2;
-local num_control_nodes = 1;
-
-local indices_control_nodes = std.range(0, num_control_nodes - 1);
-local indices_worker_nodes = std.range(num_control_nodes, num_control_nodes + num_worker_nodes - 1);
-
-local ssh_key = importstr './ssh_key';
-local ssh_key_pub = importstr './ssh_key.pub';
-local credentials = import './secrets/credentials.libsonnet';
-
-local Node(i=0) = {
-  name: 'node' + i,
-  hostname: 'node' + i + '.kube.tibor.host',
-  user: 'debian',
-  ip_external: '5.9.178.' + std.toString(192 + i),
-  gw_external: '136.243.40.226',
-  role: ['worker'],
-  memory: 32768,
-  cores: 4,
-  worker: 1,
-  storage0: '64G',
-  storage1: '64G',
-  ssh_key: ssh_key,
-};
-
-local ControlNode(i=0) = Node(i) + {
-  role: ['worker', 'controlplane', 'etcd'],
-};
-
-local control_nodes = [
-  ControlNode(i)
-  for i in indices_control_nodes
-];
-
-local worker_nodes = [
-  Node(i)
-  for i in indices_worker_nodes
-];
-
-local nodes = control_nodes + worker_nodes;
+local nodes = import './nodes.libsonnet';
 
 local proxmox_node = 'dc12';
 
@@ -162,48 +123,6 @@ local proxmox_vms = {
         for node in nodes
       },
       proxmox_vm_qemu: proxmox_vms,
-    },
-  },
-  'cluster.yml': {
-    nodes: [
-      {
-        address: node.ip_external,
-        port: '22',
-        role: node.role,
-        user: node.user,
-        ssh_key: ssh_key,
-      }
-      for node in nodes
-    ],
-    addons_include: [
-      'https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager-no-webhook.yaml',
-      './addons/letsencrypt-clusterissuer.yaml',
-      './addons/ingress-nginx/configmap.yaml',
-      'https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.28.0/deploy/static/mandatory.yaml',
-      './addons/ingress-nginx/service.yaml',
-      'https://raw.githubusercontent.com/google/metallb/v0.8.3/manifests/metallb.yaml',
-      './addons/metallb-config.yaml',
-      'https://raw.githubusercontent.com/rook/rook/release-1.3/cluster/examples/kubernetes/ceph/common.yaml',
-      'https://raw.githubusercontent.com/rook/rook/release-1.3/cluster/examples/kubernetes/ceph/operator.yaml',
-      './addons/rook-ceph/ceph-cluster.yaml',
-      './addons/rook-ceph/ingress.yaml',
-      './addons/rook-ceph/storageclass-cephfs.yaml',
-      'https://storage.googleapis.com/tekton-releases/pipeline/previous/v0.12.1/release.yaml',
-      'https://github.com/tektoncd/dashboard/releases/download/v0.6.1.5/tekton-dashboard-release.yaml',
-      './addons/tekton/config-artifact-pvc.yaml',
-      './addons/external-dns.yaml',
-      'https://raw.githubusercontent.com/kubernetes-sigs/application/release-v0.8/deploy/kube-app-manager-aio.yaml',
-      './addons/basic-auth.yaml',
-    ],
-    kubernetes_version: '',
-    network: {
-      plugin: 'weave',
-    },
-    authorization: {
-      mode: 'rbac',
-    },
-    ingress: {
-      provide: 'none',
     },
   },
 }

@@ -5,3 +5,4 @@ crentials.libsonnet
 terraform
 cluster.yml
 main.tf.json
+.terraform
