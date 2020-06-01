@@ -2,3 +2,6 @@
 !*.secret
 .env
 crentials.libsonnet
+terraform
+cluster.yml
+main.tf.json
