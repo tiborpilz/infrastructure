@@ -1,4 +1,5 @@
-local nodes = import './nodes.libsonnet'
+local nodes = import './nodes.jsonnet';
+local ssh_key = importstr './ssh_key';
 
 {
   nodes: [

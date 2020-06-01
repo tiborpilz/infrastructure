@@ -1,4 +1,7 @@
-local nodes = import './nodes.libsonnet';
+local nodes = import './nodes.jsonnet';
+local credentials = import './secrets/credentials.libsonnet';
+local ssh_key = importstr './ssh_key';
+local ssh_key_pub = importstr './ssh_key.pub';
 
 local proxmox_node = 'dc12';
 
