@@ -33,9 +33,15 @@ local proxmox_vms = {
     balloon: 0,
     network: [
       {
-        id: 0,
-        model: 'virtio',
         bridge: 'vmbr0',
+        firewall: false,
+        id: 0,
+        link_down: false,
+        model: 'virtio',
+        macaddr: 'C2:DB:B4:AB:C0:6C',
+        queues: -1,
+        rate: -1,
+        tag: -1,
       },
     ],
     disk: [
@@ -75,13 +81,13 @@ local proxmox_vms = {
       private_key: ssh_key,
     },
 
-    provisioner: [
-      {
-        'remote-exec': {
-          inline: ["sleep 30 && echo 'Connected to ${self.name}'"],
-        },
-      },
-    ],
+    // provisioner: [
+    //   {
+    //     'remote-exec': {
+    //       inline: ["sleep 30 && echo 'Connected to ${self.name}'"],
+    //     },
+    //   },
+    // ],
   }
   for node in nodes
 };

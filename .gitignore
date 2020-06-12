@@ -1,5 +1,6 @@
 .gitsecret/keys/random_seed
 !*.secret
+secrets/
 .env
 crentials.libsonnet
 terraform
