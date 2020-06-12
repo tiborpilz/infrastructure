@@ -1,7 +1,10 @@
 .gitsecret/keys/random_seed
 !*.secret
+secrets/
 .env
 crentials.libsonnet
 terraform
 cluster.yml
 main.tf.json
+.terraform
+cluster.rkestate
