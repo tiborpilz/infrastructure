@@ -1,0 +1,23 @@
+---
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata:
+  name: yugabytedb-ui
+  namespace: rook-yugabytedb
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: 'true'
+spec:
+  tls:
+    - hosts:
+        - yb-master.tibor.host
+      secretName: yb-tls
+  rules:
+    - host: yb-master.tibor.host
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: yb-master-ui-ybdb-cluster
+              servicePort: 7000
