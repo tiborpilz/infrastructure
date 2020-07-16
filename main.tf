@@ -57,6 +57,17 @@ resource "hcloud_volume" "volumes" {
   automount = false
 }
 
+resource "hcloud_load_balancer" "load_balancers" {
+  count = 4
+  load_balancer_type = "lb11"
+  network_zone = "eu-central"
+  name = "lb_${count.index}"
+  target {
+    type = "server"
+    server_id = hcloud_server.nodes[local.names[0]].id
+  }
+}
+
 resource "cloudflare_record" "nodes" {
   for_each = hcloud_server.nodes
   zone_id = lookup(data.cloudflare_zones.tibor_host.zones[0], "id")
@@ -92,6 +103,15 @@ resource "rke_cluster" "cluster" {
     "./addons/rook-ceph/ingress.yaml",
     "./addons/rook-ceph/storageclass-cephfs.yaml"
   ]
+}
+provider "kubernetes" {
+  host     = rke_cluster.cluster.api_server_url
+  username = rke_cluster.cluster.kube_admin_user
+
+
+  client_certificate     = rke_cluster.cluster.client_cert
+  client_key             = rke_cluster.cluster.client_key
+  cluster_ca_certificate = rke_cluster.cluster.ca_crt
 }
 
 resource "local_file" "kube_cluster_yaml" {
