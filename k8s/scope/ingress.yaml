@@ -1,0 +1,24 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: weave-scope
+  namespace: weave
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-clusterissuer"
+    kubernetes.io/ingress.class: "nginx"
+    kubernetes.io/tls-acme: "true"
+  labels:
+    app: weave-scope
+spec:
+  rules:
+  - host: weave-scope.tibor.host
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: weave-scope-app
+          servicePort: app
+  tls:
+  - hosts:
+    - weave-scope.tibor.host
+    secretName: scope-tls
