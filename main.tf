@@ -97,6 +97,8 @@ resource "rke_cluster" "cluster" {
     "https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager-no-webhook.yaml",
     "https://raw.githubusercontent.com/rook/rook/release-1.2/cluster/examples/kubernetes/ceph/common.yaml",
     "https://raw.githubusercontent.com/rook/rook/release-1.2/cluster/examples/kubernetes/ceph/operator.yaml",
+    "https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml",
+    "https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml",
     "./addons/external-dns.yaml",
     "./addons/letsencrypt-clusterissuer.yaml",
     "./addons/rook-ceph/cluster.yaml",
@@ -112,6 +114,25 @@ provider "kubernetes" {
   client_certificate     = rke_cluster.cluster.client_cert
   client_key             = rke_cluster.cluster.client_key
   cluster_ca_certificate = rke_cluster.cluster.ca_crt
+}
+
+resource "kubernetes_config_map" "metallb_config" {
+  metadata {
+    name = "config"
+    namespace = "metallb-system"
+  }
+  data = {
+    config = <<EOF
+      address-pools:
+      - name: default
+        protocol: layer2
+        addresses:
+        - ${hcloud_load_balancer.load_balancers[0].ipv4}/32
+        - ${hcloud_load_balancer.load_balancers[1].ipv4}/32
+        - ${hcloud_load_balancer.load_balancers[2].ipv4}/32
+        - ${hcloud_load_balancer.load_balancers[3].ipv4}/32
+    EOF
+  }
 }
 
 resource "local_file" "kube_cluster_yaml" {
