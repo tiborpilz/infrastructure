@@ -21,6 +21,9 @@ spec:
     enabled: true
     port: 7000
     ssl: false
+  storage:
+    useAllNodes: true
+    useAllDevices: true
   monitoring:
     enabled: false
     rulesNamespace: rook-ceph

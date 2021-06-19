@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/part-of: ingress-nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: '*.tibor.host.'
+    external-dns.alpha.kubernetes.io/hostname: '*.tiborpilz.dev.'
 spec:
   type: LoadBalancer
   ports:

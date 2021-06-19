@@ -3,8 +3,22 @@ variable "cloudflare_email" {}
 variable "cloudflare_api_token" {}
 variable "nodecount" {}
 
+terraform {
+  required_providers {
+    rke = {
+      source = "rancher/rke"
+    }
+    hcloud = {
+      source = "hetznercloud/hcloud"
+    }
+    cloudflare = {
+      source = "cloudflare/cloudflare"
+    }
+  }
+}
+
 locals {
-  domain = "kube.tibor.host"
+  domain = "kube.tiborpilz.dev"
   names = [for i in range(var.nodecount) : format("%s%02d", "node", i)]
 }
 
@@ -17,9 +31,14 @@ provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
 
-data "cloudflare_zones" "tibor_host" {
+provider "rke" {
+  debug = true
+  log_file = "rke.log"
+}
+
+data "cloudflare_zones" "tiborpilz_dev" {
   filter {
-    name = "tibor.host*"
+    name = "tiborpilz.dev"
   }
 }
 
@@ -32,9 +51,10 @@ resource "hcloud_server" "nodes" {
   for_each = toset(local.names)
   name = each.value
   image = "ubuntu-18.04"
-  server_type = "cx21"
+  server_type = "cx11"
   ssh_keys = [hcloud_ssh_key.terraform.id]
 	user_data = file("userdata.cloudinit")
+  location = "nbg1"
 
   provisioner "remote-exec" {
     connection {
@@ -57,23 +77,25 @@ resource "hcloud_volume" "volumes" {
   automount = false
 }
 
-resource "hcloud_load_balancer" "load_balancers" {
-  count = 4
-  load_balancer_type = "lb11"
-  network_zone = "eu-central"
-  name = "lb_${count.index}"
-  target {
-    type = "server"
-    server_id = hcloud_server.nodes[local.names[0]].id
-  }
+resource "hcloud_floating_ip" "node_ip" {
+  for_each = hcloud_server.nodes
+  type = "ipv4"
+  server_id = each.value.id
 }
 
 resource "cloudflare_record" "nodes" {
   for_each = hcloud_server.nodes
-  zone_id = lookup(data.cloudflare_zones.tibor_host.zones[0], "id")
+  zone_id = lookup(data.cloudflare_zones.tiborpilz_dev.zones[0], "id")
   name    = "${each.value.name}.${local.domain}"
   type    = "A"
   value   = each.value.ipv4_address
+}
+
+resource "cloudflare_record" "ingress" {
+  zone_id = lookup(data.cloudflare_zones.tiborpilz_dev.zones[0], "id")
+  name = "*.${local.domain}"
+  type = "A"
+  value = hcloud_floating_ip.node_ip[local.names[0]].ip_address
 }
 
 resource "rke_cluster" "cluster" {
@@ -127,10 +149,9 @@ resource "kubernetes_config_map" "metallb_config" {
       - name: default
         protocol: layer2
         addresses:
-        - ${hcloud_load_balancer.load_balancers[0].ipv4}/32
-        - ${hcloud_load_balancer.load_balancers[1].ipv4}/32
-        - ${hcloud_load_balancer.load_balancers[2].ipv4}/32
-        - ${hcloud_load_balancer.load_balancers[3].ipv4}/32
+        %{ for ip in hcloud_floating_ip.node_ip }
+        - ${ip.ip_address}/32
+        %{ endfor }
     EOF
   }
 }
@@ -144,3 +165,45 @@ resource "local_file" "rke_cluster_yaml" {
   filename = "${path.root}/rke_cluster.yml"
   content = rke_cluster.cluster.rke_cluster_yaml
 }
+
+/* resource "kubernetes_service" "service_ingress_nginx" { */
+/*   depends_on = [ */
+/*       kubernetes_config_map.metallb_config */
+/*   ] */
+/*   metadata { */
+/*     annotations = { */
+/*       "external-dns.alpha.kubernetes.io/hostname" = "*.tiborpilz.dev." */
+/*     } */
+/*     labels = { */
+/*       "app.kubernetes.io/name" = "ingress-nginx" */
+/*       "app.kubernetes.io/part-of" = "ingress-nginx" */
+/*     } */
+/*     name = "ingress-nginx" */
+/*     namespace = "ingress-nginx" */
+/*   } */
+/*   spec { */
+/*     port { */
+/*       name = "http" */
+/*       port = 80 */
+/*       protocol = "TCP" */
+/*       target_port = 80 */
+/*     } */
+/*     port { */
+/*       name = "https" */
+/*       port = 443 */
+/*       protocol = "TCP" */
+/*       target_port = 443 */
+/*     } */
+/*     port { */
+/*       name = "proxied-tcp-22" */
+/*       port = 22 */
+/*       protocol = "TCP" */
+/*       target_port = 22 */
+/*     } */
+/*     selector = { */
+/*       "app.kubernetes.io/name" = "ingress-nginx" */
+/*       "app.kubernetes.io/part-of" = "ingress-nginx" */
+/*     } */
+/*     type = "LoadBalancer" */
+/*   } */
+/* } */
