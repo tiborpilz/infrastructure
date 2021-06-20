@@ -2,6 +2,7 @@ variable "hcloud_token" {}
 variable "cloudflare_email" {}
 variable "cloudflare_api_token" {}
 variable "nodecount" {}
+variable "metallb_secret" {}
 
 terraform {
   required_providers {
@@ -14,11 +15,13 @@ terraform {
     cloudflare = {
       source = "cloudflare/cloudflare"
     }
+    kustomization = {
+      source = "kbst/kustomization"
+    }
   }
 }
-
 locals {
-  domain = "kube.tiborpilz.dev"
+  domain = "tiborpilz.dev"
   names = [for i in range(var.nodecount) : format("%s%02d", "node", i)]
 }
 
@@ -36,10 +39,13 @@ provider "rke" {
   log_file = "rke.log"
 }
 
-data "cloudflare_zones" "tiborpilz_dev" {
+data "cloudflare_zones" "zone" {
   filter {
-    name = "tiborpilz.dev"
+    name = local.domain
   }
+}
+data "hcloud_image" "rke_image" {
+  with_selector = "type=rke_node"
 }
 
 resource "hcloud_ssh_key" "terraform" {
@@ -51,7 +57,7 @@ resource "hcloud_server" "nodes" {
   for_each = toset(local.names)
   name = each.value
   image = "ubuntu-18.04"
-  server_type = "cx11"
+  server_type = "cx31"
   ssh_keys = [hcloud_ssh_key.terraform.id]
 	user_data = file("userdata.cloudinit")
   location = "nbg1"
@@ -77,25 +83,37 @@ resource "hcloud_volume" "volumes" {
   automount = false
 }
 
-resource "hcloud_floating_ip" "node_ip" {
-  for_each = hcloud_server.nodes
+resource "hcloud_floating_ip" "floating_ip" {
   type = "ipv4"
-  server_id = each.value.id
+  server_id = hcloud_server.nodes[local.names[0]].id
+
+  provisioner "remote-exec" {
+    connection {
+      type = "ssh"
+      user = "root"
+      private_key = file("ssh_key")
+      host = hcloud_server.nodes[local.names[0]].ipv4_address
+    }
+    inline = [
+      "sudo ip addr add ${self.ip_address} dev eth0"
+    ]
+  }
 }
+
 
 resource "cloudflare_record" "nodes" {
   for_each = hcloud_server.nodes
-  zone_id = lookup(data.cloudflare_zones.tiborpilz_dev.zones[0], "id")
-  name    = "${each.value.name}.${local.domain}"
+  zone_id = lookup(data.cloudflare_zones.zone.zones[0], "id")
+  name    = "${each.value.name}.kube.${local.domain}"
   type    = "A"
   value   = each.value.ipv4_address
 }
 
 resource "cloudflare_record" "ingress" {
-  zone_id = lookup(data.cloudflare_zones.tiborpilz_dev.zones[0], "id")
+  zone_id = lookup(data.cloudflare_zones.zone.zones[0], "id")
   name = "*.${local.domain}"
   type = "A"
-  value = hcloud_floating_ip.node_ip[local.names[0]].ip_address
+  value = hcloud_floating_ip.floating_ip.ip_address
 }
 
 resource "rke_cluster" "cluster" {
@@ -112,22 +130,24 @@ resource "rke_cluster" "cluster" {
     plugin    = "weave"
   }
   ingress {
-    provider  = "nginx"
+    provider  = "none"
   }
 
   addons_include = [
+    "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.47.0/deploy/static/provider/cloud/deploy.yaml",
+    "./addons/ingress-nginx/service.yaml",
     "https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager-no-webhook.yaml",
     "https://raw.githubusercontent.com/rook/rook/release-1.2/cluster/examples/kubernetes/ceph/common.yaml",
     "https://raw.githubusercontent.com/rook/rook/release-1.2/cluster/examples/kubernetes/ceph/operator.yaml",
     "https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml",
     "https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml",
-    "./addons/external-dns.yaml",
     "./addons/letsencrypt-clusterissuer.yaml",
     "./addons/rook-ceph/cluster.yaml",
     "./addons/rook-ceph/ingress.yaml",
     "./addons/rook-ceph/storageclass-cephfs.yaml"
   ]
 }
+
 provider "kubernetes" {
   host     = rke_cluster.cluster.api_server_url
   username = rke_cluster.cluster.kube_admin_user
@@ -149,10 +169,18 @@ resource "kubernetes_config_map" "metallb_config" {
       - name: default
         protocol: layer2
         addresses:
-        %{ for ip in hcloud_floating_ip.node_ip }
-        - ${ip.ip_address}/32
-        %{ endfor }
+        - ${hcloud_floating_ip.floating_ip.ip_address}/32
     EOF
+  }
+}
+
+resource "kubernetes_secret" "metallb_memberlist" {
+  metadata {
+    name = "memberlist"
+    namespace = "metallb-system"
+  }
+  data = {
+    secretkey = var.metallb_secret
   }
 }
 
@@ -166,44 +194,17 @@ resource "local_file" "rke_cluster_yaml" {
   content = rke_cluster.cluster.rke_cluster_yaml
 }
 
-/* resource "kubernetes_service" "service_ingress_nginx" { */
-/*   depends_on = [ */
-/*       kubernetes_config_map.metallb_config */
-/*   ] */
-/*   metadata { */
-/*     annotations = { */
-/*       "external-dns.alpha.kubernetes.io/hostname" = "*.tiborpilz.dev." */
-/*     } */
-/*     labels = { */
-/*       "app.kubernetes.io/name" = "ingress-nginx" */
-/*       "app.kubernetes.io/part-of" = "ingress-nginx" */
-/*     } */
-/*     name = "ingress-nginx" */
-/*     namespace = "ingress-nginx" */
-/*   } */
-/*   spec { */
-/*     port { */
-/*       name = "http" */
-/*       port = 80 */
-/*       protocol = "TCP" */
-/*       target_port = 80 */
-/*     } */
-/*     port { */
-/*       name = "https" */
-/*       port = 443 */
-/*       protocol = "TCP" */
-/*       target_port = 443 */
-/*     } */
-/*     port { */
-/*       name = "proxied-tcp-22" */
-/*       port = 22 */
-/*       protocol = "TCP" */
-/*       target_port = 22 */
-/*     } */
-/*     selector = { */
-/*       "app.kubernetes.io/name" = "ingress-nginx" */
-/*       "app.kubernetes.io/part-of" = "ingress-nginx" */
-/*     } */
-/*     type = "LoadBalancer" */
-/*   } */
-/* } */
+provider "kustomization" {
+  kubeconfig_raw = rke_cluster.cluster.kube_config_yaml
+}
+
+data "kustomization" "weave-scope" {
+  provider = kustomization
+  path = "./applications/weave-scope"
+}
+
+resource "kustomization_resource" "weave-scope" {
+  provider = kustomization
+  for_each = data.kustomization.weave-scope.ids
+  manifest = data.kustomization.weave-scope.manifests[each.value]
+}

@@ -24,5 +24,6 @@ runcmd:
   - apt-get install -y docker-ce docker-ce-cli containerd.io
   - systemctl start docker
   - systemctl enable docker
+  - docker login -u tiborpilz -p Dionarap23
 
 final_message: "The system is finally up, after $UPTIME seconds"
