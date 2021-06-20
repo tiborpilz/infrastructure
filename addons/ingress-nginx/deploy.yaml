@@ -275,6 +275,7 @@ metadata:
   namespace: ingress-nginx
 spec:
   type: LoadBalancer
+  externalTrafficPolicy: Cluster
   ports:
     - name: http
       port: 80
@@ -291,7 +292,7 @@ spec:
 ---
 # Source: ingress-nginx/templates/controller-deployment.yaml
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
   labels:
     helm.sh/chart: ingress-nginx-3.33.0
@@ -329,6 +330,7 @@ spec:
                   - /wait-shutdown
           args:
             - /nginx-ingress-controller
+            - --publish-service=$(POD_NAMESPACE)/ingress-nginx-controller
             - --election-id=ingress-controller-leader
             - --ingress-class=nginx
             - --configmap=$(POD_NAMESPACE)/ingress-nginx-controller

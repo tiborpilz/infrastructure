@@ -13,7 +13,7 @@ spec:
   tls:
     - hosts:
         - weave.tiborpilz.dev
-      secretName: ceph-tls
+      secretName: weave-tls
   rules:
     - host: weave.tiborpilz.dev
       http:

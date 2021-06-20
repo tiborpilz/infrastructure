@@ -35,7 +35,6 @@ provider "cloudflare" {
 }
 
 provider "rke" {
-  debug = true
   log_file = "rke.log"
 }
 
@@ -134,8 +133,7 @@ resource "rke_cluster" "cluster" {
   }
 
   addons_include = [
-    "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.47.0/deploy/static/provider/cloud/deploy.yaml",
-    "./addons/ingress-nginx/service.yaml",
+    "./addons/ingress-nginx/deploy.yaml",
     "https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager-no-webhook.yaml",
     "https://raw.githubusercontent.com/rook/rook/release-1.2/cluster/examples/kubernetes/ceph/common.yaml",
     "https://raw.githubusercontent.com/rook/rook/release-1.2/cluster/examples/kubernetes/ceph/operator.yaml",
@@ -192,19 +190,4 @@ resource "local_file" "kube_cluster_yaml" {
 resource "local_file" "rke_cluster_yaml" {
   filename = "${path.root}/rke_cluster.yml"
   content = rke_cluster.cluster.rke_cluster_yaml
-}
-
-provider "kustomization" {
-  kubeconfig_raw = rke_cluster.cluster.kube_config_yaml
-}
-
-data "kustomization" "weave-scope" {
-  provider = kustomization
-  path = "./applications/weave-scope"
-}
-
-resource "kustomization_resource" "weave-scope" {
-  provider = kustomization
-  for_each = data.kustomization.weave-scope.ids
-  manifest = data.kustomization.weave-scope.manifests[each.value]
 }
