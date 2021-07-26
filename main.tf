@@ -45,9 +45,13 @@ data "cloudflare_zones" "zone" {
   }
 }
 
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+}
+
 resource "hcloud_ssh_key" "terraform" {
 	name = "Terraform ssh key"
-	public_key = file("ssh_key.pub")
+	public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
 resource "hcloud_server" "nodes" {
@@ -69,7 +73,7 @@ resource "hcloud_server" "nodes" {
     connection {
       type = "ssh"
       user = "root"
-      private_key = file("ssh_key")
+      private_key = tls_private_key.ssh_key.private_key_pem
       host = self.ipv4_address
     }
     inline = [
@@ -78,13 +82,13 @@ resource "hcloud_server" "nodes" {
   }
 }
 
-/* resource "hcloud_volume" "volumes" { */
-/*   for_each = hcloud_server.nodes */
-/*   name = "volume_${each.value.name}" */
-/*   server_id = each.value.id */
-/*   size = 64 */
-/*   automount = false */
-/* } */
+resource "hcloud_volume" "volumes" {
+  for_each = hcloud_server.nodes
+  name = "volume_${each.value.name}"
+  server_id = each.value.id
+  size = 64
+  automount = false
+}
 
 resource "hcloud_floating_ip" "floating_ip" {
   type = "ipv4"
@@ -94,7 +98,7 @@ resource "hcloud_floating_ip" "floating_ip" {
     connection {
       type = "ssh"
       user = "root"
-      private_key = file("ssh_key")
+      private_key = tls_private_key.ssh_key.private_key_pem
       host = hcloud_server.nodes[local.names[0]].ipv4_address
     }
     inline = [
@@ -116,4 +120,9 @@ resource "cloudflare_record" "ingress" {
   name = "*.${local.domain}"
   type = "A"
   value = hcloud_floating_ip.floating_ip.ip_address
+}
+
+resource "local_file" "ssh_key" {
+  filename = "${path.root}/sshkey"
+  content = tls_private_key.ssh_key.private_key_pem
 }

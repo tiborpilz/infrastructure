@@ -5,7 +5,7 @@ resource "rke_cluster" "cluster" {
       address = nodes.value.ipv4_address
       user    = "root"
       role    = ["etcd", "worker", "controlplane"]
-      ssh_key = file("./ssh_key")
+      ssh_key = tls_private_key.ssh_key.private_key_pem
     }
   }
   network {
@@ -16,7 +16,7 @@ resource "rke_cluster" "cluster" {
   }
 
   addons_include = [
-    "./addons/ingress-nginx/deploy.yaml",
+    /* "./addons/ingress-nginx/deploy.yaml", */
     "https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager-no-webhook.yaml",
     "https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml",
     "https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml",
