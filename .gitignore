@@ -8,3 +8,11 @@ cluster.yml
 main.tf.json
 .terraform
 cluster.rkestate
+ssh_key
+*.tfstate
+*.backup
+terraform-provider-*/**
+*.lock.hcl
+*.log
+rke_cluster.yml
+kube_config_cluster.yml

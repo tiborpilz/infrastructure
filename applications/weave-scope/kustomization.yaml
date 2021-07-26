@@ -1,0 +1,3 @@
+resources:
+  - scope.yaml
+  - ingress.yaml
