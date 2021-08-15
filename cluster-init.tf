@@ -61,56 +61,55 @@ resource "helm_release" "argocd" {
   wait             = true
   timeout          = 600
 
-  /* settls { */
-  /*   name  = "createCRD" */
-  /*   value = false */
-  /* } */
+  set {
+    name  = "createCRD"
+    value = false
+  }
 
-  /* set { */
-  /*   name = "helm.versions" */
-  /*   value = "v3" */
-  /* } */
+  set {
+    name = "helm.versions"
+    value = "v3"
+  }
 
-  values = [file("./applications/argocd/values.yaml")]
-  /* values = [ */
-  /*   <<EOF */
-  /*   server: */
-  /*     ingress: */
-  /*       enabled: true */
-  /*       hosts: */
-  /*         - argocd.${var.domain} */
-  /*       tls: */
-  /*         - hosts: */
-  /*             - argocd.${var.domain} */
-  /*           secretName: argocd-secret */
-  /*       annotations: */
-  /*         cert-manager.io/cluster-issuer: letsencrypt-clusterissuer */
-  /*         kubernetes.io/ingress.class: nginx */
-  /*         kubernetes.io/tls-acme: 'true' */
-  /*         nginx.ingress.kubernetes.io/ssl-passthrough: 'true' */
-  /*         nginx.ingress.kubernetes.io/backend-protocol: 'HTTPS' */
-  /*       https: true */
-  /*     configEnabled: true */
-  /*     config: */
-  /*       url: https://argocd.${var.domain} */
-  /*       application.instanceLabelKey: argocd.argoproj.io/instance */
-  /*       oidc.config: | */
-  /*         name: Auth0 */
-  /*         issuer: ${var.auth0_domain}/ */
-  /*         clientID: ${auth0_client.argocd.client_id} */
-  /*         clientSecret: ${auth0_client.argocd.client_secret} */
-  /*         requestedIDTokenClaims: */
-  /*           groups: */
-  /*             essential: true */
-  /*         requestedScopes: */
-  /*         - openid */
-  /*         - profile */
-  /*         - email */
-  /*         - 'https://argocd.${var.domain}/claims/groups' */
-  /*     rbacConfig: */
-  /*       policy.csv: | */
-  /*         g, argo-admins, role:admin */
-  /*       scopes: '[https://argocd.${var.domain}/claims/groups, email]' */
-  /*   EOF */
-  /* ] */
+  values = [
+    <<EOF
+    server:
+      ingress:
+        enabled: true
+        hosts:
+          - argocd.${var.domain}
+        tls:
+          - hosts:
+              - argocd.${var.domain}
+            secretName: argocd-secret
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+          kubernetes.io/ingress.class: nginx
+          kubernetes.io/tls-acme: 'true'
+          nginx.ingress.kubernetes.io/ssl-passthrough: 'true'
+          nginx.ingress.kubernetes.io/backend-protocol: 'HTTPS'
+        https: true
+      configEnabled: true
+      config:
+        url: https://argocd.${var.domain}
+        application.instanceLabelKey: argocd.argoproj.io/instance
+        oidc.config: |
+          name: Auth0
+          issuer: ${var.auth0_domain}/
+          clientID: ${auth0_client.argocd.client_id}
+          clientSecret: ${auth0_client.argocd.client_secret}
+          requestedIDTokenClaims:
+            groups:
+              essential: true
+          requestedScopes:
+          - openid
+          - profile
+          - email
+          - 'https://argocd.${var.domain}/claims/groups'
+      rbacConfig:
+        policy.csv: |
+          g, argo-admins, role:admin
+        scopes: '[https://argocd.${var.domain}/claims/groups, email]'
+    EOF
+  ]
 }

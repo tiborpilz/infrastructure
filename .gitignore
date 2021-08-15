@@ -16,3 +16,4 @@ terraform-provider-*/**
 *.log
 rke_cluster.yml
 kube_config_cluster.yml
+sshkey
