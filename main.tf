@@ -16,8 +16,11 @@ terraform {
     cloudflare = {
       source = "cloudflare/cloudflare"
     }
-    kustomization = {
-      source = "kbst/kustomization"
+    auth0 = {
+      source = "alexkappa/auth0"
+    }
+    kubectl = {
+      source = "gavinbunney/kubectl"
     }
   }
 }
@@ -80,14 +83,6 @@ resource "hcloud_server" "nodes" {
       "cloud-init status --wait"
     ]
   }
-}
-
-resource "hcloud_volume" "volumes" {
-  for_each = hcloud_server.nodes
-  name = "volume_${each.value.name}"
-  server_id = each.value.id
-  size = 64
-  automount = false
 }
 
 resource "hcloud_floating_ip" "floating_ip" {

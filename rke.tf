@@ -16,16 +16,29 @@ resource "rke_cluster" "cluster" {
   }
 
   addons_include = [
-    /* "./addons/ingress-nginx/deploy.yaml", */
     "https://github.com/jetstack/cert-manager/releases/download/v0.13.0/cert-manager-no-webhook.yaml",
     "https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml",
     "https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml",
     "./addons/letsencrypt-clusterissuer.yaml",
     "https://raw.githubusercontent.com/hetznercloud/csi-driver/master/deploy/kubernetes/hcloud-csi.yml",
+    "https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/master/deploy/upstream/quickstart/olm.yaml",
   ]
 }
 
 provider "kubernetes" {
+  experiments {
+    manifest_resource = true
+  }
+  host     = rke_cluster.cluster.api_server_url
+  username = rke_cluster.cluster.kube_admin_user
+
+
+  client_certificate     = rke_cluster.cluster.client_cert
+  client_key             = rke_cluster.cluster.client_key
+  cluster_ca_certificate = rke_cluster.cluster.ca_crt
+}
+
+provider "kubectl" {
   host     = rke_cluster.cluster.api_server_url
   username = rke_cluster.cluster.kube_admin_user
 
