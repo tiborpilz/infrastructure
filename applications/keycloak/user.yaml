@@ -1,0 +1,17 @@
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: tibor
+  labels:
+    app: sso
+spec:
+  user:
+    username: tibor
+    firstName: Tibor
+    lastName: Pilz
+    email: tibor@pilz.berlin
+    enabled: true
+    emailVerified: true
+  realmSelector:
+    matchLabels:
+      app: sso
