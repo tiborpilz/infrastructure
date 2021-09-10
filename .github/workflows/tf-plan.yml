@@ -8,16 +8,16 @@ jobs:
     name: "Terraform Plan"
     runs-on: ubuntu-latest
     steps:
+      # Checkout the code
+      # Marketplace: https://github.com/marketplace/actions/checkout
+      - name: "Setup - Checkout"
+        uses: actions/checkout@v2.1.0
       # Unlock secrets
       - uses: actions/checkout@master
       - name: Unlock secrets
         uses: sliteteam/github-action-git-crypt-unlock@1.2.0
         env:
           GIT_CRYPT_KEY: ${{ secrets.GIT_CRYPT_KEY }}
-      # Checkout the code
-      # Marketplace: https://github.com/marketplace/actions/checkout
-      - name: "Setup - Checkout"
-        uses: actions/checkout@v2.1.0
 
       # Static analysis of Terraform templates to spot potential security issues
       # Marketplace: https://github.com/marketplace/actions/terraform-security-scan
