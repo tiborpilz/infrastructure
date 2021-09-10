@@ -12,7 +12,7 @@ spec:
     server: ''
   source:
     path: 'applications/weave-scope'
-    repoURL: 'https://github.com/tiborpilz/intrastructure'
+    repoURL: 'https://github.com/tiborpilz/infrastructure'
     targetRevision: HEAD
   project: default
   syncPolicy:
