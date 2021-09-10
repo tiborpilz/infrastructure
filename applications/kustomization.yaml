@@ -1,4 +1,4 @@
 resources:
   - gitea/application.yaml
   - weave-scope/application.yaml
-  - keycloak/application.yaml
+  # - keycloak/application.yaml
