@@ -1,0 +1,47 @@
+config:
+  clientID: oauth-proxy
+  clientSecret: 8b71cdb1-48e9-4bdb-81dd-46f9c0093256
+  cookieSecret: SEVuTitJTGFFRnREcmt4bGxYdk1DZEM0QUNHbm1JSHc=
+  configFile: |-
+    provider = "oidc"
+    provider_display_name = "Keycloak"
+    oidc_issuer_url = "https://keycloak.tiborpilz.dev/auth/realms/master"
+    email_domains  = [ "*" ]
+    redirect_url = "https://oauth.tiborpilz.dev/oauth2/callback"
+    cookie_secure = "false"
+    whitelist_domains = [".tiborpilz.dev"]
+    cookie_domains = [".tiborpilz.dev"]
+ingress:
+  enabled: true
+  path: /
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+  hosts:
+    - 'oauth.tiborpilz.dev'
+  tls:
+    - hosts:
+      - oauth.tiborpilz.dev
+      secretName: oauth.tls
+#oidc_issuer_url = "https://keycloak.tiborpilz.dev/auth/realms/master"
+    # login_url = "https://keycloak.tiborpilz.dev/auth/realms/master/protocol/openid-connect/auth"
+    # redeem_url = "https://keycloak.tiborpilz.dev/auth/realms/master/protocol/openid-connect/token"
+    # validate_url = "https://keycloak.tiborpilz.dev/auth/realms/master/protocol/openid-connect/userinfo"
+    # scope = "openid profile email"
+    # cookie_domain = ".tiborpilz.dev"
+    # whitelist_domains = ".tiborpilz.dev"
+    # pass_authorization_header = true
+    # pass_access_token = true
+    # pass_user_headers = true
+    # set_authorization_header = true
+    # set_xauthrequest = true
+    # cookie_refresh = "1m"
+    # cookie_expire = "30m"
+    #
+    # pass_authorization_header = true
+    # pass_access_token = true
+    # pass_user_headers = true
+    # set_authorization_header = true
+    # set_xauthrequest = true
+    # cookie_refresh = "1m"
+    # cookie_expire = "30m"
