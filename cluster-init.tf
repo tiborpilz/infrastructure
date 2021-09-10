@@ -1,8 +1,7 @@
 variable "auth0_domain" {}
 variable "auth0_client_id" {}
 variable "auth0_client_secret" {}
-variable "github_username" {}
-variable "github_password" {}
+variable "github_sshkey" {}
 
 provider "auth0" {
   domain = var.auth0_domain
@@ -114,15 +113,13 @@ resource "helm_release" "argocd" {
         scopes: '[https://argocd.${var.domain}/claims/groups, email]'
     configs:
       repositories:
-        applications:
-          url: https://github.com/tiborpilz/applications
         infrastructure:
           url: https://github.com/tiborpilz/infrastructure
       credentialTemplates:
         https-creds:
-          url: https://github.com/tiborpilz
-          password: ${var.github_password}
-          username: ${var.github_username}
+          url: git@github.com:tiborpilz
+          sshPrivateKey: |
+            ${var.github_sshkey}
     EOF
   ]
 }
@@ -150,7 +147,7 @@ resource "kubectl_manifest" "applications" {
         server: ''
       source:
         path: applications
-        repoURL: https://github.com/tiborpilz/infrastructure
+        repoURL: git@github.com:tiborpilz/infrastructure.git
         targetRevision: HEAD
     YAML
 }
