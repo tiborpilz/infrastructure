@@ -2,6 +2,7 @@ apiVersion: keycloak.org/v1alpha1
 kind: Keycloak
 metadata:
   name: keycloak
+  namespace: my-keycloak-operator
   labels:
     app: sso
 spec:

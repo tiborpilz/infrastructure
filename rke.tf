@@ -22,6 +22,7 @@ resource "rke_cluster" "cluster" {
     "./addons/letsencrypt-clusterissuer.yaml",
     "https://raw.githubusercontent.com/hetznercloud/csi-driver/master/deploy/kubernetes/hcloud-csi.yml",
     "https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/master/deploy/upstream/quickstart/olm.yaml",
+    "https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/master/deploy/upstream/quickstart/crds.yaml",
   ]
 }
 
@@ -29,6 +30,7 @@ provider "kubernetes" {
   experiments {
     manifest_resource = true
   }
+
   host     = rke_cluster.cluster.api_server_url
   username = rke_cluster.cluster.kube_admin_user
 

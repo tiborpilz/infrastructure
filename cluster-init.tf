@@ -1,6 +1,8 @@
 variable "auth0_domain" {}
 variable "auth0_client_id" {}
 variable "auth0_client_secret" {}
+variable "github_username" {}
+variable "github_password" {}
 
 provider "auth0" {
   domain = var.auth0_domain
@@ -29,8 +31,8 @@ resource "helm_release" "ingress-nginx" {
 
 resource "auth0_client" "argocd" {
   name = "argocd"
-  callbacks = ["https://argocd.tiborpilz.dev/auth/callback"]
-  initiate_login_uri = "https://argocd.tiborpilz.dev/login"
+  callbacks = ["https://argocd.${var.domain}/auth/callback"]
+  initiate_login_uri = "https://argocd.${var.domain}/login"
   app_type = "regular_web"
   oidc_conformant = true
 
@@ -44,7 +46,7 @@ resource "auth0_rule" "argocd" {
   enabled = true
   script = <<EOF
     function (user, context, callback) {
-    var namespace = 'https://argocd.tiborpilz.dev/claims/';
+    var namespace = 'https://argocd.${var.domain}/claims/';
     context.idToken[namespace + "groups"] = user.groups;
     callback(null, user, context);
   }
@@ -55,7 +57,7 @@ resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
-  version          = "3.6.8"
+  version          = "3.17.6"
   namespace        = "argocd"
   create_namespace = true
   wait             = true
@@ -110,6 +112,45 @@ resource "helm_release" "argocd" {
         policy.csv: |
           g, argo-admins, role:admin
         scopes: '[https://argocd.${var.domain}/claims/groups, email]'
+    configs:
+      repositories:
+        applications:
+          url: https://github.com/tiborpilz/applications
+        infrastructure:
+          url: https://github.com/tiborpilz/infrastructure
+      credentialTemplates:
+        https-creds:
+          url: https://github.com/tiborpilz
+          password: ${var.github_password}
+          username: ${var.github_username}
     EOF
   ]
+}
+
+resource "kubectl_manifest" "applications" {
+  yaml_body = <<YAML
+    apiVersion: argoproj.io/v1alpha1
+    kind: Application
+    metadata:
+      name: applications
+      namespace: ${helm_release.argocd.namespace}
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+      destination:
+        name: in-cluster
+        namespace: applications
+        server: ''
+      source:
+        path: applications
+        repoURL: https://github.com/tiborpilz/infrastructure
+        targetRevision: HEAD
+    YAML
 }

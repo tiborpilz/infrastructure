@@ -22,6 +22,10 @@ terraform {
     kubectl = {
       source = "gavinbunney/kubectl"
     }
+    argocd = {
+      source = "oboukili/argocd"
+      version = "1.2.2"
+    }
   }
 }
 
