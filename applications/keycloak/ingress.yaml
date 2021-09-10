@@ -1,18 +1,19 @@
-- apiVersion: networking.k8s.io/v1
-  kind: Ingress
-  metadata:
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
-      kubernetes.io/tls-acme: "true"
-      nginx.ingress.kubernetes.io/backend-protocol: HTTPS
-      nginx.ingress.kubernetes.io/server-snippet: |2-
-        location ~* "^/auth/realms/master/metrics" {
-          return 301 /auth/realms/master;
-        }
-    labels:
-      app: keycloak
-    name: keycloak
-  spec:
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    nginx.ingress.kubernetes.io/server-snippet: |2-
+      location ~* "^/auth/realms/master/metrics" {
+        return 301 /auth/realms/master;
+      }
+  labels:
+    app: keycloak
+  name: keycloak
+  namespace: keycloak
+spec:
     rules:
     - host: keycloak.tiborpilz.dev
       http:

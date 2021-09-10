@@ -2,6 +2,7 @@ apiVersion: keycloak.org/v1alpha1
 kind: KeycloakUser
 metadata:
   name: tibor
+  namespace: keycloak
   labels:
     app: sso
 spec:
@@ -12,6 +13,11 @@ spec:
     email: tibor@pilz.berlin
     enabled: true
     emailVerified: true
+    credentials:
+      - type: "password"
+        value: "testpw12345"
+    realmRoles:
+      - admin
   realmSelector:
     matchLabels:
-      app: sso
+      realm: master
