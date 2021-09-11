@@ -1,11 +1,11 @@
 include {
-  path = find_in_parent_folders()
+  path           = find_in_parent_folders()
   merge_strategy = "deep"
 }
 
 remote_state {
   backend = "local"
-  config = {}
+  config  = {}
 }
 
 dependency "cluster" {
@@ -13,11 +13,11 @@ dependency "cluster" {
 
   mock_outputs = {
     cluster_connection = {
-      api_server_url = ""
+      api_server_url  = ""
       kube_admin_user = ""
-      client_cert = ""
-      client_key = ""
-      ca_crt = ""
+      client_cert     = ""
+      client_key      = ""
+      ca_crt          = ""
     }
   }
 }

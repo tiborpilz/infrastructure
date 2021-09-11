@@ -1,12 +1,12 @@
 include {
-  path = find_in_parent_folders()
+  path           = find_in_parent_folders()
   merge_strategy = "deep"
 }
 
 remote_state {
   backend = "local"
-  config = {}
-    # path = "/tmp/local_tg/terraform.tfstate"
+  config  = {}
+  # path = "/tmp/local_tg/terraform.tfstate"
   # }
 }
 
@@ -19,7 +19,7 @@ dependency "metal" {
       node00 = { ipv4_address = "0.0.0.0" }
     }
     ssh_key = {
-      private_key_pem = "privatekey"
+      private_key_pem    = "privatekey"
       public_key_openssh = "publickey"
     }
     ingress_ips = ["0.0.0.0"]
@@ -27,7 +27,7 @@ dependency "metal" {
 }
 
 inputs = {
-  nodes = dependency.metal.outputs.nodes
-  ssh_key = dependency.metal.outputs.ssh_key
+  nodes       = dependency.metal.outputs.nodes
+  ssh_key     = dependency.metal.outputs.ssh_key
   ingress_ips = dependency.metal.outputs.ingress_ips
 }
