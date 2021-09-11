@@ -12,10 +12,21 @@ terraform {
 }
 
 provider "kubernetes" {
+  alias = "dev"
+
   experiments {
     manifest_resource = true
   }
 
+  host     = var.cluster_connection.api_server_url
+  username = var.cluster_connection.kube_admin_user
+
+  client_certificate     = var.cluster_connection.client_cert
+  client_key             = var.cluster_connection.client_key
+  cluster_ca_certificate = var.cluster_connection.ca_crt
+}
+
+provider "kubernetes" {
   host     = var.cluster_connection.api_server_url
   username = var.cluster_connection.kube_admin_user
 

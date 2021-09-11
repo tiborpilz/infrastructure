@@ -11,7 +11,7 @@ spec:
     namespace: 
     server: ''
   source:
-    path: 'applications/weave-scope'
+    path: 'applications/manifests/weave-scope'
     repoURL: 'git@github.com:tiborpilz/infrastructure.git'
     targetRevision: HEAD
   project: default
