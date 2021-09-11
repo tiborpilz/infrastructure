@@ -1,6 +1,4 @@
 resource "kubernetes_manifest" "keycloakclient_oauth_proxy" {
-  provider = kubernetes.dev
-
   manifest = {
     apiVersion = "keycloak.org/v1alpha1"
     kind = "KeycloakClient"
@@ -58,15 +56,12 @@ data "kubernetes_secret" "keycloak-client-secret-oauth-proxy" {
   }
 }
 
-resource "time_sleep" "wait_10_seconds" {
-  depends_on = [data.kubernetes_secret.keycloak-client-secret-oauth-proxy]
-  create_duration = "10s"
-}
+# resource "time_sleep" "wait_10_seconds" {
+#   depends_on = [data.kubernetes_secret.keycloak-client-secret-oauth-proxy]
+#   create_duration = "10s"
+# }
 
 resource "kubernetes_manifest" "oauth2-proxy-application" {
-  provider = kubernetes.dev
-
-  depends_on = [time_sleep.wait_10_seconds]
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind = "Application"

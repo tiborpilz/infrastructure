@@ -23,7 +23,7 @@ dependency "cluster" {
 }
 
 dependencies {
-  paths = ["../metal", "../cluster", "../services"]
+  paths = ["../metal", "../cluster"]
 }
 
 inputs = {

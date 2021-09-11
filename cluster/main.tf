@@ -28,6 +28,9 @@ terraform {
     auth0 = {
       source = "alexkappa/auth0"
     }
+    kustomization = {
+      source = "kbst/kustomization"
+    }
   }
   backend "local" {}
 }
@@ -56,6 +59,10 @@ provider "kubernetes" {
   client_certificate     = rke_cluster.cluster.client_cert
   client_key             = rke_cluster.cluster.client_key
   cluster_ca_certificate = rke_cluster.cluster.ca_crt
+}
+
+provider "kustomization" {
+  kubeconfig_raw = rke_cluster.cluster.kube_config_yaml
 }
 
 provider "auth0" {

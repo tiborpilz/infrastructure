@@ -1,6 +1,4 @@
 resource "kubernetes_manifest" "app-of-apps-application" {
-  provider = kubernetes.dev
-
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind = "Application"
