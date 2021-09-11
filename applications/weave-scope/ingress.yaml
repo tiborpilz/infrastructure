@@ -5,6 +5,8 @@ metadata:
   name: weave-scope
   namespace: weave
   annotations:
+    nginx.ingress.kubernetes.io/auth-url: "https://oauth.tiborpilz.dev/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://oauth.tiborpilz.dev/oauth2/start?rd=$scheme://$best_http_host$request_uri"
     cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
     kubernetes.io/ingress.class: nginx
     kubernetes.io/tls-acme: 'true'
@@ -12,7 +14,7 @@ metadata:
 spec:
   tls:
     - hosts:
-        - scope.tiborpilz.dev
+      - scope.tiborpilz.dev
       secretName: weave-tls
   rules:
     - host: scope.tiborpilz.dev
