@@ -1,12 +1,5 @@
-provider "kubernetes" {
-  experiments {
-    manifest_resource = true
-  }
-
-  config_path = "../kube_config_cluster.yml"
-}
-
 resource "kubernetes_manifest" "keycloak-application" {
+  depends_on = [helm_release.argocd]
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind = "Application"
@@ -48,22 +41,11 @@ resource "kubernetes_manifest" "keycloak-application" {
 }
 
 data "kubernetes_secret" "keycloak-client-secret-oauth-proxy" {
+  depends_on = [kubernetes_manifest.keycloak-application]
   metadata {
     name = "keycloak-client-secret-oauth-proxy"
     namespace = "keycloak"
   }
-}
-
-data "terraform_remote_state" "main" {
-  backend = "local"
-
-  config = {
-    path = "../terraform.tfstate"
-  }
-}
-
-locals {
-  domain = data.terraform_remote_state.main.outputs.domain
 }
 
 output "oauth_proxy_id" {
@@ -73,6 +55,7 @@ output "oauth_proxy_id" {
 }
 
 resource "kubernetes_manifest" "oauth2-proxy-application" {
+  depends_on = [kubernetes_manifest.keycloak-application]
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind = "Application"
@@ -111,11 +94,11 @@ resource "kubernetes_manifest" "oauth2-proxy-application" {
                 # Provider
                 provider = "oidc"
                 provider_display_name = "Keycloak"
-                oidc_issuer_url = "https://keycloak.${local.domain}/auth/realms/master"
+                oidc_issuer_url = "https://keycloak.${var.domain}/auth/realms/master"
                 email_domains  = ["*"]
                 scope = "openid profile email"
-                cookie_domains = [".${local.domain}"]
-                whitelist_domains = [".${local.domain}"]
+                cookie_domains = [".${var.domain}"]
+                whitelist_domains = [".${var.domain}"]
                 pass_authorization_header = true
                 pass_access_token = true
                 pass_user_headers = true
@@ -137,13 +120,13 @@ resource "kubernetes_manifest" "oauth2-proxy-application" {
               }
               enabled = true
               hosts = [
-                "oauth.${local.domain}",
+                "oauth.${var.domain}",
               ]
               path = "/"
               tls = [
                 {
                   hosts = [
-                    "oauth.${local.domain}",
+                    "oauth.${var.domain}",
                   ]
                   secretName = "oauth.tls"
                 },
