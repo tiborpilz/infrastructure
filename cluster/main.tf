@@ -1,6 +1,10 @@
 variable "metallb_secret" {}
 variable "domain" {}
 variable "hcloud_token" {}
+variable "github_private_key_path" {}
+variable "auth0_domain" {}
+variable "auth0_client_id" {}
+variable "auth0_client_secret" {}
 
 variable nodes {
   type = map(any)
@@ -21,8 +25,43 @@ terraform {
     rke = {
       source = "rancher/rke"
     }
+    auth0 = {
+      source = "alexkappa/auth0"
+    }
   }
   backend "local" {}
+}
+
+provider "rke" {
+  log_file = "${path.root}/log/rke.log"
+}
+
+provider "helm" {
+  kubernetes {
+    host = rke_cluster.cluster.api_server_url
+    client_certificate = rke_cluster.cluster.client_cert
+    client_key = rke_cluster.cluster.client_key
+    cluster_ca_certificate = rke_cluster.cluster.ca_crt
+  }
+}
+
+provider "kubernetes" {
+  experiments {
+    manifest_resource = true
+  }
+
+  host     = rke_cluster.cluster.api_server_url
+  username = rke_cluster.cluster.kube_admin_user
+
+  client_certificate     = rke_cluster.cluster.client_cert
+  client_key             = rke_cluster.cluster.client_key
+  cluster_ca_certificate = rke_cluster.cluster.ca_crt
+}
+
+provider "auth0" {
+  domain = var.auth0_domain
+  client_id = var.auth0_client_id
+  client_secret = var.auth0_client_secret
 }
 
 output "cluster_connection" {

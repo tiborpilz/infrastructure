@@ -1,7 +1,3 @@
-provider "rke" {
-  log_file = "${path.root}/log/rke.log"
-}
-
 resource "rke_cluster" "cluster" {
   dynamic nodes {
     for_each = var.nodes
@@ -38,4 +34,42 @@ resource "local_file" "kube_cluster_yaml" {
 resource "local_file" "rke_cluster_yaml" {
   filename = "${path.root}/../out/rke_cluster.yml"
   content = rke_cluster.cluster.rke_cluster_yaml
+}
+
+resource "kubernetes_secret" "hcloud_csi" {
+  metadata {
+    name = "hcloud-csi"
+    namespace = "kube-system"
+  }
+  data = {
+    token = var.hcloud_token
+  }
+}
+
+resource "kubernetes_config_map" "metallb_config" {
+  metadata {
+    name = "config"
+    namespace = "metallb-system"
+  }
+  data = {
+    config = <<EOF
+      address-pools:
+      - name: default
+        protocol: layer2
+        addresses:
+        %{ for ip in var.ingress_ips }
+        - ${ip}/32
+        %{ endfor }
+    EOF
+  }
+}
+
+resource "kubernetes_secret" "metallb_memberlist" {
+  metadata {
+    name = "memberlist"
+    namespace = "metallb-system"
+  }
+  data = {
+    secretkey = var.metallb_secret
+  }
 }
