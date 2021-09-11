@@ -32,7 +32,9 @@ resource "kubernetes_config_map" "metallb_config" {
       - name: default
         protocol: layer2
         addresses:
-        - ${var.ingress_ips[0]}/32
+        %{ for ip in var.ingress_ips }
+        - ${ip}/32
+        %{ endfor }
     EOF
   }
 }
