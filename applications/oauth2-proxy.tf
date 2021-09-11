@@ -51,10 +51,6 @@ data "kubernetes_secret" "keycloak-client-secret-oauth-proxy" {
     name = "keycloak-client-secret-oauth-proxy"
     namespace = "keycloak"
   }
-  # binary_data = {
-  #   CLIENT_ID = ""
-  #   CLIENT_SECRET = ""
-  # }
 }
 
 resource "time_sleep" "wait_10_seconds" {
@@ -91,12 +87,6 @@ resource "kubernetes_manifest" "oauth2-proxy-application" {
               ssl-upstream-insecure-skip-verify = true
               keycloak-group = "/basic_user"
             }
-            # extraEnv = [
-            #   {
-            #     name: "OAUTH2_PROXY_COOKIE_SECURE"
-            #     value: false
-            #   }
-            # ]
             config = {
               clientID = data.kubernetes_secret.keycloak-client-secret-oauth-proxy.data.CLIENT_ID
               clientSecret = data.kubernetes_secret.keycloak-client-secret-oauth-proxy.data.CLIENT_SECRET
