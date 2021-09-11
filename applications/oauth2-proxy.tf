@@ -38,6 +38,11 @@ resource "kubernetes_manifest" "keycloakclient_oauth_proxy" {
       }
     }
   }
+  wait_for = {
+    fields = {
+      "status.ready" = true
+    }
+  }
 }
 
 resource "time_sleep" "wait_5_seconds" {

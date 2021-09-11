@@ -22,6 +22,10 @@ dependency "cluster" {
   }
 }
 
+dependencies {
+  paths = ["../metal", "../cluster", "../services"]
+}
+
 inputs = {
   cluster_connection = dependency.cluster.outputs.cluster_connection
 }
