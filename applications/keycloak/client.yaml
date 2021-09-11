@@ -18,4 +18,6 @@ spec:
     directAccessGrantsEnabled: true
     redirectUris:
       - https://oauth.tiborpilz.dev/oauth2/callback
-    
+    defaultClientScopes:
+      - profile
+      - email
