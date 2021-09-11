@@ -72,7 +72,6 @@ output "oauth_proxy_id" {
   sensitive = true
 }
 
-
 resource "kubernetes_manifest" "oauth2-proxy-application" {
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
@@ -97,6 +96,7 @@ resource "kubernetes_manifest" "oauth2-proxy-application" {
           values = yamlencode({
             extraArgs = {
               ssl-upstream-insecure-skip-verify = true
+              keycloak-group = "/basic_user"
             }
             # extraEnv = [
             #   {
@@ -108,14 +108,22 @@ resource "kubernetes_manifest" "oauth2-proxy-application" {
               clientID = data.kubernetes_secret.keycloak-client-secret-oauth-proxy.data.CLIENT_ID
               clientSecret = data.kubernetes_secret.keycloak-client-secret-oauth-proxy.data.CLIENT_SECRET
               configFile = <<-EOT
+                # Provider
                 provider = "oidc"
                 provider_display_name = "Keycloak"
-                oidc_issuer_url = "https://keycloak.${local.domain}/auth/realms/master"
-                email_domains  = [" * "]
-                redirect_url = "https://oauth.${local.domain}/oauth2/callback"
+                login_url = "https://keycloak.${local.domain}/auth/realms/master/protocol/openid-connect/auth"
+                redeem_url = "https://keycloak.${local.domain}/auth/realms/master/protocol/openid-connect/token"
+                profile_url = "https://keycloak.${local.domain}/auth/realms/master/protocol/openid-connect/userinfo"
+                validate_url = "https://keycloak.${local.domain}/auth/realms/master/protocol/openid-connect/userinfo"
+                # Client
                 cookie_secure = "false"
-                whitelist_domains = [".${local.domain}"]
+                # Proxy
+                skip_auth_routes=["/health.*"]
+                skip_provider_button="true"
+                reverse_proxy="true"
+                email_domains  = ["*"]
                 cookie_domains = [".${local.domain}"]
+                whitelist_domains = [".${local.domain}"]
                 ssl_insecure_skip_verify = "true"
               EOT
               cookieSecret = "SEVuTitJTGFFRnREcmt4bGxYdk1DZEM0QUNHbm1JSHc="
