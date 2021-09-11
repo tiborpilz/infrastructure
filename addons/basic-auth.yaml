@@ -1,8 +1,0 @@
-apiVersion: v1
-data:
-  auth: dGlib3I6JDJ5JDA1JDk4T2VsZzFRVGw4OGQ5TzNsbGNJMHVzY2h3azhtL2I3WDdMUDg2LnRhNkFwV1BQMmlKQWNhDQoNCg==
-kind: Secret
-metadata:
-  creationTimestamp: null
-  name: basic-auth
-  namespace: kube-system
