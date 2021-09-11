@@ -111,19 +111,21 @@ resource "kubernetes_manifest" "oauth2-proxy-application" {
                 # Provider
                 provider = "oidc"
                 provider_display_name = "Keycloak"
-                login_url = "https://keycloak.${local.domain}/auth/realms/master/protocol/openid-connect/auth"
-                redeem_url = "https://keycloak.${local.domain}/auth/realms/master/protocol/openid-connect/token"
-                profile_url = "https://keycloak.${local.domain}/auth/realms/master/protocol/openid-connect/userinfo"
-                validate_url = "https://keycloak.${local.domain}/auth/realms/master/protocol/openid-connect/userinfo"
-                # Client
-                cookie_secure = "false"
-                # Proxy
-                skip_auth_routes=["/health.*"]
-                skip_provider_button="true"
-                reverse_proxy="true"
+                oidc_issuer_url = "https://keycloak.${local.domain}/auth/realms/master"
                 email_domains  = ["*"]
+                scope = "openid profile email"
                 cookie_domains = [".${local.domain}"]
                 whitelist_domains = [".${local.domain}"]
+                pass_authorization_header = true
+                pass_access_token = true
+                pass_user_headers = true
+                set_authorization_header = true
+                set_xauthrequest = true
+                cookie_refresh = "1m"
+                cookie_expire = "30m"
+                # cookie_secure = "false"
+                # skip_auth_routes=["/health.*"]
+                # skip_provider_button="true"
                 ssl_insecure_skip_verify = "true"
               EOT
               cookieSecret = "SEVuTitJTGFFRnREcmt4bGxYdk1DZEM0QUNHbm1JSHc="
