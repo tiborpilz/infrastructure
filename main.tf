@@ -125,3 +125,7 @@ resource "local_file" "ssh_key" {
   filename = "${path.root}/sshkey"
   content  = tls_private_key.ssh_key.private_key_pem
 }
+
+output "domain" {
+  value = var.domain
+}

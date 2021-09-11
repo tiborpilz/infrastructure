@@ -1,7 +1,7 @@
 variable "auth0_domain" {}
 variable "auth0_client_id" {}
 variable "auth0_client_secret" {}
-variable "github_sshkey" {}
+variable "github_private_key_path" {}
 
 provider "auth0" {
   domain = var.auth0_domain
@@ -52,6 +52,22 @@ resource "auth0_rule" "argocd" {
   EOF
 }
 
+data "template_file" "argocd_values" {
+  template = file("${path.module}/templates/argocd_values.tpl")
+  vars = {
+    domain = var.domain
+    auth0_domain = var.auth0_domain
+    client_id = auth0_client.argocd.client_id
+    client_secret = auth0_client.argocd.client_secret
+    github_private_key = file(abspath(var.github_private_key_path))
+  }
+}
+
+resource "local_file" "argocd_values" {
+  filename = "${path.root}/out/argocd-values.yaml"
+  content = data.template_file.argocd_values.rendered
+}
+
 resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
@@ -72,82 +88,5 @@ resource "helm_release" "argocd" {
     value = "v3"
   }
 
-  values = [
-    <<EOF
-    server:
-      ingress:
-        enabled: true
-        hosts:
-          - argocd.${var.domain}
-        tls:
-          - hosts:
-              - argocd.${var.domain}
-            secretName: argocd-secret
-        annotations:
-          cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
-          kubernetes.io/ingress.class: nginx
-          kubernetes.io/tls-acme: 'true'
-          nginx.ingress.kubernetes.io/ssl-passthrough: 'true'
-          nginx.ingress.kubernetes.io/backend-protocol: 'HTTPS'
-        https: true
-      configEnabled: true
-      config:
-        url: https://argocd.${var.domain}
-        application.instanceLabelKey: argocd.argoproj.io/instance
-        oidc.config: |
-          name: Auth0
-          issuer: ${var.auth0_domain}/
-          clientID: ${auth0_client.argocd.client_id}
-          clientSecret: ${auth0_client.argocd.client_secret}
-          requestedIDTokenClaims:
-            groups:
-              essential: true
-          requestedScopes:
-          - openid
-          - profile
-          - email
-          - 'https://argocd.${var.domain}/claims/groups'
-      rbacConfig:
-        policy.csv: |
-          g, argo-admins, role:admin
-        scopes: '[https://argocd.${var.domain}/claims/groups, email]'
-    configs:
-      repositories:
-        infrastructure:
-          url: https://github.com/tiborpilz/infrastructure
-      credentialTemplates:
-        https-creds:
-          url: git@github.com:tiborpilz
-          sshPrivateKey: |
-            ${var.github_sshkey}
-    EOF
-  ]
-}
-
-resource "kubectl_manifest" "applications" {
-  yaml_body = <<YAML
-    apiVersion: argoproj.io/v1alpha1
-    kind: Application
-    metadata:
-      name: applications
-      namespace: ${helm_release.argocd.namespace}
-      finalizers:
-        - resources-finalizer.argocd.argoproj.io
-    spec:
-      project: default
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-        - CreateNamespace=true
-      destination:
-        name: in-cluster
-        namespace: applications
-        server: ''
-      source:
-        path: applications
-        repoURL: git@github.com:tiborpilz/infrastructure.git
-        targetRevision: HEAD
-    YAML
+  values = [data.template_file.argocd_values.rendered]
 }
