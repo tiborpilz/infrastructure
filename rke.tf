@@ -34,7 +34,6 @@ provider "kubernetes" {
   host     = rke_cluster.cluster.api_server_url
   username = rke_cluster.cluster.kube_admin_user
 
-
   client_certificate     = rke_cluster.cluster.client_cert
   client_key             = rke_cluster.cluster.client_key
   cluster_ca_certificate = rke_cluster.cluster.ca_crt
@@ -87,11 +86,11 @@ resource "kubernetes_secret" "metallb_memberlist" {
 }
 
 resource "local_file" "kube_cluster_yaml" {
-  filename = "${path.root}/kube_config_cluster.yml"
+  filename = "${path.root}/out/kube_config_cluster.yml"
   content = rke_cluster.cluster.kube_config_yaml
 }
 
 resource "local_file" "rke_cluster_yaml" {
-  filename = "${path.root}/rke_cluster.yml"
+  filename = "${path.root}/out/rke_cluster.yml"
   content = rke_cluster.cluster.rke_cluster_yaml
 }

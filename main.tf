@@ -4,6 +4,12 @@ variable "cloudflare_api_token" {}
 variable "nodecount" {}
 variable "metallb_secret" {}
 variable "domain" {}
+variable "docker_user" {}
+variable "docker_password" {}
+variable "docker_login" {
+  type    = bool
+  default = false
+}
 
 terraform {
   required_providers {
@@ -23,7 +29,7 @@ terraform {
       source = "gavinbunney/kubectl"
     }
     argocd = {
-      source = "oboukili/argocd"
+      source  = "oboukili/argocd"
       version = "1.2.2"
     }
   }
@@ -67,9 +73,13 @@ resource "hcloud_server" "nodes" {
   image       = "ubuntu-18.04"
   server_type = "cx21"
   ssh_keys    = [hcloud_ssh_key.terraform.id]
-  user_data   = file("userdata.cloudinit")
-  location    = "nbg1"
-  keep_disk   = true
+  user_data = templatefile("${path.module}/templates/userdata.cloudinit.tpl", {
+    docker_user     = var.docker_user
+    docker_password = var.docker_password
+    docker_login    = var.docker_login
+  })
+  location  = "nbg1"
+  keep_disk = true
 
   labels = {
     type      = "kube-node"
@@ -122,7 +132,7 @@ resource "cloudflare_record" "ingress" {
 }
 
 resource "local_file" "ssh_key" {
-  filename = "${path.root}/sshkey"
+  filename = "${path.root}/out/sshkey"
   content  = tls_private_key.ssh_key.private_key_pem
 }
 
