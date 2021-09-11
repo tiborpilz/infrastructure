@@ -42,4 +42,5 @@ configs:
   credentialTemplates:
     ssh-creds:
       url: git@github.com:tiborpilz
-      sshPrivateKey: "${github_private_key}"
+      sshPrivateKey: |
+        ${indent(8, github_private_key)}

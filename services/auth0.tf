@@ -1,8 +1,3 @@
-variable domain {
-  type = string
-  default = ""
-}
-
 resource "auth0_client" "argocd" {
   name = "argocd"
   callbacks = ["https://argocd.${var.domain}/auth/callback"]

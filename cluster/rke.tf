@@ -1,12 +1,3 @@
-variable nodes {
-  type = map(any)
-  default = {}
-}
-variable ssh_key {
-  type = map(string)
-  default = {}
-}
-
 provider "rke" {
   log_file = "${path.root}/log/rke.log"
 }
@@ -37,4 +28,14 @@ resource "rke_cluster" "cluster" {
     "https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/master/deploy/upstream/quickstart/olm.yaml",
     "https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/master/deploy/upstream/quickstart/crds.yaml",
   ]
+}
+
+resource "local_file" "kube_cluster_yaml" {
+  filename = "${path.root}/../out/kube_config_cluster.yml"
+  content = rke_cluster.cluster.kube_config_yaml
+}
+
+resource "local_file" "rke_cluster_yaml" {
+  filename = "${path.root}/../out/rke_cluster.yml"
+  content = rke_cluster.cluster.rke_cluster_yaml
 }

@@ -47,3 +47,7 @@ output "ssh_key" {
 output "nodes" {
   value = hcloud_server.nodes
 }
+
+output "ingress_ips" {
+  value = [hcloud_floating_ip.floating_ip.ip_address]
+}

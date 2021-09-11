@@ -19,7 +19,7 @@ resource "hcloud_server" "nodes" {
     docker_login    = var.docker_login
   })
   location  = "nbg1"
-  keep_disk = true
+  keep_disk = false
 
   labels = {
     type      = "kube-node"
