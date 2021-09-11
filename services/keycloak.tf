@@ -8,33 +8,33 @@ provider "kubernetes" {
 
 resource "kubernetes_manifest" "keycloak-application" {
   manifest = {
-    "apiVersion" = "argoproj.io/v1alpha1"
-    "kind" = "Application"
-    "metadata" = {
-      "finalizers" = [
+    apiVersion = "argoproj.io/v1alpha1"
+    kind = "Application"
+    metadata = {
+      finalizers = [
         "resources-finalizer.argocd.argoproj.io",
       ]
-      "name" = "keycloak"
-      "namespace" = "argocd"
+      name = "keycloak"
+      namespace = "argocd"
     }
-    "spec" = {
-      "destination" = {
-        "name" = "in-cluster"
-        "namespace" = "keycloak"
-        "server" = ""
+    spec = {
+      destination = {
+        name = "in-cluster"
+        namespace = "keycloak"
+        server = ""
       }
-      "project" = "default"
-      "source" = {
-        "path" = "applications/keycloak"
-        "repoURL" = "git@github.com:tiborpilz/infrastructure.git"
-        "targetRevision" = "HEAD"
+      project = "default"
+      source = {
+        path = "applications/keycloak"
+        repoURL = "git@github.com:tiborpilz/infrastructure.git"
+        targetRevision = "HEAD"
       }
-      "syncPolicy" = {
-        "automated" = {
-          "prune" = true
-          "selfHeal" = true
+      syncPolicy = {
+        automated = {
+          prune = true
+          selfHeal = true
         }
-        "syncOptions" = [
+        syncOptions = [
           "CreateNamespace=true",
         ]
       }
