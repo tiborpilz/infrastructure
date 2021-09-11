@@ -1,4 +1,4 @@
-secrets/** filter=git-crypt diff=git-crypt
+**/secrets/** filter=git-crypt diff=git-crypt
 terraform.tfvars filter=git-crypt diff=git-crypt
 hetzner-kube-secret.txt filter=git-crypt diff=git-crypt
 userdata.cloudinit filter=git-crypt diff=git-crypt

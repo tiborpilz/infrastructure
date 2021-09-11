@@ -1,0 +1,57 @@
+provider "hcloud" {
+  token = var.hcloud_token
+}
+
+resource "hcloud_ssh_key" "terraform" {
+  name       = "Terraform ssh key"
+  public_key = tls_private_key.ssh_key.public_key_openssh
+}
+
+resource "hcloud_server" "nodes" {
+  for_each    = toset(local.names)
+  name        = each.value
+  image       = "ubuntu-18.04"
+  server_type = "cx21"
+  ssh_keys    = [hcloud_ssh_key.terraform.id]
+  user_data = templatefile("${path.module}/templates/userdata.cloudinit.tpl", {
+    docker_user     = var.docker_user
+    docker_password = var.docker_password
+    docker_login    = var.docker_login
+  })
+  location  = "nbg1"
+  keep_disk = true
+
+  labels = {
+    type      = "kube-node"
+    terraform = "true"
+  }
+
+  provisioner "remote-exec" {
+    connection {
+      type        = "ssh"
+      user        = "root"
+      private_key = tls_private_key.ssh_key.private_key_pem
+      host        = self.ipv4_address
+    }
+    inline = [
+      "cloud-init status --wait"
+    ]
+  }
+}
+
+resource "hcloud_floating_ip" "floating_ip" {
+  type      = "ipv4"
+  server_id = hcloud_server.nodes[local.names[0]].id
+
+  provisioner "remote-exec" {
+    connection {
+      type        = "ssh"
+      user        = "root"
+      private_key = tls_private_key.ssh_key.private_key_pem
+      host        = hcloud_server.nodes[local.names[0]].ipv4_address
+    }
+    inline = [
+      "sudo ip addr add ${self.ip_address} dev eth0"
+    ]
+  }
+}
