@@ -1,1 +1,5 @@
-# Infrastructure scaffolding using Terragrunt
+# Personal infrastructure on Hetzner Cloud
+
+```bash
+terragrunt run-all apply
+```
