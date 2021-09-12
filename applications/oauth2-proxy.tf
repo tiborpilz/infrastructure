@@ -1,3 +1,7 @@
+locals {
+  client_secret = sensitive(uuid())
+}
+
 resource "kubernetes_manifest" "keycloakclient_oauth_proxy" {
   manifest = {
     apiVersion = "keycloak.org/v1alpha1"
@@ -16,6 +20,7 @@ resource "kubernetes_manifest" "keycloakclient_oauth_proxy" {
     spec = {
       client = {
         clientId = "oauth-proxy"
+        secret = local.client_secret
         defaultClientScopes = [
           "profile",
           "email",
@@ -40,19 +45,6 @@ resource "kubernetes_manifest" "keycloakclient_oauth_proxy" {
     fields = {
       "status.ready" = true
     }
-  }
-}
-
-resource "time_sleep" "wait_5_seconds" {
-  depends_on = [kubernetes_manifest.keycloakclient_oauth_proxy]
-  create_duration = "5s"
-}
-
-data "kubernetes_secret" "keycloak-client-secret-oauth-proxy" {
-  depends_on = [time_sleep.wait_5_seconds]
-  metadata {
-    name = "keycloak-client-secret-oauth-proxy"
-    namespace = "keycloak"
   }
 }
 
@@ -88,8 +80,8 @@ resource "kubernetes_manifest" "oauth2-proxy-application" {
               keycloak-group = "/basic_user"
             }
             config = {
-              clientID = data.kubernetes_secret.keycloak-client-secret-oauth-proxy.data.CLIENT_ID
-              clientSecret = data.kubernetes_secret.keycloak-client-secret-oauth-proxy.data.CLIENT_SECRET
+              clientID = "oauth-proxy"
+              clientSecret = local.client_secret
               configFile = <<-EOT
                 # Provider
                 provider = "oidc"
