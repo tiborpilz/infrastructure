@@ -185,11 +185,17 @@ items:
               command:
                 - /home/weave/scope
               env: []
-              image: 'docker.io/weaveworks/scope:1.13.2'
+              image: 'docker.io/weaveworks/scope:latest'
               imagePullPolicy: IfNotPresent
               ports:
                 - containerPort: 4040
                   protocol: TCP
+              livenessProbe:
+                httpGet:
+                  path: /
+                  port: 4040
+                initialDelaySeconds: 3
+                periodSeconds: 3
   - apiVersion: v1
     kind: Service
     metadata:
