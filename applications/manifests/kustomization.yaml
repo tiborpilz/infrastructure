@@ -1,3 +1,4 @@
 resources:
   - gitea/application.yaml
   - weave-scope/application.yaml
+  - tandoor/application.yaml
