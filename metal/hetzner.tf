@@ -11,7 +11,7 @@ resource "hcloud_server" "nodes" {
   for_each    = toset(local.names)
   name        = each.value
   image       = "ubuntu-18.04"
-  server_type = "cx21"
+  server_type = "cx31"
   ssh_keys    = [hcloud_ssh_key.terraform.id]
   user_data = templatefile("${path.module}/templates/userdata.cloudinit.tpl", {
     docker_user     = var.docker_user
