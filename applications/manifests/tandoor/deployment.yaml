@@ -38,7 +38,7 @@ spec:
             subPath: nginx-config
             readOnly: true
       - name: recipes
-        image: 'vabene1111/recipes:0.17.2'
+        image: 'vabene1111/recipes:0.16.8'
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
