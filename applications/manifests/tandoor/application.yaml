@@ -8,7 +8,7 @@ metadata:
 spec:
   destination:
     name: in-cluster
-    namespace: 
+    namespace: tandoor
     server: ''
   source:
     path: 'applications/manifests/tandoor'

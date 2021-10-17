@@ -1,3 +1,4 @@
+namespace: tandoor
 resources:
   - configmap.yaml
   - pvc.yaml
