@@ -1,0 +1,26 @@
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: recipes
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: 'true'
+    external-dns.alpha.kubernetes.io/hostname: 'recipes.tiborpilz.dev'
+spec:
+  tls:
+    - hosts:
+      - recipes.tiborpilz.dev
+      secretName: recipes-tls
+  rules:
+    - host: recipes.tiborpilz.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: recipes
+                port:
+                  number: 80

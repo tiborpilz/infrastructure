@@ -38,7 +38,7 @@ spec:
             subPath: nginx-config
             readOnly: true
       - name: recipes
-        image: 'vabene1111/recipes:latest'
+        image: 'vabene1111/recipes:0.16.8'
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -80,6 +80,7 @@ spec:
         volumeMounts:
           - mountPath: '/var/lib/postgresql/data'
             name: database
+            subPath: postgres
         env:
           - name: POSTGRES_USER
             value: recipes
