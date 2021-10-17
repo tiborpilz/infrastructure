@@ -11,7 +11,7 @@ spec:
     namespace: 
     server: ''
   source:
-    path: 'applications/tandoor'
+    path: 'applications/manifests/tandoor'
     repoURL: 'git@github.com:tiborpilz/infrastructure.git'
     targetRevision: HEAD
   project: default
