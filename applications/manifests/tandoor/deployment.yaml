@@ -71,7 +71,7 @@ spec:
           - name: POSTGRES_DB
             value: recipes
           - name: POSTGRES_PASSWORD
-            value: # CHANGEME
+            value: testpw12345
       - name: recipes-db
         image: 'postgres:latest'
         imagePullPolicy: IfNotPresent
@@ -86,7 +86,7 @@ spec:
           - name: POSTGRES_DB
             value: recipes
           - name: POSTGRES_PASSWORD
-            value: # CHANGEME
+            value: testpw12345
       volumes:
         - name: database
           persistentVolumeClaim:
