@@ -26,6 +26,9 @@ spec:
               cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
             hosts:
             - host: mealie.tiborpilz.dev
+              paths:
+                - path: "/"
+                  pathType: "Prefix"
             tls:
             - hosts:
               - mealie.tiborpilz.dev
