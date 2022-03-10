@@ -22,6 +22,14 @@ spec:
         ingress:
           main:
             enabled: true
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+            hosts:
+            - host: mealie.tiborpilz.dev
+            tls:
+            - hosts:
+              - mealie.tiborpilz.dev
+              secretName: mealie.tls
   project: default
   syncPolicy:
     automated:
