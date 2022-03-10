@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mealie
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    name: in-cluster
+    namespace: mealie
+    server: ''
+  source:
+    path: ''
+    repoURL: 'https://library-charts.k8s-at-home.com'
+    targetRevision: 3.3.0
+    chart: mealie
+    helm:
+      values: |
+        env:
+          TZ: 'Europe/Berlin'
+        ingress:
+          main:
+            enabled: true
+            certManager: true
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+            hosts:
+            - mealie.tiborpilz.dev
+            tls:
+            - hosts:
+              - mealie.tiborpilz.dev
+              secretName: mealie.tls
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
