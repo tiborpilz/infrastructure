@@ -1,4 +1,2 @@
 resources:
-  - weave-scope/application.yaml
   - tandoor/application.yaml
-  - mealie/application.yaml
