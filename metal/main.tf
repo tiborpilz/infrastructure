@@ -9,9 +9,16 @@ variable "docker_login" {
   type    = bool
   default = false
 }
+variable "metallb_secret" {
+  type    = string
+  default = ""
+}
 
 terraform {
   required_providers {
+    rke = {
+      source = "rancher/rke"
+    }
     hcloud = {
       source = "hetznercloud/hcloud"
     }
@@ -19,7 +26,8 @@ terraform {
       source = "cloudflare/cloudflare"
     }
   }
-  backend "local" {}
+  backend "http" {
+  }
 }
 
 locals {

@@ -13,13 +13,9 @@ resource "hcloud_server" "nodes" {
   image       = "ubuntu-18.04"
   server_type = "cx31"
   ssh_keys    = [hcloud_ssh_key.terraform.id]
-  user_data = templatefile("${path.module}/templates/userdata.cloudinit.tpl", {
-    docker_user     = var.docker_user
-    docker_password = var.docker_password
-    docker_login    = var.docker_login
-  })
-  location  = "nbg1"
-  keep_disk = false
+  user_data   = templatefile("${path.module}/templates/userdata.cloudinit.tpl", {})
+  location    = "nbg1"
+  keep_disk   = false
 
   labels = {
     type      = "kube-node"
