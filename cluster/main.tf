@@ -34,3 +34,18 @@ terraform {
   }
   backend "http" {}
 }
+
+output "kube_config_yaml" {
+  sensitive = true
+  value     = rke_cluster.cluster.kube_config_yaml
+}
+
+output "cluster_connection" {
+  sensitive = true
+  value = {
+    host                   = rke_cluster.cluster.api_server_url
+    cluster_ca_certificate = rke_cluster.cluster.ca_crt
+    client_certificate     = rke_cluster.cluster.client_cert
+    client_key             = rke_cluster.cluster.client_key
+  }
+}
