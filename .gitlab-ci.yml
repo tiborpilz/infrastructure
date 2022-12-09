@@ -1,4 +1,11 @@
+.git-crypt:
+  before_script:
+    - apk add git-crypt
+    - cat "$GIT_CRYPT_KEY" | base64 -d > key-file
+    - git-crypt unlock key-file
+
 .terragrunt:
+  extends: .git-crypt
   image: alpine/terragrunt
 
 .terraform-parallel:
