@@ -1,0 +1,34 @@
+.terragrunt:
+  image: alpine/terragrunt
+
+.terraform-parallel:
+  extends: .terragrunt
+  parallel:
+    matrix:
+      - SUBFOLDER:
+          - metal
+          - cluster
+          - applications
+
+create_plan:
+  extends: .terragrunt
+  script:
+    - cd metal
+    - terraform init
+    - terraform plan -out=plan.out 
+    - terraform show -json plan.out > plan.json
+  artifacts:
+    paths:
+      - metal/plan.json
+
+visualize_plan:
+  dependencies: [create_plan]
+  extends: .terragrunt
+  image: node
+  script:
+    - cd metal
+    - npx -y @terraform-visual/cli --plan plan.json
+  artifacts:
+    expose_as: "metal report"
+    paths:
+      - metal/terraform-visual-report
