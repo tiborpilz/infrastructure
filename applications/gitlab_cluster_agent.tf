@@ -46,12 +46,3 @@ resource "helm_release" "agent" {
     value = "wss://kas.gitlab.com"
   }
 }
-
-# helm repo add gitlab https://charts.gitlab.io
-# helm repo update
-# helm upgrade --install test gitlab/gitlab-agent \
-#     --namespace gitlab-agent \
-#     --create-namespace \
-#     --set image.tag=v15.4.0 \
-#     --set config.token=Pn8yXdZ3Jx8pYFA1SBrUbj9QPZQgrEVfFAFVpuCJBaSxKWJ79A \
-#     --set config.kasAddress=wss://kas.gitlab.com
