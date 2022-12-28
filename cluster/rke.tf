@@ -1,3 +1,4 @@
+
 resource "rke_cluster" "cluster" {
   dynamic "nodes" {
     for_each = var.nodes

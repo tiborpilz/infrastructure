@@ -37,7 +37,6 @@ resource "kubernetes_manifest" "keycloak_keycloak" {
 }
 
 resource "kubernetes_manifest" "keycloakrealm_keycloak_master" {
-  depends_on = [kubernetes_manifest.keycloak_keycloak]
   manifest = {
     "apiVersion" = "keycloak.org/v1alpha1"
     "kind" = "KeycloakRealm"
@@ -90,6 +89,12 @@ resource "kubernetes_manifest" "keycloakrealm_keycloak_master" {
 
 resource "kubernetes_manifest" "keycloakrealm_keycloak_default" {
   depends_on = [kubernetes_manifest.keycloak_keycloak]
+
+  field_manager {
+    name = "terraform"
+    force_conflicts = true
+  }
+
   manifest = {
     "apiVersion" = "keycloak.org/v1alpha1"
     "kind" = "KeycloakRealm"
@@ -114,7 +119,27 @@ resource "kubernetes_manifest" "keycloakrealm_keycloak_default" {
         "realm" = "default"
         "clientScopes" = [
           {
-            "name" = "microprofile-jwt"
+            "name" = "groups"
+            "protocol" = "openid-connect"
+            "description" = "Scope for groups"
+            "attributes" = {
+              "display.on.consent.screen" = "false"
+              "include.in.token.scope" = "true"
+            }
+            "protocolMappers" = [{
+              "config" = {
+                "access.token.claim" = "true"
+                "claim.name" = "groups"
+                "full.path" = "false"
+                "id.token.claim" = "true"
+                "userinfo.token.claim" = "true"
+              }
+              "name" = "groups"
+              "protocol" = "openid-connect"
+              "protocolMapper" = "oidc-group-membership-mapper"
+            }]
+          }, {
+            "name" = "microprofile-jwt-2"
             "description" = "Microprofile - JWT built-in scope"
             "protocol" = "openid-connect"
             "attributes" = {
@@ -397,8 +422,7 @@ resource "kubernetes_manifest" "keycloakrealm_keycloak_default" {
                   "jsonType.label" = "String"
                 }
               }
-
-        ]
+            ]
           }, {
             "name" = "offline_access"
             "description" = "OpenID Connect built-in scope: offline_access"
@@ -560,13 +584,12 @@ resource "kubernetes_manifest" "keycloakrealm_keycloak_default" {
   }
 }
 
-resource "kubernetes_manifest" "keycloakuser_tibor" {
-  depends_on = [kubernetes_manifest.keycloakrealm_keycloak_master]
+resource "kubernetes_manifest" "keycloakuser_tiborpilz" {
   manifest = {
     "apiVersion" = "keycloak.org/v1alpha1"
     "kind" = "KeycloakUser"
     "metadata" = {
-      "name" = "tibor"
+      "name" = "tiborpilz"
       "namespace" = "keycloak"
       "labels" = {
         "app" = "sso"
@@ -593,6 +616,50 @@ resource "kubernetes_manifest" "keycloakuser_tibor" {
         "realmRoles" = [
           "admin",
         ]
+        "username" = "tiborpilz"
+      }
+    }
+  }
+  computed_fields = ["spec.user.id"]
+  wait {
+    fields = {
+      "spec.user.id" = "^([a-z0-9]+(-|$)){1,8}"
+    }
+  }
+}
+
+resource "kubernetes_manifest" "keycloakuser_tibor" {
+  manifest = {
+    "apiVersion" = "keycloak.org/v1alpha1"
+    "kind" = "KeycloakUser"
+    "metadata" = {
+      "name" = "tibor"
+      "namespace" = "keycloak"
+      "labels" = {
+        "app" = "sso"
+      }
+    }
+    "spec" = {
+      "realmSelector" = {
+        "matchLabels" = {
+          "realm" = "master"
+        }
+      }
+      "user" = {
+        "credentials" = [
+          {
+            "type" = "password"
+            "value" = "testpw12345"
+          },
+        ]
+        "email" = "tibor@pilz.berlin"
+        "emailVerified" = true
+        "enabled" = true
+        "firstName" = "Tibor"
+        "lastName" = "Pilz"
+        "realmRoles" = [
+          "admin",
+        ]
         "username" = "tibor"
       }
     }
@@ -600,7 +667,6 @@ resource "kubernetes_manifest" "keycloakuser_tibor" {
   computed_fields = ["spec.user.id"]
   wait {
     fields = {
-      "status.phase" = "reconciled"
       "spec.user.id" = "^([a-z0-9]+(-|$)){1,8}"
     }
   }
@@ -619,7 +685,7 @@ resource "kubernetes_cluster_role_binding" "oidc-cluster-admin" {
 
     subject {
         kind      = "User"
-        name      = "https://keycloak.${var.domain}/auth/realms/master#${kubernetes_manifest.keycloakuser_tibor.object.spec.user.id}"
+        name      = "https://keycloak.${var.domain}/auth/realms/default#${kubernetes_manifest.keycloakuser_tibor.object.spec.user.id}"
         api_group = "rbac.authorization.k8s.io"
     }
 }
@@ -633,8 +699,8 @@ resource "kubernetes_ingress_v1" "keycloak" {
       "kubernetes.io/tls-acme" = "true"
       "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
       "nginx.ingress.kubernetes.io/server-snippet" = <<-EOT
-        location ~* "^/auth/realms/master/metrics" {
-          return 301 /auth/realms/master;
+        location ~* "^/auth/realms/default/metrics" {
+          return 301 /auth/realms/default;
         }
         EOT
     }
@@ -672,51 +738,51 @@ resource "kubernetes_ingress_v1" "keycloak" {
   }
 }
 
-resource "kubernetes_manifest" "keycloakclient_keycloak_kubernetes" {
-  depends_on = [kubernetes_manifest.keycloakrealm_keycloak_master]
-  manifest = {
-    "apiVersion" = "keycloak.org/v1alpha1"
-    "kind" = "KeycloakClient"
-    "metadata" = {
-      "labels" = {
-        "realm" = "master"
-      }
-      "name" = "kubernetes"
-      "namespace" = "keycloak"
-    }
-    "spec" = {
-      "client" = {
-        "clientId" = "kubernetes"
-        "protocol" = "openid-connect"
-        "protocolMappers" = [
-          {
-            "config" = {
-              "access.token.claim" = "true"
-              "claim.name" = "groups"
-              "full.path" = "true"
-              "id.token.claim" = "true"
-              "multivalued" = "true"
-              "userinfo.token.claim" = "true"
-              "usermodel.clientRoleMapping.clientId" = "kubernetes"
-              "usermodel.clientRoleMapping.rolePrefix" = "kubernetes:"
-            }
-            "consentRequired" = false
-            "name" = "groups"
-            "protocol" = "openid-connect"
-            "protocolMapper" = "oidc-usermodel-client-role-mapper"
-          },
-        ]
-        "redirectUris" = [
-          "http://localhost:8000",
-          "http://localhost:18000",
-        ]
-        "standardFlowEnabled" = true
-      }
-      "realmSelector" = {
-        "matchLabels" = {
-          "realm" = "default"
-        }
-      }
-    }
-  }
-}
+# resource "kubernetes_manifest" "keycloakclient_keycloak_kubernetes" {
+#   depends_on = [kubernetes_manifest.keycloakrealm_keycloak_master]
+#   manifest = {
+#     "apiVersion" = "keycloak.org/v1alpha1"
+#     "kind" = "KeycloakClient"
+#     "metadata" = {
+#       "labels" = {
+#         "realm" = "default"
+#       }
+#       "name" = "kubernetes"
+#       "namespace" = "keycloak"
+#     }
+#     "spec" = {
+#       "client" = {
+#         "clientId" = "kubernetes"
+#         "protocol" = "openid-connect"
+#         "protocolMappers" = [
+#           {
+#             "config" = {
+#               "access.token.claim" = "true"
+#               "claim.name" = "groups"
+#               "full.path" = "true"
+#               "id.token.claim" = "true"
+#               "multivalued" = "true"
+#               "userinfo.token.claim" = "true"
+#               "usermodel.clientRoleMapping.clientId" = "kubernetes"
+#               "usermodel.clientRoleMapping.rolePrefix" = "kubernetes:"
+#             }
+#             "consentRequired" = false
+#             "name" = "groups"
+#             "protocol" = "openid-connect"
+#             "protocolMapper" = "oidc-usermodel-client-role-mapper"
+#           },
+#         ]
+#         "redirectUris" = [
+#           "http://localhost:8000",
+#           "http://localhost:18000",
+#         ]
+#         "standardFlowEnabled" = true
+#       }
+#       "realmSelector" = {
+#         "matchLabels" = {
+#           "realm" = "default"
+#         }
+#       }
+#     }
+#   }
+# }
