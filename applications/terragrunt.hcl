@@ -13,9 +13,11 @@ dependency "cluster" {
       client_certificate = ""
       client_key = ""
     }
+    kube_config_yaml = ""
   }
 }
 
 inputs = {
   cluster_connection = dependency.cluster.outputs.cluster_connection
+  kube_config_yaml = dependency.cluster.outputs.kube_config_yaml
 }
