@@ -2,10 +2,10 @@ data "gitlab_group" "bababourbaki" {
   full_path = "baba-bourbaki"
 }
 
-resource "gitlab_runner" "cluster_runner" {
-  registration_token = data.gitlab_group.bababourbaki.runners_token
-  description        = "Default Cluster Runner"
-}
+# resource "gitlab_runner" "cluster_runner" {
+#   registration_token = data.gitlab_group.bababourbaki.runners_token
+#   description        = "Default Cluster Runner"
+# }
 
 # resource "helm_release" "gitlab_runner" {
 #   name             = "gitlab-runner"
