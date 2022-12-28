@@ -29,7 +29,8 @@ server:
       requestedScopes:
       - profile
       - email
-      - roles
+      - groups
+      - openid
   rbacConfig:
     policy.csv: |
       g, argo:admin, role:admin
