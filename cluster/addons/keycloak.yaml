@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: keycloak-postgresql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: keycloak-db
+type: Opaque
+data:
+  username: a2V5Y2xvYWs=
+  password: a2V5Y2xvYWs=
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-postgresql
+  labels:
+    app: keycloak-postgres
+spec:
+  selector:
+    matchLabels:
+      app: keycloak-postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: keycloak-postgres
+    spec:
+      containers:
+      - name: keycloak-postgresql
+        image: postgres:12-alpine
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db
+              key: password
+        - name: POSTGRES_DB
+          value: keycloak
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: keycloak-postgresql
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: keycloak-postgresql
+        persistentVolumeClaim:
+          claimName: keycloak-postgresql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-postgres
+  labels:
+    app: keycloak-postgres
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: keycloak-postgres
+---
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak
+spec:
+  instances: 1
+  db:
+    vendor: postgres
+    host: keycloak-postgres
+    usernameSecret:
+      name: keycloak-db
+      key: username
+    passwordSecret:
+      name: keycloak-db
+      key: password
+  http:
+    httpEnabled: true
+  ingress:
+    enabled: false
+  hostname:
+    strict: false
+    strictBackchannel: false
+    # hostname: keycloak.bababourbaki.dev
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: 'true'
+    external-dns.alpha.kubernetes.io/hostname: 'keycloak.bababourbaki.dev'
+spec:
+  tls:
+    - hosts:
+      - keycloak.bababourbaki.dev
+      secretName: keycloak-tls
+  rules:
+    - host: keycloak.bababourbaki.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak-service
+                port:
+                  number: 8080

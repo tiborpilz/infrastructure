@@ -1,0 +1,7 @@
+resources:
+  - github.com/keycloak/keycloak-operator/deploy
+  - keycloak.yaml
+  - ingress.yaml
+  - realm.yaml
+  - user.yaml
+  - k8s_client.yaml

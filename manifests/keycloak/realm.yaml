@@ -1,0 +1,16 @@
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakRealm
+metadata:
+  name: master
+  namespace: keycloak
+  labels:
+    realm: master
+spec:
+  realm:
+    id: master
+    realm: master
+    enabled: true
+    displayName: Master
+  instanceSelector:
+    matchLabels:
+      app: sso

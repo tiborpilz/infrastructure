@@ -25,7 +25,6 @@ resource "gitlab_cluster_agent_token" "agent" {
 
 resource "helm_release" "agent" {
   name = "gitlab-agent"
-  # repository       = "https://charts.gitlab.io"
   chart            = "gitlab/gitlab-agent"
   version          = "1.5.0"
   namespace        = "gitlab-agent"

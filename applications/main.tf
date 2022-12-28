@@ -5,6 +5,7 @@ variable "cluster_connection" {
 
 variable "gitlab_token" {}
 variable "gitlab_project_id" {}
+variable "domain" {}
 
 terraform {
   required_providers {
