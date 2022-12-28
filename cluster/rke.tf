@@ -27,7 +27,7 @@ resource "rke_cluster" "cluster" {
   services {
     kube_api {
       extra_args = {
-        "oidc-issuer-url" = "https://keycloak.${var.domain}/auth/realms/master"
+        "oidc-issuer-url" = "https://auth.${var.domain}/auth/realms/default"
         "oidc-client-id"  = "kubernetes"
       }
     }
