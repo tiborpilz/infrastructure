@@ -1,11 +1,11 @@
 resource "kubernetes_manifest" "keycloakclient_keycloak_argocd" {
-  depends_on = [kubernetes_manifest.keycloakrealm_keycloak_master]
+  depends_on = [kubernetes_manifest.keycloakrealm_keycloak_default]
   manifest = {
     "apiVersion" = "keycloak.org/v1alpha1"
     "kind" = "KeycloakClient"
     "metadata" = {
       "labels" = {
-        "realm" = "master"
+        "realm" = "default"
       }
       "name" = "argocd"
       "namespace" = "keycloak"
@@ -14,6 +14,7 @@ resource "kubernetes_manifest" "keycloakclient_keycloak_argocd" {
       "client" = {
         "clientId" = "argocd"
         "protocol" = "openid-connect"
+        "name" = "ArgoCD"
         "protocolMappers" = [
           {
             "config" = {
@@ -32,6 +33,11 @@ resource "kubernetes_manifest" "keycloakclient_keycloak_argocd" {
             "protocolMapper" = "oidc-usermodel-client-role-mapper"
           },
         ]
+        "defaultClientScopes" = [
+          "profile",
+          "email",
+          "groups",
+        ]
         "redirectUris" = [
           "https://argocd.${var.domain}/*",
         ]
@@ -39,7 +45,7 @@ resource "kubernetes_manifest" "keycloakclient_keycloak_argocd" {
       }
       "realmSelector" = {
         "matchLabels" = {
-          "realm" = "master"
+          "realm" = "default"
         }
       }
     }
@@ -59,16 +65,11 @@ data "kubernetes_secret" "keycloakclient_keycloak_argocd" {
   }
 }
 
-output "keycloakclient_keycloak_argocd_client_secret" {
-  value = data.kubernetes_secret.keycloakclient_keycloak_argocd.data["CLIENT_SECRET"]
-  sensitive = true
-}
-
 data "template_file" "argocd_values" {
   template = file("${path.module}/templates/argocd_values.tpl")
   vars = {
     domain = var.domain
-    issuer_url = "https://keycloak.${var.domain}/auth/realms/master"
+    issuer_url = "https://keycloak.${var.domain}/auth/realms/default"
     client_id = data.kubernetes_secret.keycloakclient_keycloak_argocd.data["CLIENT_ID"]
     client_secret = data.kubernetes_secret.keycloakclient_keycloak_argocd.data["CLIENT_SECRET"]
   }
