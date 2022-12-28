@@ -18,9 +18,9 @@ resource "rke_cluster" "cluster" {
   addons_include = [
     "https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml",
     "./addons/letsencrypt-clusterissuer.yaml",
-    "https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml",
+    "https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml",
     "https://raw.githubusercontent.com/hetznercloud/csi-driver/master/deploy/kubernetes/hcloud-csi.yml",
-    "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.1/deploy/static/provider/baremetal/deploy.yaml",
+    "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.5.1/deploy/static/provider/baremetal/deploy.yaml",
   ]
 
   addons = <<EOF
@@ -56,7 +56,7 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: hcloud-csi
+  name: hcloud
   namespace: kube-system
 type: Opaque
 data:
