@@ -9,7 +9,7 @@ dependency "cluster" {
   mock_outputs = {
     cluster_connection = {
       host = ""
-      cluster_ca_certifcate = ""
+      cluster_ca_certificate = ""
       client_certificate = ""
       client_key = ""
     }
