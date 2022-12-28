@@ -20,9 +20,27 @@ resource "rke_cluster" "cluster" {
     "./addons/letsencrypt-clusterissuer.yaml",
     "https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml",
     "https://raw.githubusercontent.com/hetznercloud/csi-driver/master/deploy/kubernetes/hcloud-csi.yml",
-    "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.5.1/deploy/static/provider/baremetal/deploy.yaml",
+    "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.5.1/deploy/static/provider/cloud/deploy.yaml",
   ]
-
+  services {
+    kube_api {
+      extra_args = {
+        "oidc-issuer-url" = "https://keycloak.${var.domain}/auth/realms/master"
+        "oidc-client-id"  = "kubernetes"
+      }
+    }
+  }
+  upgrade_strategy {
+    drain = true
+    max_unavailable_worker = "100%"
+    max_unavailable_controlplane = "100%"
+    drain_input {
+      delete_local_data = true
+      force = true
+      ignore_daemon_sets = true
+      timeout = 120
+    }
+  }
   addons = <<EOF
 ---
 apiVersion: v1
