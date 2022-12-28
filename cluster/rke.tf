@@ -16,11 +16,12 @@ resource "rke_cluster" "cluster" {
     provider = "none"
   }
   addons_include = [
-    "https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml",
+    "https://github.com/cert-manager/cert-manager/releases/download/v1.10.1/cert-manager.yaml",
     "./addons/letsencrypt-clusterissuer.yaml",
     "https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml",
     "https://raw.githubusercontent.com/hetznercloud/csi-driver/master/deploy/kubernetes/hcloud-csi.yml",
     "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.5.1/deploy/static/provider/cloud/deploy.yaml",
+    "./addons/keycloak.yaml"
   ]
   services {
     kube_api {

@@ -3,6 +3,8 @@ variable "cluster_connection" {
   default = {}
 }
 
+variable "kube_config_yaml" {}
+
 variable "gitlab_token" {}
 variable "gitlab_project_id" {}
 variable "domain" {}
@@ -11,6 +13,10 @@ terraform {
   required_providers {
     gitlab = {
       source = "gitlabhq/gitlab"
+    }
+    kustomization = {
+      source = "kbst/kustomization"
+      version = "0.9.0"
     }
   }
 
@@ -33,6 +39,9 @@ provider "helm" {
   }
 }
 
+provider "kustomization" {
+  kubeconfig_raw  = var.kube_config_yaml
+}
 
 provider "gitlab" {
   token = var.gitlab_token
