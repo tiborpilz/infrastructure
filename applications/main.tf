@@ -18,6 +18,10 @@ terraform {
       source = "kbst/kustomization"
       version = "0.9.0"
     }
+    keycloak = {
+      source = "mrparkers/keycloak"
+      version = "4.1.0"
+    }
   }
 
   backend "http" {}
