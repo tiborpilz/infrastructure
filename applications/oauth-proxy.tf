@@ -6,7 +6,7 @@ resource "keycloak_openid_client" "oauth2_proxy" {
   root_url    = "https://oauth.${var.domain}"
   admin_url   = "https://oauth.${var.domain}"
   valid_redirect_uris = [
-    "https://oauth.${var.domain}/oauth2/callback",
+    "https://oauth.${var.domain}/*",
   ]
   web_origins = ["*"]
   access_type                  = "CONFIDENTIAL"
@@ -33,8 +33,8 @@ data "template_file" "oauth2_proxy_values" {
   vars = {
     host          = var.domain
     issuer_url    = "https://auth.${var.domain}/auth/realms/default"
-    client_id     = keycloak_openid_client.argocd.client_id
-    client_secret = keycloak_openid_client.argocd.client_secret
+    client_id     = keycloak_openid_client.oauth2_proxy.client_id
+    client_secret = keycloak_openid_client.oauth2_proxy.client_secret
     cookie_secret = "HbRkRZf7fXtGML6iAEYOuCS7busPZCFt"
   }
 }
