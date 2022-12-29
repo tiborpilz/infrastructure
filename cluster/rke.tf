@@ -17,12 +17,13 @@ resource "rke_cluster" "cluster" {
     provider = "none"
   }
   addons_include = [
-    "https://github.com/cert-manager/cert-manager/releases/download/v1.10.1/cert-manager.yaml",
+    "https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml",
     "./addons/letsencrypt-clusterissuer.yaml",
-    "https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml",
+    "https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml",
     "https://raw.githubusercontent.com/hetznercloud/csi-driver/master/deploy/kubernetes/hcloud-csi.yml",
     "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.5.1/deploy/static/provider/cloud/deploy.yaml",
-    "./addons/keycloak.yaml"
+    "./addons/keycloak-operator.yaml",
+    "./addons/keycloak-base.yaml",
   ]
   services {
     kube_api {
@@ -43,48 +44,18 @@ resource "rke_cluster" "cluster" {
       timeout = 120
     }
   }
-  addons = <<EOF
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: metallb-system
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: memberlist
-  namespace: metallb-system
-data:
-  secretkey: "${var.metallb_secret}"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: config
-  namespace: metallb-system
-data:
-  config: |
-    address-pools:
-    - name: default
-      protocol: layer2
-      addresses:
-      %{for ip in var.ingress_ips}
-      - ${ip}/32
-      %{endfor}
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: hcloud
-  namespace: kube-system
-type: Opaque
-data:
-  token: "${base64encode(var.hcloud_token)}"
----
-EOF
+  addons = templatefile("${path.module}/addon_template.yaml", {
+    metallb_secret = var.metallb_secret
+    ingress_ips = var.ingress_ips
+    hcloud_token = var.hcloud_token
+  })
   # ssh_key_path       = "../out/sshkey"
   enable_cri_dockerd = true
+
+  provisioner "local-exec" {
+    command = "while true; do curl -k 'https://auth.bababourbaki.dev' && break || sleep 3"
+    on_failure = "continue"
+  }
 }
 
 resource "local_file" "kube_cluster_yaml" {
