@@ -12,25 +12,6 @@ spec:
     host: auth.bababourbaki.dev
     tlsTermination: reencypt
 ---
-# apiVersion: keycloak.org/v1alpha1
-# kind: KeycloakClient
-# metadata:
-#   labels:
-#     realm: master
-#   name: terraform
-#   namespace: keycloak
-# spec:
-#   client:
-#     clientId: terraform
-#     protocol: openid-connect
-#     publicClient: false
-#     standardFlowEnabled: false
-#     directAccessGrantsEnabled: false
-#     serviceAccountsEnabled: true
-#   realmSelector:
-#     matchLabels:
-#       realm: master
----
 apiVersion: keycloak.org/v1alpha1
 kind: KeycloakRealm
 metadata:
