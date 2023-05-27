@@ -1,4 +1,3 @@
-
 resource "rke_cluster" "cluster" {
   dynamic "nodes" {
     for_each = var.nodes
@@ -34,27 +33,27 @@ resource "rke_cluster" "cluster" {
     }
   }
   upgrade_strategy {
-    drain = true
-    max_unavailable_worker = "100%"
+    drain                        = true
+    max_unavailable_worker       = "100%"
     max_unavailable_controlplane = "100%"
     drain_input {
-      delete_local_data = true
-      force = true
+      delete_local_data  = true
+      force              = true
       ignore_daemon_sets = true
-      timeout = 120
+      timeout            = 120
     }
   }
   addons = templatefile("${path.module}/addon_template.yaml", {
     metallb_secret = var.metallb_secret
-    ingress_ips = var.ingress_ips
-    hcloud_token = var.hcloud_token
+    ingress_ips    = var.ingress_ips
+    hcloud_token   = var.hcloud_token
   })
   # ssh_key_path       = "../out/sshkey"
   enable_cri_dockerd = true
 
   provisioner "local-exec" {
-    command = "while true; do curl -k 'https://auth.bababourbaki.dev' && break || sleep 3"
-    on_failure = "continue"
+    command    = "while true; do curl -k 'https://auth.bababourbaki.dev' && break || sleep 3"
+    on_failure = continue
   }
 }
 

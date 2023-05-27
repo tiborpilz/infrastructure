@@ -26,8 +26,6 @@ terraform {
       source = "cloudflare/cloudflare"
     }
   }
-  backend "http" {
-  }
 }
 
 locals {

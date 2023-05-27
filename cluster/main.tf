@@ -32,7 +32,6 @@ terraform {
       source = "rancher/rke"
     }
   }
-  backend "http" {}
 }
 
 output "kube_config_yaml" {
