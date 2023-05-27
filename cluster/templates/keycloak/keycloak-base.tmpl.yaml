@@ -1,0 +1,86 @@
+apiVersion: keycloak.org/v1alpha1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak
+  labels:
+    app: sso
+spec:
+  instances: 1
+  externalAccess:
+    enabled: true
+    host: "auth.${domain}"
+    tlsTermination: reencypt
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakRealm
+metadata:
+  labels:
+    realm: master
+  name: master
+  namespace: keycloak
+spec:
+  instanceSelector:
+    matchLabels:
+      app: sso
+  realm:
+    displayName: "${name}"
+    displayNameHtml: '<div class="kc-logo-text"><span>${name}</span></div>'
+    enabled: true
+    id: master
+    realm: master
+---
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakUser
+metadata:
+  name: terraform
+  namespace: keycloak
+  labels:
+    app: sso
+spec:
+  realmSelector:
+    matchLabels:
+      realm: master
+  user:
+    credentials:
+      - type: password
+        value: testpw12345
+    enabled: true
+    firstName: Terra
+    lastName: Form
+    realmRoles:
+      - admin
+    username: terraform
+---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   annotations:
+#     cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+#     kubernetes.io/ingress.class: nginx
+#     kubernetes.io/tls-acme: "true"
+#     external-dns.alpha.kubernetes.io/hostname: "auth.bababourbaki.dev"
+#     nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+#     nginx.ingress.kubernetes.io/server-snippet: |2-
+#       location ~* "^/auth/realms/master/metrics" {
+#         return 301 /auth/realms/master;
+#       }
+#   name: keycloak
+#   namespace: keycloak
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#     - host: auth.bababourbaki.dev
+#       http:
+#         paths:
+#           - backend:
+#               service:
+#                 name: keycloak
+#                 port:
+#                   number: 8443
+#             path: /
+#             pathType: ImplementationSpecific
+#   tls:
+#     - hosts:
+#         - auth.bababourbaki.dev
+#       secretName: auth-tls
