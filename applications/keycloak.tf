@@ -58,6 +58,11 @@ resource "keycloak_openid_client" "kubernetes" {
 }
 
 resource "keycloak_openid_client_default_scopes" "k8s_default_scopes" {
+  depends_on = [
+    keycloak_openid_client.kubernetes,
+    keycloak_realm.default,
+  ]
+
   realm_id  = keycloak_realm.default.id
   client_id = keycloak_openid_client.kubernetes.id
 

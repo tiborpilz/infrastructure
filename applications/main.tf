@@ -15,16 +15,14 @@ terraform {
       source = "gitlabhq/gitlab"
     }
     kustomization = {
-      source = "kbst/kustomization"
+      source  = "kbst/kustomization"
       version = "0.9.0"
     }
     keycloak = {
-      source = "mrparkers/keycloak"
+      source  = "mrparkers/keycloak"
       version = "4.1.0"
     }
   }
-
-  backend "http" {}
 }
 
 provider "kubernetes" {
@@ -44,7 +42,7 @@ provider "helm" {
 }
 
 provider "kustomization" {
-  kubeconfig_raw  = var.kube_config_yaml
+  kubeconfig_raw = var.kube_config_yaml
 }
 
 provider "gitlab" {
