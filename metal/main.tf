@@ -17,16 +17,17 @@ variable "metallb_secret" {
 terraform {
   required_providers {
     rke = {
-      source = "rancher/rke"
+      source  = "rancher/rke"
+      version = "1.4.1"
     }
     hcloud = {
-      source = "hetznercloud/hcloud"
+      source  = "hetznercloud/hcloud"
+      version = "1.39.0"
     }
     cloudflare = {
-      source = "cloudflare/cloudflare"
+      source  = "cloudflare/cloudflare"
+      version = "4.6.0"
     }
-  }
-  backend "http" {
   }
 }
 
@@ -41,6 +42,7 @@ resource "tls_private_key" "ssh_key" {
 resource "local_file" "ssh_key" {
   filename = "${path.root}/../out/sshkey"
   content  = tls_private_key.ssh_key.private_key_pem
+  file_permission = "0600"
 }
 
 output "domain" {

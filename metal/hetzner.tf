@@ -10,11 +10,11 @@ resource "hcloud_ssh_key" "terraform" {
 resource "hcloud_server" "nodes" {
   for_each    = toset(local.names)
   name        = each.value
-  image       = "ubuntu-18.04"
+  image       = "docker-ce"
   server_type = "cx31"
   ssh_keys    = [hcloud_ssh_key.terraform.id]
   user_data   = templatefile("${path.module}/templates/userdata.cloudinit.tpl", {})
-  location    = "nbg1"
+  location    = "fsn1"
   keep_disk   = false
 
   labels = {
@@ -30,7 +30,7 @@ resource "hcloud_server" "nodes" {
       host        = self.ipv4_address
     }
     inline = [
-      "cloud-init status --wait"
+      "echo 'done'"
     ]
   }
 }
