@@ -49,9 +49,11 @@ resource "local_file" "manifest" {
 output "manifest" {
   value       = local.encoded_manifest
   description = "The addon as list of manifests with namespace, encoded as yaml, separated by ---"
+  sensitive   = true
 }
 
 output "file" {
   value       = local_file.manifest
   description = "The manifest file"
+  sensitive   = true
 }
