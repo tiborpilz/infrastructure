@@ -13,7 +13,7 @@ module "keycloak" {
   source           = "./modules/keycloak"
   keycloak_version = "21.1.1"
   domain           = var.domain
-  default_password = var.secrets.admin_password
+  default_password = var.secrets.keycloak_admin_password
 }
 
 module "cert_manager" {

@@ -1,7 +1,7 @@
 provider "keycloak" {
   client_id = "admin-cli"
   username  = "admin"
-  password  = var.secrets.admin_password
+  password  = var.secrets.keycloak_admin_password
   url       = "https://keycloak.${var.domain}/"
 }
 
