@@ -11,7 +11,7 @@ variable "cluster_connection" {
 variable "kube_config_yaml" {}
 
 variable "gitlab_token" {}
-variable "gitlab_project_id" {}
+# variable "gitlab_project_id" {}
 variable "domain" {}
 variable "email" {}
 terraform {
