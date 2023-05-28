@@ -1,6 +1,7 @@
 variable "metallb_secret" {}
 variable "domain" {}
 variable "hcloud_token" {}
+variable "email" {}
 
 variable "nodes" {
   type    = map(any)
@@ -29,10 +30,10 @@ variable "kube_config_yaml" {
 terraform {
   required_providers {
     rke = {
-      source = "rancher/rke"
+      source  = "rancher/rke"
+      version = "1.4.1"
     }
   }
-  backend "http" {}
 }
 
 output "kube_config_yaml" {
