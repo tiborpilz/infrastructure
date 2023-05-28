@@ -12,6 +12,13 @@ inputs = {
   secrets           = local.secrets
 }
 
+retryable_errors = [
+  "(?s).*error initializing keycloak provider*" # sometimes we need to wait for the certificates to be ready
+]
+
+retry_max_attempts = 5
+retry_sleep_interval_sec = 10
+
 generate "backend" {
   path      = "backend.tf"
   if_exists = "overwrite_terragrunt"
