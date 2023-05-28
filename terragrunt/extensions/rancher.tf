@@ -77,7 +77,6 @@ resource "keycloak_openid_client_default_scopes" "client_default_scopes" {
   realm_id  = keycloak_realm.default.id
   client_id = keycloak_openid_client.rancher_oidc.id
 
-  realm_access = true
   default_scopes = [
     "profile",
     "email",
