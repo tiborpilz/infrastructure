@@ -1,3 +1,7 @@
+variable "secrets" {
+  type    = map(string)
+  default = {}
+}
 variable "nodecount" {}
 variable "hcloud_token" {}
 variable "cloudflare_email" {}

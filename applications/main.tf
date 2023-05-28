@@ -1,3 +1,8 @@
+variable "secrets" {
+  type    = map(string)
+  default = {}
+}
+
 variable "cluster_connection" {
   type    = map(string)
   default = {}
@@ -9,7 +14,6 @@ variable "gitlab_token" {}
 variable "gitlab_project_id" {}
 variable "domain" {}
 variable "email" {}
-
 terraform {
   required_providers {
     gitlab = {
