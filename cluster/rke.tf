@@ -1,22 +1,42 @@
+module "metallb" {
+  source          = "./modules/metallb"
+  ips             = var.ingress_ips
+  metallb_version = "v0.13.9"
+}
+
+module "hcloud_csi" {
+  source       = "./modules/hcloud-csi"
+  hcloud_token = var.hcloud_token
+}
+
+module "keycloak" {
+  source           = "./modules/keycloak"
+  keycloak_version = "21.1.1"
+  domain           = var.domain
+}
+
+module "cert_manager" {
+  source               = "./modules/cert-manager"
+  cert_manager_version = "v1.9.1"
+  email                = var.email
+}
+
+module "ingress_nginx" {
+  source = "./modules/download-manifest"
+  urls = [
+    "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.1/deploy/static/provider/cloud/deploy.yaml",
+  ]
+  output_file = "${path.root}/templates-out/ingress-nginx.yaml"
+}
+
 locals {
   template_out              = "${path.root}/templates-out"
   metallb_address_pool_file = "${local.template_out}/metallb_address_pool.yaml"
   hcloud_token_file         = "${local.template_out}/hcloud_token.yaml"
-}
-
-resource "local_file" "metallb_address_pool" {
-  filename = local.metallb_address_pool_file
-  content = templatefile("${path.root}/templates/metallb-ip-address-pool.tpl.yaml", {
-    ingress_ips = var.ingress_ips
-  })
-}
-
-
-resource "local_file" "hcloud_token" {
-  filename = local.hcloud_token_file
-  content = templatefile("${path.root}/templates/hcloud_token.tpl.yaml", {
-    hcloud_token = var.hcloud_token
-  })
+  keycloak_file             = "${local.template_out}/keycloak.yaml"
+  keycloak_version          = "21.1.1"
+  keycloak_username         = "admin"
+  keycloak_password         = "admin"
 }
 
 resource "rke_cluster" "cluster" {
@@ -30,33 +50,20 @@ resource "rke_cluster" "cluster" {
       ssh_agent_auth = true
     }
   }
-  kubernetes_version = "v1.21.14-rancher1-1"
+  kubernetes_version = "v1.24.10-rancher4-1"
   network {
     plugin = "weave"
   }
   ingress {
     provider = "none"
   }
-  addons_include = [
-    # Cert Manager
-    "https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml",
-    "./addons/letsencrypt-clusterissuer.yaml",
-
-    # MetalLB
-    "https://raw.githubusercontent.com/metallb/metallb/v0.13.9/config/manifests/metallb-native.yaml",
-    local.metallb_address_pool_file,
-
-    # Hcloud CSI
-    "https://raw.githubusercontent.com/hetznercloud/csi-driver/master/deploy/kubernetes/hcloud-csi.yml",
-    local.hcloud_token_file,
-
-    # Ingress Nginx
-    "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.5.1/deploy/static/provider/cloud/deploy.yaml",
-
-    # Keycloak
-    "./addons/keycloak-operator.yaml",
-    "./addons/keycloak-base.yaml",
-  ]
+  addons_include = concat(
+    [module.ingress_nginx.filename],
+    module.cert_manager.files,
+    module.metallb.files,
+    module.hcloud_csi.files,
+    module.keycloak.files,
+  )
   services {
     kube_api {
       extra_args = {
@@ -76,11 +83,6 @@ resource "rke_cluster" "cluster" {
       timeout            = 120
     }
   }
-  addons = templatefile("${path.module}/addon_template.yaml", {
-    metallb_secret = var.metallb_secret
-    ingress_ips    = var.ingress_ips
-    hcloud_token   = var.hcloud_token
-  })
   # ssh_key_path       = "../out/sshkey"
   enable_cri_dockerd    = true
   ignore_docker_version = true

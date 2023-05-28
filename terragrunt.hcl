@@ -1,9 +1,11 @@
 locals {
+  email = "tibor@pilz.berlin"
   domain = "bababourbaki.dev"
   gitlab_project_id = "39120322"
 }
 
 inputs = {
+  email = local.email
   domain = local.domain
   gitlab_project_id = local.gitlab_project_id
 }

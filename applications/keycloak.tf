@@ -1,7 +1,7 @@
 provider "keycloak" {
   client_id = "admin-cli"
-  username  = "terraform"
-  password  = "testpw12345"
+  username  = "admin"
+  password  = "admin"
   url       = "https://auth.${var.domain}/auth"
 }
 
@@ -74,11 +74,11 @@ resource "keycloak_openid_client_default_scopes" "k8s_default_scopes" {
 }
 
 resource "keycloak_generic_protocol_mapper" "k8s_groups" {
-  realm_id         = keycloak_realm.default.id
-  client_scope_id  = keycloak_openid_client_scope.groups.id
-  name             = "k8s-groups"
-  protocol         = "openid-connect"
-  protocol_mapper  = "oidc-usermodel-client-role-mapper"
+  realm_id        = keycloak_realm.default.id
+  client_scope_id = keycloak_openid_client_scope.groups.id
+  name            = "k8s-groups"
+  protocol        = "openid-connect"
+  protocol_mapper = "oidc-usermodel-client-role-mapper"
   config = {
     "access.token.claim"                     = "true"
     "claim.name"                             = "groups"
@@ -121,19 +121,19 @@ resource "keycloak_generic_protocol_mapper" "k8s_groups" {
 #         "standardFlowEnabled" = true
 
 resource "kubernetes_cluster_role_binding" "oidc-cluster-admin" {
-    metadata {
-        name = "oidc-cluster-admin"
-    }
+  metadata {
+    name = "oidc-cluster-admin"
+  }
 
-    role_ref {
-        api_group = "rbac.authorization.k8s.io"
-        kind      = "ClusterRole"
-        name      = "cluster-admin"
-    }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "cluster-admin"
+  }
 
-    subject {
-        kind      = "User"
-        name      = "https://auth.${var.domain}/auth/realms/default#${keycloak_user.tibor.id}"
-        api_group = "rbac.authorization.k8s.io"
-    }
+  subject {
+    kind      = "User"
+    name      = "https://auth.${var.domain}/auth/realms/default#${keycloak_user.tibor.id}"
+    api_group = "rbac.authorization.k8s.io"
+  }
 }
