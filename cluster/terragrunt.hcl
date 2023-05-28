@@ -19,7 +19,7 @@ dependency "metal" {
 }
 
 inputs = {
-  nodes         = dependency.metal.outputs.nodes
-  ssh_key       = dependency.metal.outputs.ssh_key
-  ingress_ips   = dependency.metal.outputs.ingress_ips
+  nodes       = dependency.metal.outputs.nodes
+  ssh_key     = dependency.metal.outputs.ssh_key
+  ingress_ips = dependency.metal.outputs.ingress_ips
 }

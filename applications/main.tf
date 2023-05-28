@@ -23,6 +23,10 @@ terraform {
       source  = "mrparkers/keycloak"
       version = "4.1.0"
     }
+    rancher2 = {
+      source  = "rancher/rancher2"
+      version = "3.0.0"
+    }
   }
 }
 

@@ -40,8 +40,8 @@ resource "tls_private_key" "ssh_key" {
 }
 
 resource "local_file" "ssh_key" {
-  filename = "${path.root}/../out/sshkey"
-  content  = tls_private_key.ssh_key.private_key_pem
+  filename        = "${path.root}/../out/sshkey"
+  content         = tls_private_key.ssh_key.private_key_pem
   file_permission = "0600"
 }
 
