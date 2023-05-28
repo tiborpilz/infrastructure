@@ -1,5 +1,5 @@
 include {
-  path = find_in_parent_folders()
+  path           = find_in_parent_folders()
   merge_strategy = "deep"
 }
 
@@ -8,10 +8,10 @@ dependency "cluster" {
 
   mock_outputs = {
     cluster_connection = {
-      host = ""
+      host                   = ""
       cluster_ca_certificate = ""
-      client_certificate = ""
-      client_key = ""
+      client_certificate     = ""
+      client_key             = ""
     }
     kube_config_yaml = ""
   }
@@ -19,5 +19,5 @@ dependency "cluster" {
 
 inputs = {
   cluster_connection = dependency.cluster.outputs.cluster_connection
-  kube_config_yaml = dependency.cluster.outputs.kube_config_yaml
+  kube_config_yaml   = dependency.cluster.outputs.kube_config_yaml
 }
