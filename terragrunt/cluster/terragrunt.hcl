@@ -3,8 +3,8 @@ include {
   merge_strategy = "deep"
 }
 
-dependency "metal" {
-  config_path = "../metal"
+dependency "foundation" {
+  config_path = "../foundation"
 
   mock_outputs = {
     nodes = {
@@ -19,7 +19,7 @@ dependency "metal" {
 }
 
 inputs = {
-  nodes       = dependency.metal.outputs.nodes
-  ssh_key     = dependency.metal.outputs.ssh_key
-  ingress_ips = dependency.metal.outputs.ingress_ips
+  nodes       = dependency.foundation.outputs.nodes
+  ssh_key     = dependency.foundation.outputs.ssh_key
+  ingress_ips = dependency.foundation.outputs.ingress_ips
 }

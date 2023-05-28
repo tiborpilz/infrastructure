@@ -1,5 +1,5 @@
 *.terraform
-out/*
+**/out/*
 *.tfstate
 **/templates-out
 .env

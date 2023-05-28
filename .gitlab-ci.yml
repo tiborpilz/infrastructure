@@ -122,13 +122,13 @@ create_plan:
   before_script:
     - !reference [.git-crypt, before_script]
   script:
-    - cd metal
+    - cd foundation
     - terragrunt init
     - terragrunt plan -out=plan.out
     - terragrunt show -json plan.out > plan.json
   artifacts:
     paths:
-      - metal/plan.json
+      - foundation/plan.json
 
 visualize_plan:
   stage: visualize
@@ -138,9 +138,9 @@ visualize_plan:
   before_script:
     - !reference [.git-crypt, before_script]
   script:
-    - cd metal
+    - cd foundation
     - npx -y @terraform-visual/cli --plan plan.json
   artifacts:
-    expose_as: "metal report"
+    expose_as: "foundation report"
     paths:
-      - metal/terraform-visual-report
+      - foundation/terraform-visual-report
