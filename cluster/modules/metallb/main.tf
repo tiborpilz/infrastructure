@@ -30,14 +30,14 @@ resource "local_file" "metallb_address_pool" {
 
 output "files" {
   value = [
-    module.metallb.filename,
+    module.metallb.file.filename,
     local_file.metallb_address_pool.filename,
   ]
 }
 
-output "manifest" {
-  value = join("\n---\n", [
-    module.metallb.manifest,
-    local.metallb_address_pool_manifest,
-  ])
-}
+# output "manifest" {
+#   value = join("\n---\n", [
+#     module.metallb.manifest,
+#     local.metallb_address_pool_manifest,
+#   ])
+# }

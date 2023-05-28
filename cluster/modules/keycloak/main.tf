@@ -76,10 +76,10 @@ output "files" {
     local_file.namespace.filename,
 
     # Keycloak Operator
-    module.keycloak_operator.filename,
+    module.keycloak_operator.file.filename,
 
     # Realm Operator
-    module.keycloak_realm_operator.filename,
+    module.keycloak_realm_operator.file.filename,
 
     # Keycloak instance
     local_file.keycloak.filename,

@@ -29,7 +29,7 @@ resource "local_file" "letsencrypt_clusterissuer" {
 
 output "files" {
   value = [
-    module.cert_manager.filename,
+    module.cert_manager.file.filename,
     local_file.letsencrypt_clusterissuer.filename,
   ]
 }
