@@ -22,6 +22,11 @@ resource "helm_release" "rancher" {
       }
     }
   })]
+
+  provisioner "local-exec" {
+    command    = "while true; do curl -k 'https://rancher.${var.domain}' && break || sleep 3; done"
+    on_failure = continue
+  }
 }
 
 provider "rancher2" {
