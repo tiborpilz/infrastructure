@@ -10,6 +10,7 @@ resource "keycloak_realm" "default" {
   enabled = true
 }
 
+# TODO: Move user creation to module
 resource "keycloak_user" "tibor" {
   realm_id = keycloak_realm.default.id
   username = "tibor"
@@ -45,6 +46,22 @@ resource "keycloak_user_roles" "tibor_roles" {
   exhaustive = false
 }
 
+
+# TODO: also move group creation to module
+resource "keycloak_group" "admin" {
+  realm_id = keycloak_realm.default.id
+  name     = "admin"
+}
+
+resource "keycloak_group_memberships" "admin_membership" {
+  realm_id = keycloak_realm.default.id
+  group_id = keycloak_group.admin.id
+  members = [
+    keycloak_user.tibor.username,
+  ]
+}
+
+# TODO: Move k8s stuff to module
 resource "keycloak_openid_client" "kubernetes" {
   realm_id              = keycloak_realm.default.id
   client_id             = "kubernetes"

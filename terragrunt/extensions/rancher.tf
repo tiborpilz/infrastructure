@@ -166,6 +166,23 @@ EOT
   }
 }
 
+resource "rancher2_global_role" "admin" {
+  provider    = rancher2.admin
+  name        = "admin"
+  description = "Admin role"
+  rules {
+    api_groups = ["*"]
+    resources  = ["*"]
+    verbs      = ["*"]
+  }
+}
+
+# resource "rancher2_global_role_binding" "admin" {
+#   name = "admin"
+#   global_role_id = rancher2_global_role.admin.id
+#   group_principal_id =
+# }
+
 # resource "rancher2_auth_config_keycloak" "keycloak" {
 #   provider = "rancher2.admin"
 
