@@ -21,24 +21,6 @@ module "cert_manager" {
   email                = var.email
 }
 
-module "ingress_nginx" {
-  source = "./modules/download-manifest"
-  urls = [
-    "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.1/deploy/static/provider/cloud/deploy.yaml",
-  ]
-  output_file = "${path.root}/../out/addons/ingress-nginx.yaml"
-}
-
-locals {
-  template_out              = "${path.root}/templates-out"
-  metallb_address_pool_file = "${local.template_out}/metallb_address_pool.yaml"
-  hcloud_token_file         = "${local.template_out}/hcloud_token.yaml"
-  keycloak_file             = "${local.template_out}/keycloak.yaml"
-  keycloak_version          = "21.1.1"
-  keycloak_username         = "admin"
-  keycloak_password         = "admin"
-}
-
 resource "rke_cluster" "cluster" {
   dynamic "nodes" {
     for_each = var.nodes
@@ -58,7 +40,7 @@ resource "rke_cluster" "cluster" {
     provider = "none"
   }
   addons_include = concat(
-    [module.ingress_nginx.file.filename],
+    ["https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.1/deploy/static/provider/cloud/deploy.yaml"],
     module.cert_manager.files,
     module.metallb.files,
     module.hcloud_csi.files,
@@ -67,7 +49,7 @@ resource "rke_cluster" "cluster" {
   services {
     kube_api {
       extra_args = {
-        "oidc-issuer-url" = "https://auth.${var.domain}/auth/realms/default"
+        "oidc-issuer-url" = "https://keycloak.${var.domain}/realms/default"
         "oidc-client-id"  = "kubernetes"
       }
     }
@@ -88,7 +70,7 @@ resource "rke_cluster" "cluster" {
   ignore_docker_version = true
 
   # provisioner "local-exec" {
-  #   command    = "while true; do curl -k 'https://auth.bababourbaki.dev' && break || sleep 3; done"
+  #   command    = "while true; do curl -k 'https://keycloak.bababourbaki.dev' && break || sleep 3; done"
   #   on_failure = continue
   # }
 }

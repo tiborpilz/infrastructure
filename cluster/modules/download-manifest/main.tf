@@ -32,7 +32,7 @@ data "http" "manifests" {
 
 locals {
   manifests                = [for key, value in data.http.manifests : value]
-  decoded_resources        = ([for manifest in local.manifests : [for item in compact(split("---", manifest.response_body)) : yamldecode(item)]])
+  decoded_resources        = flatten([for manifest in local.manifests : [for item in compact(split("---", manifest.response_body)) : yamldecode(item)]])
   resources_with_namespace = [for item in local.decoded_resources : merge(item, { metadata = merge({ namespace = var.namespace }, item.metadata) })]
 
   template_manifests   = [for item in var.templates : templatefile(item.template, item.values)]
@@ -44,6 +44,11 @@ locals {
 resource "local_file" "manifest" {
   filename = var.output_file
   content  = local.encoded_manifest
+}
+
+output "manifest" {
+  value       = local.encoded_manifest
+  description = "The addon as list of manifests with namespace, encoded as yaml, separated by ---"
 }
 
 output "file" {

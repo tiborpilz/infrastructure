@@ -2,7 +2,7 @@ provider "keycloak" {
   client_id = "admin-cli"
   username  = "admin"
   password  = "admin"
-  url       = "https://auth.${var.domain}/auth"
+  url       = "https://keycloak.${var.domain}/"
 }
 
 resource "keycloak_realm" "default" {
@@ -133,7 +133,7 @@ resource "kubernetes_cluster_role_binding" "oidc-cluster-admin" {
 
   subject {
     kind      = "User"
-    name      = "https://auth.${var.domain}/auth/realms/default#${keycloak_user.tibor.id}"
+    name      = "https://keycloak.${var.domain}/realms/default#${keycloak_user.tibor.id}"
     api_group = "rbac.authorization.k8s.io"
   }
 }
