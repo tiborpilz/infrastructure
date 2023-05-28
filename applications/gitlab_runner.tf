@@ -1,6 +1,6 @@
-data "gitlab_group" "bababourbaki" {
-  full_path = "baba-bourbaki"
-}
+# data "gitlab_group" "bababourbaki" {
+#   full_path = "baba-bourbaki"
+# }
 
 # resource "gitlab_runner" "cluster_runner" {
 #   registration_token = data.gitlab_group.bababourbaki.runners_token
