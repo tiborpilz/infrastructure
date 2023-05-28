@@ -8,14 +8,6 @@ variable "cert_manager_version" {
   default     = "main"
 }
 
-module "cert_manager" {
-  source = "../download-manifest"
-  urls = [
-    "https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml",
-  ]
-  output_file = "${path.module}/templates-out/cert-manager.yaml"
-}
-
 locals {
   letsencrypt_clusterissuer_manifest = templatefile("${path.module}/templates/letsencrypt-clusterissuer.tpl.yaml", {
     email = var.email
@@ -29,14 +21,7 @@ resource "local_file" "letsencrypt_clusterissuer" {
 
 output "files" {
   value = [
-    module.cert_manager.file.filename,
+    "https://github.com/cert-manager/cert-manager/releases/download/${var.cert_manager_version}/cert-manager.yaml",
     local_file.letsencrypt_clusterissuer.filename,
   ]
-}
-
-output "manifest" {
-  value = join("\n---\n", [
-    module.cert_manager.manifest,
-    local.letsencrypt_clusterissuer_manifest,
-  ])
 }
