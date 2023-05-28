@@ -104,7 +104,7 @@ resource "keycloak_openid_audience_protocol_mapper" "rancher_audience_mapper" {
   name      = "Client Audience"
 
   included_client_audience = keycloak_openid_client.rancher_oidc.name
-  add_to_access_token      = false
+  add_to_access_token      = true
 }
 
 resource "keycloak_openid_group_membership_protocol_mapper" "rancher_group_path_mapper" {
