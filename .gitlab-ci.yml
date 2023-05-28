@@ -24,6 +24,7 @@ stages:
 variables:
   IMAGE_TAG: latest
   TF_STATE_BASE_ADDRESS: $CI_API_V4_URL/projects/$CI_PROJECT_ID/terraform/state
+  TF_ROOT: terragrunt
 
 image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
 
@@ -33,9 +34,10 @@ cache:
     - ${TF_ROOT}/**/.terraform
 
 # Source the gitlab-terraform script so that we get the env vars
-.source:
+.pre-terragrunt:
   script:
     - source $(which gitlab-terraform)
+    - cd ${TF_ROOT}
 
 .git-crypt:
   before_script:
@@ -82,7 +84,7 @@ fmt:
   before_script:
     - !reference [.git-crypt, before_script]
   script:
-    - !reference [.source, script]
+    - !reference [.pre-terragrunt, script]
     - terragrunt hclfmt -check -diff
     - terragrunt run-all fmt -check -diff -recursive
 
@@ -91,7 +93,7 @@ init:
   before_script:
     - !reference [.git-crypt, before_script]
   script:
-    - !reference [.source, script]
+    - !reference [.pre-terragrunt, script]
     - terragrunt run-all init -input=false -reconfigure -lockfile=readonly
 
 validate:
@@ -99,7 +101,7 @@ validate:
   before_script:
     - !reference [.git-crypt, before_script]
   script:
-    - !reference [.source, script]
+    - !reference [.pre-terragrunt, script]
     - terragrunt validate-inputs
     - terragrunt run-all validate
 
@@ -108,7 +110,7 @@ build:
   before_script:
     - !reference [.git-crypt, before_script]
   script:
-    - !reference [.source, script]
+    - !reference [.pre-terragrunt, script]
     - terragrunt run-all plan -input=false -out=plan.cache
     - terragrunt run-all show -json plan.cache | jq -r "${JQ_PLAN}" | jq -s 'map(to_entries) | flatten | group_by(.key) | map({(.[0].key):map(.value) | add}) | add' > "${TF_ROOT}/plan.json"
   artifacts:
