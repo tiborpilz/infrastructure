@@ -1,3 +1,8 @@
+variable "secrets" {
+  type    = map(string)
+  default = {}
+}
+
 variable "metallb_secret" {}
 variable "domain" {}
 variable "hcloud_token" {}

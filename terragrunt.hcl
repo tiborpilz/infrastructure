@@ -2,12 +2,14 @@ locals {
   email             = "tibor@pilz.berlin"
   domain            = "bababourbaki.dev"
   gitlab_project_id = "39120322"
+  secrets           = yamldecode(file("${get_parent_terragrunt_dir()}/secrets.yaml"))
 }
 
 inputs = {
   email             = local.email
   domain            = local.domain
   gitlab_project_id = local.gitlab_project_id
+  secrets           = local.secrets
 }
 
 generate "backend" {
