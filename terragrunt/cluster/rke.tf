@@ -66,14 +66,13 @@ resource "rke_cluster" "cluster" {
       timeout            = 120
     }
   }
-  # ssh_key_path       = "../out/sshkey"
   enable_cri_dockerd    = true
   ignore_docker_version = true
 
-  # provisioner "local-exec" {
-  #   command    = "while true; do curl -k 'https://keycloak.bababourbaki.dev' && break || sleep 3; done"
-  #   on_failure = continue
-  # }
+  provisioner "local-exec" {
+    command    = "while true; do curl -k 'https://keycloak.${var.domain}' && break || sleep 3; done"
+    on_failure = continue
+  }
 }
 
 resource "local_file" "kube_cluster_yaml" {
