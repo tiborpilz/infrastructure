@@ -8,7 +8,7 @@ resource "keycloak_openid_client" "oauth2_proxy" {
   valid_redirect_uris = [
     "https://oauth.${var.domain}/*",
   ]
-  web_origins = ["*"]
+  web_origins                  = ["*"]
   access_type                  = "CONFIDENTIAL"
   standard_flow_enabled        = true
   implicit_flow_enabled        = false
@@ -32,7 +32,7 @@ data "template_file" "oauth2_proxy_values" {
   template = file("${path.module}/templates/oauth2_proxy_values.tpl")
   vars = {
     host          = var.domain
-    issuer_url    = "https://auth.${var.domain}/auth/realms/default"
+    issuer_url    = "https://keycloak.${var.domain}/realms/default"
     client_id     = keycloak_openid_client.oauth2_proxy.client_id
     client_secret = keycloak_openid_client.oauth2_proxy.client_secret
     cookie_secret = "HbRkRZf7fXtGML6iAEYOuCS7busPZCFt"
