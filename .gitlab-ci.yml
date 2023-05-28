@@ -1,7 +1,7 @@
 .git-crypt:
   before_script:
     - apk add git-crypt
-    - cat "$GIT_CRYPT_KEY" | base64 -d > key-file
+    - echo "$GIT_CRYPT_KEY" | base64 -d > key-file
     - git-crypt unlock key-file
 
 .terragrunt:
@@ -22,7 +22,7 @@ create_plan:
   script:
     - cd metal
     - terraform init
-    - terraform plan -out=plan.out 
+    - terraform plan -out=plan.out
     - terraform show -json plan.out > plan.json
   artifacts:
     paths:
