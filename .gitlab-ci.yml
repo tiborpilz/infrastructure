@@ -1,37 +1,142 @@
+include:
+  - template: Terraform/Base.latest.gitlab-ci.yml
+
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+      changes:
+        - .gitlab/ci/Dockerfile
+      variables:
+        IMAGE_TAG: ${CI_COMMIT_REF_SLUG}
+    - when: always
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+stages:
+  - prepare
+  - lint
+  - init
+  - validate
+  - build
+  - visualize
+
+variables:
+  IMAGE_TAG: latest
+  TF_STATE_BASE_ADDRESS: $CI_API_V4_URL/projects/$CI_PROJECT_ID/terraform/state
+
+image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
+
+cache:
+  key: "${TF_ROOT}"
+  paths:
+    - ${TF_ROOT}/**/.terraform
+
+# Source the gitlab-terraform script so that we get the env vars
+.source:
+  script:
+    - source $(which gitlab-terraform)
+
 .git-crypt:
   before_script:
     - apk add git-crypt
     - echo "$GIT_CRYPT_KEY" | base64 -d > key-file
     - git-crypt unlock key-file
 
-.terragrunt:
-  extends: .git-crypt
-  image: alpine/terragrunt
+# .terragrunt:
+#   extends: .git-crypt
+#   image: alpine/terragrunt
 
-.terraform-parallel:
-  extends: .terragrunt
-  parallel:
-    matrix:
-      - SUBFOLDER:
-          - metal
-          - cluster
-          - applications
+prepare:image:
+  needs: []
+  stage: prepare
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
+  rules:
+    # Tag with the commit SHA if we're in an MR
+    - if: $CI_MERGE_REQUEST_IID
+      changes:
+        - .gitlab/ci/Dockerfile
+      variables:
+        DOCKER_TAG: $CI_COMMIT_REF_SLUG
+    # If we're on our main branch, tag with "latest"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - .gitlab/ci/Dockerfile
+      variables:
+        DOCKER_TAG: latest
+  before_script:
+    # Authenticate to the docker registry and dependency proxy
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}/.gitlab/ci"
+      --cache=true
+      --dockerfile "${CI_PROJECT_DIR}/.gitlab/ci/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}:${DOCKER_TAG}"
+
+fmt:
+  extends: .terraform:fmt
+  stage: lint
+  before_script:
+    - !reference [.git-crypt, before_script]
+  script:
+    - !reference [.source, script]
+    - terragrunt hclfmt -check -diff
+    - terragrunt run-all fmt -check -diff -recursive
+
+init:
+  stage: init
+  before_script:
+    - !reference [.git-crypt, before_script]
+  script:
+    - !reference [.source, script]
+    - terragrunt run-all init -input=false -reconfigure -lockfile=readonly
+
+validate:
+  extends: .terraform:validate
+  before_script:
+    - !reference [.git-crypt, before_script]
+  script:
+    - !reference [.source, script]
+    - terragrunt validate-inputs
+    - terragrunt run-all validate
+
+build:
+  extends: .terraform:build
+  before_script:
+    - !reference [.git-crypt, before_script]
+  script:
+    - !reference [.source, script]
+    - terragrunt run-all plan -input=false -out=plan.cache
+    - terragrunt run-all show -json plan.cache | jq -r "${JQ_PLAN}" | jq -s 'map(to_entries) | flatten | group_by(.key) | map({(.[0].key):map(.value) | add}) | add' > "${TF_ROOT}/plan.json"
+  artifacts:
+    paths:
+      - ${TF_ROOT}/**/plan.cache
+    reports:
+      terraform: ${TF_ROOT}/plan.json
 
 create_plan:
-  extends: .terragrunt
+  stage: visualize
+  before_script:
+    - !reference [.git-crypt, before_script]
   script:
     - cd metal
-    - terraform init
-    - terraform plan -out=plan.out
-    - terraform show -json plan.out > plan.json
+    - terragrunt init
+    - terragrunt plan -out=plan.out
+    - terragrunt show -json plan.out > plan.json
   artifacts:
     paths:
       - metal/plan.json
 
 visualize_plan:
+  stage: visualize
   dependencies: [create_plan]
-  extends: .terragrunt
+  extends: .git-crypt
   image: node
+  before_script:
+    - !reference [.git-crypt, before_script]
   script:
     - cd metal
     - npx -y @terraform-visual/cli --plan plan.json

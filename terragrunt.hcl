@@ -17,9 +17,9 @@ generate "backend" {
 terraform {
   backend "http" {
     config  = {
-      address = "https://gitlab.com/api/v4/projects/${local.gitlab_project_id}/terraform/state/${path_relative_to_include()}"
-      lock_address = "https://gitlab.com/api/v4/projects/${local.gitlab_project_id}/terraform/state/${path_relative_to_include()}/lock"
-      unlock_address = "https://gitlab.com/api/v4/projects/${local.gitlab_project_id}/terraform/state/${path_relative_to_include()}/lock"
+      address = "${get_env("TF_STATE_BASE_ADDRESS", "https://gitlab.com/api/v4/projects/${local.gitlab_project_id}/terraform/state")}/${path_relative_to_include()}"
+      lock_address = "${get_env("TF_STATE_BASE_ADDRESS", "https://gitlab.com/api/v4/projects/${local.gitlab_project_id}/terraform/state")}/${path_relative_to_include()}/lock"
+      unlock_address = "${get_env("TF_STATE_BASE_ADDRESS", "https://gitlab.com/api/v4/projects/${local.gitlab_project_id}/terraform/state")}/${path_relative_to_include()}/lock"
       lock_method = "POST"
       unlock_method = "DELETE"
       retry_wait_min = "5"
