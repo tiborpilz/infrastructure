@@ -8,13 +8,13 @@ config:
   configFile: |-
     provider = "oidc"
     provider_display_name = "Keycloak"
-    redirect_url = "https://oauth.bababourbaki.dev/oauth2/callback"
+    redirect_url = "https://oauth.${domain}/oauth2/callback"
     oidc_issuer_url = "${issuer_url}"
-    whitelist_domains=".oauth.bababourbaki.dev"
+    whitelist_domains=".${domain}"
     reverse_proxy = true
     email_domains = [ "*" ]
     scope = "email openid profile"
-    cookie_domains = ".${host}"
+    cookie_domains = ".${domain}"
     pass_authorization_header = true
     pass_access_token = true
     pass_user_headers = true
@@ -22,17 +22,21 @@ config:
     set_xauthrequest = true
     cookie_refresh = "1m"
     cookie_expire = "30m"
+    upstreams = [ "file:///dev/null" ]
 
 ingress:
   enabled: true
-  path: /
   hosts:
-    - oauth.${host}
+    - oauth.${domain}
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
     kubernetes.io/ingress.class: nginx
     kubernetes.io/tls-acme: "true"
+    # nginx.ingress.kubernetes.io/rewrite-target: /oauth2
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      large_client_header_buffers 4 32k;
   tls:
     - secretName: oauth-proxy-tls
       hosts:
-        - oauth.${host}
+        - oauth.${domain}

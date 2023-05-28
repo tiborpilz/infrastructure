@@ -31,7 +31,7 @@ resource "keycloak_openid_group_membership_protocol_mapper" "group_membership_ma
 data "template_file" "oauth2_proxy_values" {
   template = file("${path.module}/templates/oauth2_proxy_values.tpl")
   vars = {
-    host          = var.domain
+    domain        = var.domain
     issuer_url    = "https://keycloak.${var.domain}/realms/default"
     client_id     = keycloak_openid_client.oauth2_proxy.client_id
     client_secret = keycloak_openid_client.oauth2_proxy.client_secret
