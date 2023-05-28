@@ -12,20 +12,17 @@ variable "namespace" {
 
 variable "output_file" {
   type        = string
-  description = "optional file to write the manifest to"
+  description = "File to write the manifest to"
   default     = null
 }
 
 variable "templates" {
-  type        = map(string)
-  description = "optional templates to render"
-  default     = {}
-}
-
-variable "template_vars" {
-  type        = map(string)
-  description = "optional variables to pass to the templates"
-  default     = {}
+  type = list(object({
+    template = string,
+    values   = any,
+  }))
+  description = "Templates to render"
+  default     = []
 }
 
 data "http" "manifests" {
@@ -35,11 +32,13 @@ data "http" "manifests" {
 
 locals {
   manifests                = [for key, value in data.http.manifests : value]
-  decoded_resources        = flatten([for manifest in local.manifests : [for item in compact(split("---", manifest.response_body)) : yamldecode(item)]])
+  decoded_resources        = ([for manifest in local.manifests : [for item in compact(split("---", manifest.response_body)) : yamldecode(item)]])
   resources_with_namespace = [for item in local.decoded_resources : merge(item, { metadata = merge({ namespace = var.namespace }, item.metadata) })]
 
-  template_manifests = [for key, value in var.templates : templatefile(value, var.template_vars[key])]
-  encoded_manifest   = join("\n---\n", concat([for item in local.resources_with_namespace : yamlencode(item)], local.template_manifests))
+  template_manifests   = [for item in var.templates : templatefile(item.template, item.values)]
+  downloaded_manifests = [for item in local.resources_with_namespace : yamlencode(item)]
+
+  encoded_manifest = join("\n---\n", concat(local.template_manifests, local.downloaded_manifests))
 }
 
 resource "local_file" "manifest" {
@@ -47,17 +46,7 @@ resource "local_file" "manifest" {
   content  = local.encoded_manifest
 }
 
-output "manifest" {
-  value       = local.encoded_manifest
-  description = "The manifest with namespace, encoded as yaml"
-}
-
 output "file" {
   value       = local_file.manifest
   description = "The manifest file"
-}
-
-output "filename" {
-  value       = local_file.manifest.filename
-  description = "The manifest filename"
 }

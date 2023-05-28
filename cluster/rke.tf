@@ -26,7 +26,7 @@ module "ingress_nginx" {
   urls = [
     "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.1/deploy/static/provider/cloud/deploy.yaml",
   ]
-  output_file = "${path.root}/templates-out/ingress-nginx.yaml"
+  output_file = "${path.root}/../out/addons/ingress-nginx.yaml"
 }
 
 locals {
@@ -58,7 +58,7 @@ resource "rke_cluster" "cluster" {
     provider = "none"
   }
   addons_include = concat(
-    [module.ingress_nginx.filename],
+    [module.ingress_nginx.file.filename],
     module.cert_manager.files,
     module.metallb.files,
     module.hcloud_csi.files,

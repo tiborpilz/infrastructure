@@ -30,7 +30,7 @@ resource "local_file" "hcloud_token" {
 
 output "files" {
   value = [
-    module.hcloud_csi.filename,
+    module.hcloud_csi.file.filename,
     local_file.hcloud_token.filename,
   ]
 }
