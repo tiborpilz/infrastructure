@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 
+
+GIT_ROOT=$(git rev-parse --show-toplevel)
+
 if [ -z "$GITLAB_TOKEN" ]; then
     echo "GitLab access token is required."
     exit 1
 fi
 
 # Use curl to get the current user from GitLab API
-GITLAB_USER=$(curl -s --header "$GITLAB_TOKEN" "https://gitlab.com/api/v4/user" | jq -r '.username')
+GITLAB_USER=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://gitlab.com/api/v4/user" | jq -r '.username')
+
+echo $GITLAB_USER
 
 # Retrieve the current Git repository URL
 REPO_URL=$(git config --get remote.origin.url)
@@ -36,11 +41,16 @@ if [ -z "$PROJECT_ID" ]; then
     exit 1
 fi
 
+# export TF_ADDRESS="https://gitlab.com/api/v4/projects/$PROJECT_ID/terraform/state/foundation"
+# export TF_HTTP_USERNAME="$GITLAB_USER"
+# export TF_HTTP_PASSWORD="$GITLAB_TOKEN"
+
 # Three terraform projects are foundation, extensions and cluster
 # Run terraform init for each project
 for project in foundation extensions cluster; do
     echo "Initializing $project..."
     # Run terraform init with the derived values
+    cd "$GIT_ROOT/terragrunt/$project"
     terraform init \
         -migrate-state \
         -backend-config="address=https://gitlab.com/api/v4/projects/$PROJECT_ID/terraform/state/$project" \

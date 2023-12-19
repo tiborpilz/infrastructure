@@ -1,5 +1,5 @@
 provider "cloudflare" {
-  api_token = var.cloudflare_api_token
+  api_token = var.secrets.cloudflare_api_token
 }
 
 data "cloudflare_zones" "zone" {

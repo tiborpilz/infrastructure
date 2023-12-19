@@ -23,8 +23,15 @@ resource "keycloak_generic_protocol_mapper" "argo_groups" {
     "multivalued"                            = "true"
     "userinfo.token.claim"                   = "true"
     "usermodel.clientRoleMapping.clientId"   = "argocd"
-    "usermodel.clientRoleMapping.rolePrefix" = "argo:"
+    "usermodel.clientRoleMapping.rolePrefix" = ""
   }
+}
+
+resource "keycloak_openid_group_membership_protocol_mapper" "argo_group_membership" {
+  realm_id        = keycloak_realm.default.id
+  client_id       = keycloak_openid_client.argocd.id
+  name            = "group-membership"
+  claim_name      = "groups"
 }
 
 resource "keycloak_openid_client_scope" "groups" {
@@ -42,6 +49,7 @@ resource "keycloak_openid_client_default_scopes" "argo_default_scopes" {
     "profile",
     "email",
     "openid",
+    "groups",
     keycloak_openid_client_scope.groups.name,
   ]
 }
@@ -60,7 +68,7 @@ resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
-  version          = "5.16.10"
+  version          = var.argocd_version
   namespace        = "argocd"
   create_namespace = true
   wait             = true
@@ -68,7 +76,7 @@ resource "helm_release" "argocd" {
 
   set {
     name  = "createCRD"
-    value = false
+    value = true
   }
 
   set {
@@ -77,4 +85,30 @@ resource "helm_release" "argocd" {
   }
 
   values = [data.template_file.argocd_values.rendered]
+}
+
+resource "kubernetes_manifest" "argocd_app_of_apps" {
+  depends_on = [
+    helm_release.argocd,
+  ]
+  manifest = {
+    "apiVersion" = "argoproj.io/v1alpha1"
+    "kind"       = "Application"
+    "metadata" = {
+      "name" = "argocd-apps"
+      "namespace" = "argocd"
+    }
+    "spec" = {
+      "project" = "default"
+      "source" = {
+        "repoURL" = "https://gitlab.com/tiborpilz/infrastructure" # TODO: parameterize
+        "targetRevision" = "main"
+        "path" = "applications"
+      }
+      "destination" = {
+        "namespace" = "argocd"
+        "server" = "https://kubernetes.default.svc"
+      }
+    }
+  }
 }

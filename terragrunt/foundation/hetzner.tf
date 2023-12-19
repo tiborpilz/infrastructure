@@ -1,5 +1,5 @@
 provider "hcloud" {
-  token = var.hcloud_token
+  token = var.secrets.hcloud_token
 }
 
 resource "hcloud_ssh_key" "terraform" {
@@ -13,7 +13,7 @@ resource "hcloud_server" "nodes" {
   image       = "docker-ce"
   server_type = "cx31"
   ssh_keys    = [hcloud_ssh_key.terraform.id]
-  user_data   = templatefile("${path.module}/templates/userdata.cloudinit.tpl", {})
+  # user_data   = templatefile("${path.module}/templates/userdata.cloudinit.tpl", {})
   location    = "fsn1"
   keep_disk   = false
 

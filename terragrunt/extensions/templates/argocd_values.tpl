@@ -33,8 +33,8 @@ server:
       - openid
   rbacConfig:
     policy.csv: |
-      g, argo:admin, role:admin
-    scopes: '[https://argocd.${domain}/claims/groups, email]'
+      g, admin, role:admin
+    scopes: '[https://argocd.${domain}/claims/groups, email, groups]'
 configs:
   repositories:
     infrastructure:

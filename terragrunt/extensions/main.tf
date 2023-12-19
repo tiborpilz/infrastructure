@@ -10,10 +10,19 @@ variable "cluster_connection" {
 
 variable "kube_config_yaml" {}
 
-variable "gitlab_token" {}
-# variable "gitlab_project_id" {}
 variable "domain" {}
 variable "email" {}
+
+variable "rancher_version" {
+  type        = string
+  description = "The rancher (helm chart) version to use"
+}
+
+variable "argocd_version" {
+  type        = string
+  description = "The argocd (helm chart) version to use"
+}
+
 terraform {
   required_providers {
     gitlab = {
@@ -22,6 +31,10 @@ terraform {
     kustomization = {
       source  = "kbst/kustomization"
       version = "0.9.0"
+    }
+    argocd = {
+      source = "oboukili/argocd"
+      version = "6.0.3"
     }
     keycloak = {
       source  = "mrparkers/keycloak"
@@ -55,5 +68,5 @@ provider "kustomization" {
 }
 
 provider "gitlab" {
-  token = var.gitlab_token
+  token = var.secrets.gitlab_token
 }

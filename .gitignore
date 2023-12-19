@@ -4,3 +4,4 @@
 **/templates-out
 .env
 *.cache
+**/*.terraform.lock.hcl
