@@ -1,9 +1,9 @@
-# data "gitlab_group" "bababourbaki" {
-#   full_path = "baba-bourbaki"
+# data "gitlab_group" "gitlab_group" {
+#   full_path = "tiborpilz"
 # }
 
 # resource "gitlab_runner" "cluster_runner" {
-#   registration_token = data.gitlab_group.bababourbaki.runners_token
+#   registration_token = data.gitlab_group.tiborpilz.runners_token
 #   description        = "Default Cluster Runner"
 # }
 
@@ -17,7 +17,7 @@
 
 #   values = [<<EOF
 # gitlabUrl: https://gitlab.com
-# runnerRegistrationToken: ${data.gitlab_group.bababourbaki.runners_token}
+# runnerRegistrationToken: ${data.gitlab_group.tiborpilz.runners_token}
 # EOF
 #   ]
 # }
