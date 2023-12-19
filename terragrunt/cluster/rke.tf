@@ -6,20 +6,25 @@ module "metallb" {
 
 module "hcloud_csi" {
   source       = "./modules/hcloud-csi"
-  hcloud_token = var.hcloud_token
+  hcloud_token = var.secrets.hcloud_token
 }
 
 module "keycloak" {
   source           = "./modules/keycloak"
-  keycloak_version = "21.1.1"
+  keycloak_version = var.keycloak_version
   domain           = var.domain
   default_password = var.secrets.keycloak_admin_password
 }
 
 module "cert_manager" {
   source               = "./modules/cert-manager"
-  cert_manager_version = "v1.9.1"
+  cert_manager_version = var.cert_manager_version
   email                = var.email
+}
+
+module "ingress_nginx" {
+  source                = "./modules/ingress-nginx"
+  ingress_nginx_version = var.ingress_nginx_version
 }
 
 resource "rke_cluster" "cluster" {
@@ -33,7 +38,7 @@ resource "rke_cluster" "cluster" {
       ssh_agent_auth = true
     }
   }
-  kubernetes_version = "v1.24.10-rancher4-1"
+  kubernetes_version = var.rke_kubernetes_version
   network {
     plugin = "weave"
   }
@@ -41,7 +46,7 @@ resource "rke_cluster" "cluster" {
     provider = "none"
   }
   addons_include = concat(
-    ["https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.1/deploy/static/provider/cloud/deploy.yaml"],
+    module.ingress_nginx.files,
     module.cert_manager.files,
     module.metallb.files,
     module.hcloud_csi.files,

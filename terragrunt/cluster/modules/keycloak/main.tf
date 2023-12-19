@@ -6,7 +6,6 @@ variable "domain" {
 variable "keycloak_version" {
   type        = string
   description = "The keycloak version to use"
-  default     = "master"
 }
 
 variable "default_username" {

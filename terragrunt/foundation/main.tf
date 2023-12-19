@@ -3,12 +3,7 @@ variable "secrets" {
   default = {}
 }
 variable "nodecount" {}
-variable "hcloud_token" {}
-variable "cloudflare_email" {}
-variable "cloudflare_api_token" {}
 variable "domain" {}
-variable "docker_user" {}
-variable "docker_password" {}
 variable "docker_login" {
   type    = bool
   default = false

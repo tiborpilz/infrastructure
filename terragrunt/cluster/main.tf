@@ -3,9 +3,27 @@ variable "secrets" {
   default = {}
 }
 
-variable "metallb_secret" {}
+variable "rke_kubernetes_version" {
+  type        = string
+  description = "The (rke) kubernetes version to use"
+}
+
+variable "keycloak_version" {
+  type        = string
+  description = "The keycloak version to use"
+}
+
+variable "cert_manager_version" {
+  type        = string
+  description = "The cert-manager version to use"
+}
+
+variable "ingress_nginx_version" {
+  type        = string
+  description = "The ingress-nginx version to use"
+}
+
 variable "domain" {}
-variable "hcloud_token" {}
 variable "email" {}
 
 variable "nodes" {
@@ -36,7 +54,7 @@ terraform {
   required_providers {
     rke = {
       source  = "rancher/rke"
-      version = "1.4.1"
+      version = "1.4.3"
     }
   }
 }
