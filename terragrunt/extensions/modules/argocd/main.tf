@@ -86,6 +86,10 @@ resource "local_file" "kube_config" {
 }
 
 resource "null_resource" "apply_manifests" {
+  triggers = {
+    manifests = local_file.manifests.content
+    kube_config = local_file.kube_config.content
+  }
   provisioner "local-exec"  {
     command = "kubectl --kubeconfig ${path.module}/out/kube_config.yaml  apply -f ${path.module}/out/manifests.yaml"
   }
