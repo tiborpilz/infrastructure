@@ -23,7 +23,6 @@ resource "keycloak_generic_protocol_mapper" "argo_groups" {
     "multivalued"                            = "true"
     "userinfo.token.claim"                   = "true"
     "usermodel.clientRoleMapping.clientId"   = "argocd"
-    "usermodel.clientRoleMapping.rolePrefix" = ""
   }
 }
 
@@ -42,7 +41,6 @@ resource "keycloak_openid_client_default_scopes" "argo_default_scopes" {
   default_scopes = [
     "profile",
     "email",
-    "openid",
     "groups",
   ]
 }

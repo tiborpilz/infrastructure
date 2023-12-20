@@ -72,17 +72,17 @@ resource "keycloak_openid_client_scope" "groups" {
   include_in_token_scope = true
 }
 
-resource "keycloak_user_roles" "roles" {
-  for_each = keycloak_user.users
+# resource "keycloak_user_roles" "roles" {
+#   for_each = keycloak_user.users
 
-  realm_id = keycloak_realm.default.id
-  user_id  = each.value.id
+#   realm_id = keycloak_realm.default.id
+#   user_id  = each.value.id
 
-  role_ids = each.value.attributes.is_admin ? [
-    data.keycloak_role.admin.id,
-  ] : []
-  exhaustive = false
-}
+#   role_ids = each.value.attributes.is_admin ? [
+#     data.keycloak_role.admin.id,
+#   ] : []
+#   exhaustive = false
+# }
 
 
 # TODO: also move group creation to module
@@ -128,7 +128,6 @@ resource "keycloak_openid_client_default_scopes" "k8s_default_scopes" {
 
   default_scopes = [
     "roles",
-    "openid",
     "groups",
   ]
 }
