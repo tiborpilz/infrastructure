@@ -8,3 +8,15 @@ patches:
       - op: add
         path: /spec/source/repoURL
         value: https://gitlab.com/tiborpilz/infrastructure.git
+      - op: add
+        path: /spec/syncPolicy
+        value:
+          automated:
+            prune: true
+            selfHeal: true
+            allowEmpty: true
+          syncOptions:
+            - CreateNamespace=true
+            - Validate=false
+            - PrunePropagationPolicy=Foreground
+            - PruneLast=true
