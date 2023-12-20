@@ -94,7 +94,7 @@ init:
     - !reference [.git-crypt, before_script]
   script:
     - !reference [.pre-terragrunt, script]
-    - terragrunt run-all init -input=false -reconfigure -lockfile=readonly
+    - terragrunt run-all init -input=false -reconfigure
 
 validate:
   image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
