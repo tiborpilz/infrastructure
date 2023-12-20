@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sealed-secrets
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: portainer
+    repoURL: https://portainer.github.io/k8s/
+    targetRevision: 1.0.49
+    helm:
+      releaseName: portainer
+      valuesObject:
+        enterpriseEdition:
+          enabled: false
+        service:
+          type: ClusterIP
+        ingress:
+          enabled: true
+          ingressClassName: nginx
+          annotations:
+            kubernetes.io/ingress.class: nginx
+            kubernetes.io/tls-acme: "true"
+            cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+          hosts:
+            - host: portainer.tbr.gg
+              paths:
+                - path: /
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: kubeseal
