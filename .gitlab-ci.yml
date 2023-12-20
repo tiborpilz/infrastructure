@@ -41,6 +41,8 @@ cache:
   before_script:
     - apk add git-crypt
     - echo "$GIT_CRYPT_KEY" | base64 -d > key-file
+    - echo "$GIT_CRYPT_KEY"
+    - echo "$GIT_CRYPT_KEY" | wc
     - git-crypt unlock key-file
 
 # .terragrunt:
