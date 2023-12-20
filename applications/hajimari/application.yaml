@@ -13,6 +13,8 @@ spec:
       releaseName: hajimari
       values: |
         defaultEnable: true
+        namespaceSelector:
+          any: true
         ingress:
           main:
             enabled: true
