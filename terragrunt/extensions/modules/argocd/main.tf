@@ -31,6 +31,10 @@ variable "gitlab_infrastructure_project_id" {
   description = "The id of the infrastructure project in gitlab"
 }
 
+variable "kube_config_yaml" {
+  description = "The kube config yaml to use"
+}
+
 data "gitlab_project" "infrastructure" {
   id = var.gitlab_infrastructure_project_id
 }
@@ -42,66 +46,19 @@ resource "gitlab_project_access_token" "infrastructure_argocd" {
   expires_at = "2024-12-01"
 }
 
-data "kustomization_overlay" "argocd_repo_creds" {
-  namespace = "argocd"
-  common_labels = {
-    "argocd.argoproj.io/secret-type": "repository"
-  }
-
-  secret_generator {
-    name = "${lower(data.gitlab_project.infrastructure.name)}-repo-creds"
-    namespace = helm_release.argocd.namespace
-    behavior = "create"
-    literals = [
-      "type=git",
-      "project=default",
-      "url=${data.gitlab_project.infrastructure.http_url_to_repo}",
-      "username=${data.gitlab_project.infrastructure.name}",
-      "password=${gitlab_project_access_token.infrastructure_argocd.token}",
-    ]
+data "template_file" "repo_creds" {
+  template = file("${path.module}/templates/repo_creds.tpl.yaml")
+  vars = {
+    repo_url = data.gitlab_project.infrastructure.http_url_to_repo
+    username = data.gitlab_project.infrastructure.name
+    password = gitlab_project_access_token.infrastructure_argocd.token
   }
 }
 
-resource "kustomization_resource" "argocd_repo_cred_p0" {
-  for_each = data.kustomization_overlay.argocd_repo_creds.ids_prio[0]
-  manifest = data.kustomization_overlay.argocd_repo_creds.manifests[each.value]
-}
-
-resource "kustomization_resource" "argocd_repo_cred_p1" {
-  for_each = data.kustomization_overlay.argocd_repo_creds.ids_prio[1]
-  manifest = data.kustomization_overlay.argocd_repo_creds.manifests[each.value]
-  depends_on = [kustomization_resource.argocd_repo_cred_p0]
-}
-
-resource "kustomization_resource" "argocd_repo_cred_p2" {
-  for_each = data.kustomization_overlay.argocd_repo_creds.ids_prio[2]
-  manifest = data.kustomization_overlay.argocd_repo_creds.manifests[each.value]
-  depends_on = [kustomization_resource.argocd_repo_cred_p1]
-}
-
-resource "kubernetes_manifest" "app_of_apps" {
-  manifest = {
-    "apiVersion" = "argoproj.io/v1alpha1"
-    "kind"       = "Application"
-    "metadata" = {
-      "name" = "argocd-apps"
-      "namespace" = "argocd"
-    }
-    "spec" = {
-      "project" = "default"
-      "source" = {
-        "repoURL" = data.gitlab_project.infrastructure.http_url_to_repo
-        "targetRevision" = "HEAD"
-        "path" = "applications"
-        "directory" = {
-          "recurse" = false
-        }
-      }
-      "destination" = {
-        "namespace" = "default"
-        "server" = "https://kubernetes.default.svc"
-      }
-    }
+data "template_file" "argocd_apps" {
+  template = file("${path.module}/templates/argocd_apps.tpl.yaml")
+  vars = {
+    repo_url = data.gitlab_project.infrastructure.http_url_to_repo
   }
 }
 
@@ -112,6 +69,25 @@ data "template_file" "argocd_values" {
     issuer_url    = "https://keycloak.${var.domain}/realms/default"
     client_id     = keycloak_openid_client.argocd.client_id
     client_secret = keycloak_openid_client.argocd.client_secret
+  }
+}
+
+resource "local_file" "manifests" {
+  content = join("\n---\n", [
+    data.template_file.repo_creds.rendered,
+    data.template_file.argocd_apps.rendered,
+  ])
+  filename = "${path.module}/out/manifests.yaml"
+}
+
+resource "local_file" "kube_config" {
+  content  = var.kube_config_yaml
+  filename = "${path.module}/out/kube_config.yaml"
+}
+
+resource "null_resource" "apply_manifests" {
+  provisioner "local-exec"  {
+    command = "kubectl --kubeconfig ${path.module}/out/kube_config.yaml  apply -f ${path.module}/out/manifests.yaml"
   }
 }
 

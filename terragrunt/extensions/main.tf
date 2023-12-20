@@ -107,6 +107,7 @@ module "argocd" {
   domain = var.domain
   argocd_version = var.argocd_version
   gitlab_infrastructure_project_id = var.gitlab_infrastructure_project_id
+  kube_config_yaml = var.kube_config_yaml
 }
 
 # TODO: check whether there's an alternative
