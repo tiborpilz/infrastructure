@@ -119,7 +119,7 @@ build:
     - !reference [.pre-terragrunt, script]
     - terragrunt run-all init -input=false -reconfigure
     - terragrunt run-all plan -input=false -out=plan.cache
-    - terragrunt run-all show -json plan.cache | jq -r "${JQ_PLAN}" | jq -s 'map(to_entries) | flatten | group_by(.key) | map({(.[0].key):map(.value) | add}) | add' > "${TF_ROOT}/plan.json"
+    - terragrunt run-all show -json plan.cache | jq -r "${JQ_PLAN}" | jq -s 'map(to_entries) | flatten | group_by(.key) | map({(.[0].key):map(.value) | add}) | add' > plan.json"
   artifacts:
     paths:
       - ${TF_ROOT}/**/plan.cache
