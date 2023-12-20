@@ -17,7 +17,8 @@ spec:
           tls:
             enabled: true
             certSource: secret
-            secretName: harbor-tls
+            secret:
+              secretName: harbor-tls
           ingress:
             annotations:
               kubernetes.io/ingress.class: nginx
