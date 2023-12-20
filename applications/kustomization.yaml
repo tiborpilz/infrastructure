@@ -1,5 +1,5 @@
-resources: []
-  # - scope/application.yaml
+resources:
+  - scope/application.yaml
 
 patches:
   - target:

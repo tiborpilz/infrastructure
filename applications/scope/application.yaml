@@ -5,7 +5,7 @@ metadata:
   namespace: argocd
 spec:
   destination:
-    namespace: scope
+    namespace: weave
     server: 'https://kubernetes.default.svc'
   project: default
   source:
