@@ -27,7 +27,7 @@ spec:
             hosts:
               core: harbor.tbr.gg
               notary: notary.tbr.gg
-          externalURL: https://harbor.tbr.gg
+        externalURL: https://harbor.tbr.gg
   destination:
     server: "https://kubernetes.default.svc"
     namespace: harbor
