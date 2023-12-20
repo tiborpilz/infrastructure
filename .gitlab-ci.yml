@@ -26,7 +26,10 @@ variables:
   TF_STATE_BASE_ADDRESS: $CI_API_V4_URL/projects/$CI_PROJECT_ID/terraform/state
   TF_ROOT: terragrunt
 
-image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
+cache:
+  key: "${TF_ROOT}"
+  paths:
+    - ${TF_ROOT}/**/.terraform
 
 # Source the gitlab-terraform script so that we get the env vars
 .pre-terragrunt:
@@ -74,6 +77,7 @@ prepare:image:
       --destination "${CI_REGISTRY_IMAGE}:${DOCKER_TAG}"
 
 fmt:
+  image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
   extends: .terraform:fmt
   stage: lint
   before_script:
@@ -84,6 +88,7 @@ fmt:
     - terragrunt run-all fmt -check -diff -recursive
 
 init:
+  image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
   stage: init
   before_script:
     - !reference [.git-crypt, before_script]
@@ -92,6 +97,7 @@ init:
     - terragrunt run-all init -input=false -reconfigure -lockfile=readonly
 
 validate:
+  image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
   extends: .terraform:validate
   before_script:
     - !reference [.git-crypt, before_script]
@@ -101,6 +107,7 @@ validate:
     - terragrunt run-all validate
 
 build:
+  image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
   extends: .terraform:build
   before_script:
     - !reference [.git-crypt, before_script]
@@ -115,6 +122,7 @@ build:
       terraform: ${TF_ROOT}/plan.json
 
 create_plan:
+  image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
   stage: visualize
   before_script:
     - !reference [.git-crypt, before_script]
