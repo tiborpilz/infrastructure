@@ -1,6 +1,7 @@
 resources:
   - scope/application.yaml
   - portainer/application.yaml
+  - harbor/application.yaml
 
 patches:
   - target:
