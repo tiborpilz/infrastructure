@@ -11,8 +11,22 @@ spec:
     targetRevision: 1.0.49
     helm:
       releaseName: portainer
-      valueFiles:
-        - values.yaml
+      values: |
+        enterpriseEdition:
+          enabled: false
+        service:
+          type: ClusterIP
+        ingress:
+          enabled: true
+          ingressClassName: nginx
+          annotations:
+            kubernetes.io/ingress.class: nginx
+            kubernetes.io/tls-acme: "true"
+            cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+          hosts:
+            - host: portainer.tbr.gg
+              paths:
+                - path: /
   destination:
     server: "https://kubernetes.default.svc"
     namespace: portainer
