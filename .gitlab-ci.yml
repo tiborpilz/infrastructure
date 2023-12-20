@@ -62,8 +62,6 @@ prepare:image:
         DOCKER_TAG: $CI_COMMIT_REF_SLUG
     # If we're on our main branch, tag with "latest"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      changes:
-        - .gitlab/ci/Dockerfile
       variables:
         DOCKER_TAG: latest
   before_script:
