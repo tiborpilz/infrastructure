@@ -11,11 +11,11 @@ metadata:
     acme.cert-manager.io/http01-edit-in-place: "true"
     nginx.ingress.kubernetes.io/configuration-snippet: |
       proxy_set_header Authorization $http_authorization;
-  name: weave
-  namespace: weave
+  name: scope
+  namespace: scope
 spec:
   rules:
-    - host: weave.tbr.gg
+    - host: scope.tbr.gg
       http:
         paths:
           - backend:
@@ -27,5 +27,5 @@ spec:
             pathType: ImplementationSpecific
   tls:
     - hosts:
-        - weave.tbr.gg
-      secretName: weave-tls
+        - scope.tbr.gg
+      secretName: scope-tls
