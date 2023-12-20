@@ -95,6 +95,9 @@ init:
   script:
     - !reference [.pre-terragrunt, script]
     - terragrunt run-all init -input=false -reconfigure
+  artifacts:
+    paths:
+      - ${TF_ROOT}/**/.terraform
 
 validate:
   image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
@@ -121,31 +124,30 @@ build:
     reports:
       terraform: ${TF_ROOT}/plan.json
 
-create_plan:
-  image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
-  stage: visualize
-  before_script:
-    - !reference [.git-crypt, before_script]
-  script:
-    - cd foundation
-    - terragrunt init
-    - terragrunt plan -out=plan.out
-    - terragrunt show -json plan.out > plan.json
-  artifacts:
-    paths:
-      - foundation/plan.json
+# create_plan:
+#   image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
+#   stage: visualize
+#   before_script:
+#     - !reference [.git-crypt, before_script]
+#   script:
+#     - cd foundation
+#     - terragrunt plan -out=plan.out
+#     - terragrunt show -json plan.out > plan.json
+#   artifacts:
+#     paths:
+#       - foundation/plan.json
 
-visualize_plan:
-  stage: visualize
-  dependencies: [create_plan]
-  extends: .git-crypt
-  image: node
-  before_script:
-    - !reference [.git-crypt, before_script]
-  script:
-    - cd foundation
-    - npx -y @terraform-visual/cli --plan plan.json
-  artifacts:
-    expose_as: "foundation report"
-    paths:
-      - foundation/terraform-visual-report
+# visualize_plan:
+#   stage: visualize
+#   dependencies: [create_plan]
+#   extends: .git-crypt
+#   image: node
+#   before_script:
+#     - !reference [.git-crypt, before_script]
+#   script:
+#     - cd foundation
+#     - npx -y @terraform-visual/cli --plan plan.json
+#   artifacts:
+#     expose_as: "foundation report"
+#     paths:
+#       - foundation/terraform-visual-report
