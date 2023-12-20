@@ -109,13 +109,3 @@ module "argocd" {
   gitlab_infrastructure_project_id = var.gitlab_infrastructure_project_id
   kube_config_yaml = var.kube_config_yaml
 }
-
-# TODO: check whether there's an alternative
-# module "rancher" {
-#   source = "./modules/rancher"
-#   domain = var.domain
-#   rancher_version = var.rancher_version
-#   email = var.email
-#   rancher_initial_password = var.secrets.rancher_initial_password
-#   keycloak_realm = module.keycloak.realm
-# }
