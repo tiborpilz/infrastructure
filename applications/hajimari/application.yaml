@@ -8,7 +8,7 @@ spec:
   source:
     chart: hajimari
     repoURL: https://hajimari.io
-    targetRevision: 2.02
+    targetRevision: 2.0.2
     helm:
       releaseName: hajimari
       values: |
