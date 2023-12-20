@@ -12,9 +12,11 @@ spec:
     helm:
       releaseName: hajimari
       values: |
-        defaultEnable: true
-        namespaceSelector:
-          any: true
+        hajimari:
+          defaultEnable: true
+          namespaceSelector:
+            any: true
+          title: Hajimari
         ingress:
           main:
             enabled: true
