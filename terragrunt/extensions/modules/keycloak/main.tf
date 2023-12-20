@@ -1,8 +1,31 @@
-provider "keycloak" {
-  client_id = "admin-cli"
-  username  = "admin"
-  password  = var.secrets.keycloak_admin_password
-  url       = "https://keycloak.${var.domain}/"
+terraform {
+  required_providers {
+    keycloak = {
+      source  = "mrparkers/keycloak"
+      version = "4.1.0"
+    }
+  }
+}
+
+variable "admin_password" {
+  type        = string
+  description = "The admin password to use for keycloak"
+}
+
+variable "domain" {
+  type        = string
+  description = "The domain to use"
+}
+
+variable "users" {
+  type = map(object({
+    username = string
+    password = string
+    email    = string
+    is_admin = bool
+    first_name = string
+    last_name = string
+  }))
 }
 
 resource "keycloak_realm" "default" {
@@ -10,20 +33,26 @@ resource "keycloak_realm" "default" {
   enabled = true
 }
 
+
 # TODO: Move user creation to module
-resource "keycloak_user" "tibor" {
+resource "keycloak_user" "users" {
+  for_each = var.users
   realm_id = keycloak_realm.default.id
-  username = "tibor"
+  username = each.value.username
   enabled  = true
 
-  email          = "tibor@pilz.berlin"
+  email          = each.value.email
   email_verified = true
 
-  first_name = "Tibor"
-  last_name  = "Pilz"
+  first_name = each.value.first_name
+  last_name  = each.value.last_name
 
   initial_password {
-    value = "testpw12345"
+    value = each.value.password
+  }
+
+  attributes = {
+    "is_admin" = each.value.is_admin
   }
 }
 
@@ -36,13 +65,22 @@ data "keycloak_role" "admin" {
   name     = "admin"
 }
 
-resource "keycloak_user_roles" "tibor_roles" {
-  realm_id = keycloak_realm.default.id
-  user_id  = keycloak_user.tibor.id
+resource "keycloak_openid_client_scope" "groups" {
+  realm_id               = keycloak_realm.default.id
+  name                   = "groups"
+  description            = "When requested, this scope will add the groups claim to the token"
+  include_in_token_scope = true
+}
 
-  role_ids = [
+resource "keycloak_user_roles" "roles" {
+  for_each = keycloak_user.users
+
+  realm_id = keycloak_realm.default.id
+  user_id  = each.value.id
+
+  role_ids = each.value.attributes.is_admin ? [
     data.keycloak_role.admin.id,
-  ]
+  ] : []
   exhaustive = false
 }
 
@@ -53,11 +91,16 @@ resource "keycloak_group" "admin" {
   name     = "admin"
 }
 
+locals {
+  # admin_users = [ for user in keycloak_user.users : user if user.attributes.is_admin ]
+  admin_users = { for user in keycloak_user.users : user.username => user if user.attributes.is_admin }
+}
+
 resource "keycloak_group_memberships" "admin_membership" {
   realm_id = keycloak_realm.default.id
   group_id = keycloak_group.admin.id
   members = [
-    keycloak_user.tibor.username,
+    for user in local.admin_users : user.username
   ]
 }
 
@@ -108,6 +151,30 @@ resource "keycloak_generic_protocol_mapper" "k8s_groups" {
   }
 }
 
+
+resource "kubernetes_cluster_role_binding" "oidc-cluster-admin" {
+  for_each = local.admin_users
+  metadata {
+    name = "oidc-cluster-admin"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "cluster-admin"
+  }
+
+  subject {
+    kind      = "User"
+    name      = "https://keycloak.${var.domain}/realms/default#${each.value.username}"
+    api_group = "rbac.authorization.k8s.io"
+  }
+}
+
+output "realm" {
+  value = keycloak_realm.default
+}
+
 #       "client" = {
 #         "clientId" = "kubernetes"
 #         "protocol" = "openid-connect"
@@ -136,21 +203,3 @@ resource "keycloak_generic_protocol_mapper" "k8s_groups" {
 #           "http://localhost:18000",
 #         ]
 #         "standardFlowEnabled" = true
-
-resource "kubernetes_cluster_role_binding" "oidc-cluster-admin" {
-  metadata {
-    name = "oidc-cluster-admin"
-  }
-
-  role_ref {
-    api_group = "rbac.authorization.k8s.io"
-    kind      = "ClusterRole"
-    name      = "cluster-admin"
-  }
-
-  subject {
-    kind      = "User"
-    name      = "https://keycloak.${var.domain}/realms/default#${keycloak_user.tibor.id}"
-    api_group = "rbac.authorization.k8s.io"
-  }
-}

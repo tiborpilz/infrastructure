@@ -23,6 +23,17 @@ variable "argocd_version" {
   description = "The argocd (helm chart) version to use"
 }
 
+variable "users" {
+  type = map(object({
+    username = string
+    password = string
+    email    = string
+    is_admin = bool
+    first_name = string
+    last_name = string
+  }))
+}
+
 terraform {
   required_providers {
     gitlab = {
@@ -70,3 +81,34 @@ provider "kustomization" {
 provider "gitlab" {
   token = var.secrets.gitlab_token
 }
+
+provider "keycloak" {
+  client_id = "admin-cli"
+  username  = "admin"
+  password  = var.secrets.keycloak_admin_password
+  url       = "https://keycloak.${var.domain}/"
+}
+
+module "keycloak" {
+  source           = "./modules/keycloak"
+  domain           = var.domain
+  admin_password   = var.secrets.keycloak_admin_password
+  users            = var.users
+}
+
+module "argocd" {
+  source = "./modules/argocd"
+  keycloak_realm = module.keycloak.realm
+  domain = var.domain
+  argocd_version = var.argocd_version
+}
+
+# TODO: check whether there's an alternative
+# module "rancher" {
+#   source = "./modules/rancher"
+#   domain = var.domain
+#   rancher_version = var.rancher_version
+#   email = var.email
+#   rancher_initial_password = var.secrets.rancher_initial_password
+#   keycloak_realm = module.keycloak.realm
+# }

@@ -1,3 +1,40 @@
+terraform {
+  required_providers {
+    rancher2 = {
+      source  = "rancher/rancher2"
+      version = "3.0.0"
+    }
+    keycloak = {
+      source  = "mrparkers/keycloak"
+      version = "4.1.0"
+    }
+  }
+}
+
+variable rancher_version {
+  type        = string
+  description = "The rancher (helm chart) version to use"
+}
+
+variable rancher_initial_password {
+  type        = string
+  description = "The initial password to use for rancher"
+}
+
+variable email {
+  type        = string
+  description = "The email address to use for the certificate"
+}
+
+variable domain {
+  type        = string
+  description = "The domain to use"
+}
+
+variable keycloak_realm {
+  description = "The Keycloak realm to use"
+}
+
 resource "helm_release" "rancher" {
   name             = "rancher"
   repository       = "https://releases.rancher.com/server-charts/latest"
@@ -21,7 +58,7 @@ resource "helm_release" "rancher" {
         class = "nginx"
       }
     }
-    bootstrapPassword = var.secrets.rancher_initial_password
+    bootstrapPassword = var.rancher_initial_password
   })]
 
   provisioner "local-exec" {
@@ -38,8 +75,8 @@ provider "rancher2" {
 
 resource "rancher2_bootstrap" "admin" {
   provider         = rancher2.bootstrap
-  initial_password = var.secrets.rancher_initial_password
-  password         = var.secrets.rancher_initial_password
+  initial_password = var.rancher_initial_password
+  password         = var.rancher_initial_password
   telemetry        = false
 }
 
@@ -59,7 +96,7 @@ resource "tls_private_key" "rancher" {
 }
 
 resource "keycloak_openid_client" "rancher_oidc" {
-  realm_id  = keycloak_realm.default.id
+  realm_id  = var.keycloak_realm.id
   client_id = "rancher"
   name      = "rancher"
 
@@ -69,12 +106,12 @@ resource "keycloak_openid_client" "rancher_oidc" {
 }
 
 resource "keycloak_openid_client_scope" "rancher_oidc" {
-  realm_id = keycloak_realm.default.id
+  realm_id = var.keycloak_realm.id
   name     = "rancher"
 }
 
 resource "keycloak_openid_client_default_scopes" "client_default_scopes" {
-  realm_id  = keycloak_realm.default.id
+  realm_id  = var.keycloak_realm.id
   client_id = keycloak_openid_client.rancher_oidc.id
 
   default_scopes = [
@@ -87,7 +124,7 @@ resource "keycloak_openid_client_default_scopes" "client_default_scopes" {
 }
 
 resource "keycloak_openid_group_membership_protocol_mapper" "rancher_group_mapper" {
-  realm_id  = keycloak_realm.default.id
+  realm_id  = var.keycloak_realm.id
   client_id = keycloak_openid_client.rancher_oidc.id
 
   name       = "Groups Mapper"
@@ -99,7 +136,7 @@ resource "keycloak_openid_group_membership_protocol_mapper" "rancher_group_mappe
 }
 
 resource "keycloak_openid_audience_protocol_mapper" "rancher_audience_mapper" {
-  realm_id  = keycloak_realm.default.id
+  realm_id  = var.keycloak_realm.id
   client_id = keycloak_openid_client.rancher_oidc.id
   name      = "Client Audience"
 
@@ -108,7 +145,7 @@ resource "keycloak_openid_audience_protocol_mapper" "rancher_audience_mapper" {
 }
 
 resource "keycloak_openid_group_membership_protocol_mapper" "rancher_group_path_mapper" {
-  realm_id  = keycloak_realm.default.id
+  realm_id  = var.keycloak_realm.id
   client_id = keycloak_openid_client.rancher_oidc.id
 
   name       = "Group Path"
@@ -119,7 +156,7 @@ resource "keycloak_openid_group_membership_protocol_mapper" "rancher_group_path_
 }
 
 data "http" "keycloak_saml" {
-  url = "https://keycloak.${var.domain}/realms/${keycloak_realm.default.realm}/protocol/saml/descriptor"
+  url = "https://keycloak.${var.domain}/realms/${var.keycloak_realm.realm}/protocol/saml/descriptor"
 }
 
 resource "rancher2_token" "auth" {
@@ -130,14 +167,14 @@ resource "rancher2_token" "auth" {
 locals {
   rancher_configuration_data = {
     accessMode         = "unrestricted"
-    authEndpoint       = "https://keycloak.${var.domain}/realms/${keycloak_realm.default.realm}/protocol/openid-connect/auth"
+    authEndpoint       = "https://keycloak.${var.domain}/realms/${var.keycloak_realm.realm}/protocol/openid-connect/auth"
     clientId           = keycloak_openid_client.rancher_oidc.client_id
     clientSecret       = keycloak_openid_client.rancher_oidc.client_secret
     created            = timestamp()
     creatorId          = null
     enabled            = true
     groupSearchEnabled = null
-    issuer             = "https://keycloak.${var.domain}/realms/${keycloak_realm.default.realm}"
+    issuer             = "https://keycloak.${var.domain}/realms/${var.keycloak_realm.realm}"
     labels = {
       "cattle.io/creator" = "norman"
     }
@@ -211,7 +248,7 @@ resource "rancher2_global_role" "admin" {
 # This should work, but is currently broken in newer versions: https://github.com/mrparkers/terraform-provider-keycloak/issues/820
 #
 # data "keycloak_saml_client_installation_provider" "rancher_saml_idp_descriptor" {
-#   realm_id    = keycloak_realm.default.id
+#   realm_id    = var.keycloak_realm.id
 #   client_id   = keycloak_saml_client.rancher.id
 #   provider_id = "saml-idp-descriptor"
 # }

@@ -20,11 +20,13 @@ spec:
       name: keycloak-db-secret
       key: password
   http:
-    httpEnabled: true
+    httpEnabled: false
     httpPort: 8180
   hostname:
-    strict: false
+    hostname: "keycloak.${domain}"
+    strict: true
     strictBackchannel: false
+
 ---
 apiVersion: v1
 kind: Secret

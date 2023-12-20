@@ -1,5 +1,26 @@
+terraform {
+  required_providers {
+    keycloak = {
+      source  = "mrparkers/keycloak"
+      version = "4.1.0"
+    }
+  }
+}
+
+variable "argocd_version" {
+  description = "The argocd (helm chart) version to use"
+}
+
+variable "keycloak_realm" {
+  description = "The Keycloak realm id to use"
+}
+
+variable "domain" {
+  description = "The domain to use"
+}
+
 resource "keycloak_openid_client" "argocd" {
-  realm_id              = keycloak_realm.default.id
+  realm_id              = var.keycloak_realm.id
   client_id             = "argocd"
   name                  = "ArgoCD"
   access_type           = "CONFIDENTIAL"
@@ -10,7 +31,7 @@ resource "keycloak_openid_client" "argocd" {
 }
 
 resource "keycloak_generic_protocol_mapper" "argo_groups" {
-  realm_id        = keycloak_realm.default.id
+  realm_id        = var.keycloak_realm.id
   client_id       = keycloak_openid_client.argocd.id
   name            = "groups"
   protocol        = "openid-connect"
@@ -28,21 +49,15 @@ resource "keycloak_generic_protocol_mapper" "argo_groups" {
 }
 
 resource "keycloak_openid_group_membership_protocol_mapper" "argo_group_membership" {
-  realm_id        = keycloak_realm.default.id
+  realm_id        = var.keycloak_realm.id
   client_id       = keycloak_openid_client.argocd.id
   name            = "group-membership"
   claim_name      = "groups"
-}
-
-resource "keycloak_openid_client_scope" "groups" {
-  realm_id               = keycloak_realm.default.id
-  name                   = "groups"
-  description            = "When requested, this scope will add the groups claim to the token"
-  include_in_token_scope = true
+  full_path       = false
 }
 
 resource "keycloak_openid_client_default_scopes" "argo_default_scopes" {
-  realm_id  = keycloak_realm.default.id
+  realm_id  = var.keycloak_realm.id
   client_id = keycloak_openid_client.argocd.id
 
   default_scopes = [
@@ -50,7 +65,6 @@ resource "keycloak_openid_client_default_scopes" "argo_default_scopes" {
     "email",
     "openid",
     "groups",
-    keycloak_openid_client_scope.groups.name,
   ]
 }
 
@@ -87,28 +101,28 @@ resource "helm_release" "argocd" {
   values = [data.template_file.argocd_values.rendered]
 }
 
-resource "kubernetes_manifest" "argocd_app_of_apps" {
-  depends_on = [
-    helm_release.argocd,
-  ]
-  manifest = {
-    "apiVersion" = "argoproj.io/v1alpha1"
-    "kind"       = "Application"
-    "metadata" = {
-      "name" = "argocd-apps"
-      "namespace" = "argocd"
-    }
-    "spec" = {
-      "project" = "default"
-      "source" = {
-        "repoURL" = "https://gitlab.com/tiborpilz/infrastructure" # TODO: parameterize
-        "targetRevision" = "main"
-        "path" = "applications"
-      }
-      "destination" = {
-        "namespace" = "argocd"
-        "server" = "https://kubernetes.default.svc"
-      }
-    }
-  }
-}
+# resource "kubernetes_manifest" "argocd_app_of_apps" {
+#   depends_on = [
+#     helm_release.argocd,
+#   ]
+#   manifest = {
+#     "apiVersion" = "argoproj.io/v1alpha1"
+#     "kind"       = "Application"
+#     "metadata" = {
+#       "name" = "argocd-apps"
+#       "namespace" = "argocd"
+#     }
+#     "spec" = {
+#       "project" = "default"
+#       "source" = {
+#         "repoURL" = "https://gitlab.com/tiborpilz/infrastructure" # TODO: parameterize
+#         "targetRevision" = "main"
+#         "path" = "applications"
+#       }
+#       "destination" = {
+#         "namespace" = "argocd"
+#         "server" = "https://kubernetes.default.svc"
+#       }
+#     }
+#   }
+# }
