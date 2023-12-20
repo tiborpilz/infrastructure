@@ -31,3 +31,5 @@ spec:
   destination:
     server: "https://kubernetes.default.svc"
     namespace: harbor
+
+# TODO: set up with terraform https://registry.terraform.io/providers/goharbor/harbor/latest/docs/resources/configuration
