@@ -1,5 +1,5 @@
 resources:
-  - scope/application.yaml
+  # - scope/application.yaml
   - portainer/application.yaml
   - harbor/application.yaml
   - hajimari/application.yaml
