@@ -4,6 +4,14 @@ terraform {
       source  = "mrparkers/keycloak"
       version = "4.1.0"
     }
+    gitlab = {
+      source = "gitlabhq/gitlab"
+      version = "16.6.0"
+    }
+    kustomization = {
+      source  = "kbst/kustomization"
+      version = "0.9.5"
+    }
   }
 }
 
@@ -19,53 +27,55 @@ variable "domain" {
   description = "The domain to use"
 }
 
-resource "keycloak_openid_client" "argocd" {
-  realm_id              = var.keycloak_realm.id
-  client_id             = "argocd"
-  name                  = "ArgoCD"
-  access_type           = "CONFIDENTIAL"
-  standard_flow_enabled = true
-  valid_redirect_uris = [
-    "https://argocd.${var.domain}/*"
-  ]
+variable "gitlab_infrastructure_project_id" {
+  description = "The id of the infrastructure project in gitlab"
 }
 
-resource "keycloak_generic_protocol_mapper" "argo_groups" {
-  realm_id        = var.keycloak_realm.id
-  client_id       = keycloak_openid_client.argocd.id
-  name            = "groups"
-  protocol        = "openid-connect"
-  protocol_mapper = "oidc-usermodel-client-role-mapper"
-  config = {
-    "access.token.claim"                     = "true"
-    "claim.name"                             = "groups"
-    "full.path"                              = "true"
-    "id.token.claim"                         = "true"
-    "multivalued"                            = "true"
-    "userinfo.token.claim"                   = "true"
-    "usermodel.clientRoleMapping.clientId"   = "argocd"
-    "usermodel.clientRoleMapping.rolePrefix" = ""
+data "gitlab_project" "infrastructure" {
+  id = var.gitlab_infrastructure_project_id
+}
+
+resource "gitlab_project_access_token" "infrastructure_argocd" {
+  project = data.gitlab_project.infrastructure.id
+  name = "argocd"
+  scopes = ["read_repository"]
+  expires_at = "2024-12-01"
+}
+
+data "kustomization_overlay" "argocd_repo_creds" {
+  namespace = "argocd"
+  common_labels = {
+    "argocd.argoproj.io/secret-type": "repository"
+  }
+  secret_generator {
+    name = "${lower(data.gitlab_project.infrastructure.name)}-repo-creds"
+    namespace = helm_release.argocd.namespace
+    behavior = "create"
+    literals = [
+      "type=git",
+      "project=default",
+      "url=${data.gitlab_project.infrastructure.http_url_to_repo}",
+      "username=${data.gitlab_project.infrastructure.name}",
+      "password=${gitlab_project_access_token.infrastructure_argocd.token}",
+    ]
   }
 }
 
-resource "keycloak_openid_group_membership_protocol_mapper" "argo_group_membership" {
-  realm_id        = var.keycloak_realm.id
-  client_id       = keycloak_openid_client.argocd.id
-  name            = "group-membership"
-  claim_name      = "groups"
-  full_path       = false
+resource "kustomization_resource" "argocd_repo_cred_p0" {
+  for_each = data.kustomization_overlay.argocd_repo_creds.ids_prio[0]
+  manifest = data.kustomization_overlay.argocd_repo_creds.manifests[each.value]
 }
 
-resource "keycloak_openid_client_default_scopes" "argo_default_scopes" {
-  realm_id  = var.keycloak_realm.id
-  client_id = keycloak_openid_client.argocd.id
+resource "kustomization_resource" "argocd_repo_cred_p1" {
+  for_each = data.kustomization_overlay.argocd_repo_creds.ids_prio[1]
+  manifest = data.kustomization_overlay.argocd_repo_creds.manifests[each.value]
+  depends_on = [kustomization_resource.argocd_repo_cred_p0]
+}
 
-  default_scopes = [
-    "profile",
-    "email",
-    "openid",
-    "groups",
-  ]
+resource "kustomization_resource" "argocd_repo_cred_p2" {
+  for_each = data.kustomization_overlay.argocd_repo_creds.ids_prio[2]
+  manifest = data.kustomization_overlay.argocd_repo_creds.manifests[each.value]
+  depends_on = [kustomization_resource.argocd_repo_cred_p1]
 }
 
 data "template_file" "argocd_values" {
