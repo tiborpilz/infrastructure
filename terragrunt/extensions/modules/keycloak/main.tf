@@ -19,12 +19,12 @@ variable "domain" {
 
 variable "users" {
   type = map(object({
-    username = string
-    password = string
-    email    = string
-    is_admin = bool
+    username   = string
+    password   = string
+    email      = string
+    is_admin   = bool
     first_name = string
-    last_name = string
+    last_name  = string
   }))
 }
 

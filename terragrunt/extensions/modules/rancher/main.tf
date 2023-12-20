@@ -11,27 +11,27 @@ terraform {
   }
 }
 
-variable rancher_version {
+variable "rancher_version" {
   type        = string
   description = "The rancher (helm chart) version to use"
 }
 
-variable rancher_initial_password {
+variable "rancher_initial_password" {
   type        = string
   description = "The initial password to use for rancher"
 }
 
-variable email {
+variable "email" {
   type        = string
   description = "The email address to use for the certificate"
 }
 
-variable domain {
+variable "domain" {
   type        = string
   description = "The domain to use"
 }
 
-variable keycloak_realm {
+variable "keycloak_realm" {
   description = "The Keycloak realm to use"
 }
 

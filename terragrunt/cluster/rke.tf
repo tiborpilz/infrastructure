@@ -31,10 +31,10 @@ resource "rke_cluster" "cluster" {
   dynamic "nodes" {
     for_each = var.nodes
     content {
-      address        = nodes.value.ipv4_address
-      user           = "root"
-      role           = nodes.value.role
-      ssh_key        = var.ssh_key.private_key_pem
+      address = nodes.value.ipv4_address
+      user    = "root"
+      role    = nodes.value.role
+      ssh_key = var.ssh_key.private_key_pem
     }
   }
   kubernetes_version = var.rke_kubernetes_version
@@ -44,8 +44,8 @@ resource "rke_cluster" "cluster" {
   ingress {
     provider = "none"
     # These values are not used, but if they're missing terraform will try to re-create the cluster on every apply
-    http_port = 80
-    https_port = 443
+    http_port    = 80
+    https_port   = 443
     network_mode = "hostPort"
   }
   addons_include = concat(

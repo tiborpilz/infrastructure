@@ -1,22 +1,22 @@
 locals {
-  email             = "tibor@pilz.berlin"
-  domain            = "tbr.gg"
+  email                            = "tibor@pilz.berlin"
+  domain                           = "tbr.gg"
   gitlab_infrastructure_project_id = "53191844"
-  secrets           = yamldecode(file("${get_parent_terragrunt_dir()}/secrets.yaml"))
+  secrets                          = yamldecode(file("${get_parent_terragrunt_dir()}/secrets.yaml"))
 }
 
 inputs = {
-  email             = local.email
-  domain            = local.domain
+  email                            = local.email
+  domain                           = local.domain
   gitlab_infrastructure_project_id = local.gitlab_infrastructure_project_id
-  secrets           = local.secrets
+  secrets                          = local.secrets
 }
 
 retryable_errors = [
   "(?s).*error initializing keycloak provider*" # sometimes we need to wait for the certificates to be ready
 ]
 
-retry_max_attempts = 5
+retry_max_attempts       = 5
 retry_sleep_interval_sec = 10
 
 generate "backend" {
