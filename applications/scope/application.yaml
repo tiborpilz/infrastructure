@@ -10,3 +10,4 @@ spec:
   project: default
   source:
     path: applications/scope
+    repoURL: https://gitlab.com/tiborpilz/infrastructure.git
