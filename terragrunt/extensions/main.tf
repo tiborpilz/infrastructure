@@ -34,14 +34,19 @@ variable "users" {
   }))
 }
 
+variable gitlab_infrastructure_project_id {
+  description = "The id of the infrastructure project in gitlab"
+}
+
 terraform {
   required_providers {
     gitlab = {
       source = "gitlabhq/gitlab"
+      version = "16.6.0"
     }
     kustomization = {
       source  = "kbst/kustomization"
-      version = "0.9.0"
+      version = "0.9.5"
     }
     argocd = {
       source = "oboukili/argocd"
@@ -101,6 +106,7 @@ module "argocd" {
   keycloak_realm = module.keycloak.realm
   domain = var.domain
   argocd_version = var.argocd_version
+  gitlab_infrastructure_project_id = var.gitlab_infrastructure_project_id
 }
 
 # TODO: check whether there's an alternative

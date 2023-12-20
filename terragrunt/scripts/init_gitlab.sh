@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 GIT_ROOT=$(git rev-parse --show-toplevel)
 
 if [ -z "$GITLAB_TOKEN" ]; then
@@ -32,7 +31,8 @@ if [ -z "$PROJECT_PATH" ]; then
 fi
 
 # Use curl to get the project ID from GitLab API
-PROJECT_ID=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://gitlab.com/api/v4/projects/${PROJECT_PATH//\//%2F}" | jq -r '.id')
+PROJECT_DATA=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://gitlab.com/api/v4/projects/${PROJECT_PATH//\//%2F}")
+PROJECT_ID=$(echo $PROJECT_DATA | jq -r '.id')
 
 
 # Ensure that the project ID is retrieved
@@ -52,7 +52,7 @@ for project in foundation extensions cluster; do
     # Run terraform init with the derived values
     cd "$GIT_ROOT/terragrunt/$project"
     terraform init \
-        -migrate-state \
+        -reconfigure \
         -backend-config="address=https://gitlab.com/api/v4/projects/$PROJECT_ID/terraform/state/$project" \
         -backend-config="lock_address=https://gitlab.com/api/v4/projects/$PROJECT_ID/terraform/state/$project/lock" \
         -backend-config="unlock_address=https://gitlab.com/api/v4/projects/$PROJECT_ID/terraform/state/$project/lock" \

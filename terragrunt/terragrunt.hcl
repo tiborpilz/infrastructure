@@ -1,7 +1,7 @@
 locals {
   email             = "tibor@pilz.berlin"
   domain            = "tbr.gg"
-  gitlab_infrastructure_project_id = "39364777"
+  gitlab_infrastructure_project_id = "53191844"
   secrets           = yamldecode(file("${get_parent_terragrunt_dir()}/secrets.yaml"))
 }
 
