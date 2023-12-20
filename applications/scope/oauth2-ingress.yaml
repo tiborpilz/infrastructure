@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+  name: oauth2-ingress
+  namespace: weave
+spec:
+  rules:
+    - host: scope.tbr.gg
+      http:
+        paths:
+          - path: /oauth2
+            pathType: Prefix
+            backend:
+              service:
+                name: oauth2-proxy-bridge
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - scope.tbr.gg
+      secretName: scope-tls
