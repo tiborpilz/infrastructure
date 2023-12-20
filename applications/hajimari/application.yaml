@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hajimari
+  namespace: hajimari
+spec:
+  project: default
+  source:
+    chart: hajimari
+    repoURL: https://hajimari.io
+    targetRevision: 2.02
+    helm:
+      releaseName: hajimari
+      values: |
+        defaultEnable: true
+        ingress:
+          main:
+            enabled: true
+            annotations:
+              kubernetes.io/ingress.class: nginx
+              kubernetes.io/tls-acme: "true"
+              cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+            hosts:
+              - host: hajimari.tbr.gg
+                paths:
+                  - path: /
+                    pathType: Prefix
+            tls:
+              - hosts:
+                  - hajimari.tbr.gg
+                secretName: hajimari-tls
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: hajimari
