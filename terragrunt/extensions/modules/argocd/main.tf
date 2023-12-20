@@ -47,6 +47,7 @@ data "kustomization_overlay" "argocd_repo_creds" {
   common_labels = {
     "argocd.argoproj.io/secret-type": "repository"
   }
+
   secret_generator {
     name = "${lower(data.gitlab_project.infrastructure.name)}-repo-creds"
     namespace = helm_release.argocd.namespace
@@ -76,6 +77,32 @@ resource "kustomization_resource" "argocd_repo_cred_p2" {
   for_each = data.kustomization_overlay.argocd_repo_creds.ids_prio[2]
   manifest = data.kustomization_overlay.argocd_repo_creds.manifests[each.value]
   depends_on = [kustomization_resource.argocd_repo_cred_p1]
+}
+
+resource "kubernetes_manifest" "app_of_apps" {
+  manifest = {
+    "apiVersion" = "argoproj.io/v1alpha1"
+    "kind"       = "Application"
+    "metadata" = {
+      "name" = "argocd-apps"
+      "namespace" = "argocd"
+    }
+    "spec" = {
+      "project" = "default"
+      "source" = {
+        "repoURL" = data.gitlab_project.infrastructure.http_url_to_repo
+        "targetRevision" = "HEAD"
+        "path" = "applications"
+        "directory" = {
+          "recurse" = false
+        }
+      }
+      "destination" = {
+        "namespace" = "default"
+        "server" = "https://kubernetes.default.svc"
+      }
+    }
+  }
 }
 
 data "template_file" "argocd_values" {
