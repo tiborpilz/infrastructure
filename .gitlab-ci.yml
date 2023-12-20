@@ -1,5 +1,5 @@
 include:
-  - template: Terraform/Base.latest.gitlab-ci.yml
+  - template: Terraform/Base.gitlab-ci.yml
 
 workflow:
   rules:
@@ -27,11 +27,6 @@ variables:
   TF_ROOT: terragrunt
 
 image: ${CI_REGISTRY_IMAGE}:${IMAGE_TAG}
-
-cache:
-  key: "${TF_ROOT}"
-  paths:
-    - ${TF_ROOT}/**/.terraform
 
 # Source the gitlab-terraform script so that we get the env vars
 .pre-terragrunt:
