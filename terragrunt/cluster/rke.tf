@@ -27,6 +27,17 @@ module "ingress_nginx" {
   ingress_nginx_version = var.ingress_nginx_version
 }
 
+data "gitlab_project" "infrastructure" {
+  id = var.gitlab_infrastructure_project_id
+}
+
+resource "gitlab_project_access_token" "registry_rke" {
+  project    = data.gitlab_project.infrastructure.id
+  name       = "rke"
+  scopes     = ["read_registry", "write_registry"]
+  expires_at = "2024-12-01"
+}
+
 resource "rke_cluster" "cluster" {
   dynamic "nodes" {
     for_each = var.nodes
@@ -76,6 +87,18 @@ resource "rke_cluster" "cluster" {
   }
   enable_cri_dockerd    = true
   ignore_docker_version = true
+
+  private_registries {
+     url = "harbor.tbr.gg"
+     password = "FGuBMgYQHWbJtFLOIu1uwD3LfYEPEpDR"
+     user = "robot$kubernetes"
+  }
+
+  private_registries {
+    url = "gitlab.com"
+    password = gitlab_project_access_token.registry_rke.token
+    user = data.gitlab_project.infrastructure.name
+  }
 
   provisioner "local-exec" {
     command    = "while true; do curl -k 'https://keycloak.${var.domain}' && break || sleep 3; done"

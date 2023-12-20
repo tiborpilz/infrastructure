@@ -24,9 +24,11 @@ spec:
     httpPort: 8180
   hostname:
     hostname: "keycloak.${domain}"
-    strict: false
+    strict: true
     strictBackchannel: false
-
+  additionalOptions:
+    - name: proxy
+      value: edge
 ---
 apiVersion: v1
 kind: Secret
