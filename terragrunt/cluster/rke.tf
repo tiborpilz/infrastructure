@@ -33,13 +33,13 @@ resource "rke_cluster" "cluster" {
     content {
       address        = nodes.value.ipv4_address
       user           = "root"
-      role           = ["etcd", "worker", "controlplane"]
+      role           = nodes.value.role
       ssh_key        = var.ssh_key.private_key_pem
     }
   }
   kubernetes_version = var.rke_kubernetes_version
   network {
-    plugin = "weave"
+    plugin = "canal"
   }
   ingress {
     provider = "none"
@@ -68,7 +68,7 @@ resource "rke_cluster" "cluster" {
     max_unavailable_worker       = "100%"
     max_unavailable_controlplane = "100%"
     drain_input {
-      delete_local_data  = true
+      delete_local_data  = false
       force              = true
       ignore_daemon_sets = true
       timeout            = 120

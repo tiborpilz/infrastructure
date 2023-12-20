@@ -8,12 +8,11 @@ resource "hcloud_ssh_key" "terraform" {
 }
 
 resource "hcloud_server" "nodes" {
-  for_each    = toset(local.names)
-  name        = each.value
+  for_each    = var.nodes
+  name        = each.key
   image       = "docker-ce"
-  server_type = "cx31"
+  server_type = each.value.type
   ssh_keys    = [hcloud_ssh_key.terraform.id]
-  # user_data   = templatefile("${path.module}/templates/userdata.cloudinit.tpl", {})
   location    = "fsn1"
   keep_disk   = false
 
@@ -35,16 +34,23 @@ resource "hcloud_server" "nodes" {
   }
 }
 
+locals {
+  nodes_with_roles = { for key, node in hcloud_server.nodes : key => merge(node, var.nodes[key]) }
+  worker_nodes     = { for key, node in local.nodes_with_roles : key => node if contains(node.role, "worker") }
+  first_worker     = [ for key, node in local.worker_nodes : node ][0]
+}
+
 resource "hcloud_floating_ip" "floating_ip" {
   type      = "ipv4"
-  server_id = hcloud_server.nodes[local.names[0]].id
+  server_id = local.first_worker.id
 
   provisioner "remote-exec" {
     connection {
       type        = "ssh"
       user        = "root"
       private_key = tls_private_key.ssh_key.private_key_pem
-      host        = hcloud_server.nodes[local.names[0]].ipv4_address
+      host        = local.first_worker.ipv4_address
+
     }
     inline = [
       "sudo ip addr add ${self.ip_address} dev eth0"

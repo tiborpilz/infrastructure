@@ -2,7 +2,7 @@ variable "secrets" {
   type    = map(string)
   default = {}
 }
-variable "nodecount" {}
+variable "nodes" {}
 variable "domain" {}
 variable "docker_login" {
   type    = bool
@@ -30,10 +30,6 @@ terraform {
   }
 }
 
-locals {
-  names = [for i in range(var.nodecount) : format("%s%02d", "node", i)]
-}
-
 resource "tls_private_key" "ssh_key" {
   algorithm = "RSA"
 }
@@ -54,7 +50,7 @@ output "ssh_key" {
 }
 
 output "nodes" {
-  value = hcloud_server.nodes
+  value = local.nodes_with_roles
 }
 
 output "ingress_ips" {
