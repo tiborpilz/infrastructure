@@ -25,23 +25,23 @@ variable "argocd_version" {
 
 variable "users" {
   type = map(object({
-    username = string
-    password = string
-    email    = string
-    is_admin = bool
+    username   = string
+    password   = string
+    email      = string
+    is_admin   = bool
     first_name = string
-    last_name = string
+    last_name  = string
   }))
 }
 
-variable gitlab_infrastructure_project_id {
+variable "gitlab_infrastructure_project_id" {
   description = "The id of the infrastructure project in gitlab"
 }
 
 terraform {
   required_providers {
     gitlab = {
-      source = "gitlabhq/gitlab"
+      source  = "gitlabhq/gitlab"
       version = "16.6.0"
     }
     kustomization = {
@@ -49,7 +49,7 @@ terraform {
       version = "0.9.5"
     }
     argocd = {
-      source = "oboukili/argocd"
+      source  = "oboukili/argocd"
       version = "6.0.3"
     }
     keycloak = {
@@ -95,17 +95,17 @@ provider "keycloak" {
 }
 
 module "keycloak" {
-  source           = "./modules/keycloak"
-  domain           = var.domain
-  admin_password   = var.secrets.keycloak_admin_password
-  users            = var.users
+  source         = "./modules/keycloak"
+  domain         = var.domain
+  admin_password = var.secrets.keycloak_admin_password
+  users          = var.users
 }
 
 module "argocd" {
-  source = "./modules/argocd"
-  keycloak_realm = module.keycloak.realm
-  domain = var.domain
-  argocd_version = var.argocd_version
+  source                           = "./modules/argocd"
+  keycloak_realm                   = module.keycloak.realm
+  domain                           = var.domain
+  argocd_version                   = var.argocd_version
   gitlab_infrastructure_project_id = var.gitlab_infrastructure_project_id
-  kube_config_yaml = var.kube_config_yaml
+  kube_config_yaml                 = var.kube_config_yaml
 }

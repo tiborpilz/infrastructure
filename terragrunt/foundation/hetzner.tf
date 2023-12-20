@@ -37,7 +37,7 @@ resource "hcloud_server" "nodes" {
 locals {
   nodes_with_roles = { for key, node in hcloud_server.nodes : key => merge(node, var.nodes[key]) }
   worker_nodes     = { for key, node in local.nodes_with_roles : key => node if contains(node.role, "worker") }
-  first_worker     = [ for key, node in local.worker_nodes : node ][0]
+  first_worker     = [for key, node in local.worker_nodes : node][0]
 }
 
 resource "hcloud_floating_ip" "floating_ip" {

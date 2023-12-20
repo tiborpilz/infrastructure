@@ -5,7 +5,7 @@ terraform {
       version = "4.1.0"
     }
     gitlab = {
-      source = "gitlabhq/gitlab"
+      source  = "gitlabhq/gitlab"
       version = "16.6.0"
     }
     kustomization = {
@@ -40,9 +40,9 @@ data "gitlab_project" "infrastructure" {
 }
 
 resource "gitlab_project_access_token" "infrastructure_argocd" {
-  project = data.gitlab_project.infrastructure.id
-  name = "argocd"
-  scopes = ["read_repository"]
+  project    = data.gitlab_project.infrastructure.id
+  name       = "argocd"
+  scopes     = ["read_repository"]
   expires_at = "2024-12-01"
 }
 
@@ -88,10 +88,10 @@ resource "local_file" "kube_config" {
 resource "null_resource" "apply_manifests" {
   depends_on = [helm_release.argocd]
   triggers = {
-    manifests = local_file.manifests.content
+    manifests   = local_file.manifests.content
     kube_config = local_file.kube_config.content
   }
-  provisioner "local-exec"  {
+  provisioner "local-exec" {
     command = "kubectl --kubeconfig ${path.module}/out/kube_config.yaml  apply -f ${path.module}/out/manifests.yaml"
   }
 }
