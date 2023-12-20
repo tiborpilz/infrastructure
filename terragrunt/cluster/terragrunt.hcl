@@ -8,7 +8,7 @@ dependency "foundation" {
 
   mock_outputs = {
     nodes = {
-      node00 = { ipv4_address = "0.0.0.0" }
+      node00 = { ipv4_address = "0.0.0.0", role = ["control", "worker", "etcd"] }
     }
     ssh_key = {
       private_key_pem    = "privatekey"

@@ -86,6 +86,7 @@ resource "local_file" "kube_config" {
 }
 
 resource "null_resource" "apply_manifests" {
+  depends_on = [helm_release.argocd]
   triggers = {
     manifests = local_file.manifests.content
     kube_config = local_file.kube_config.content
