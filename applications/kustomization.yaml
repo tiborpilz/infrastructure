@@ -7,9 +7,6 @@ patches:
       kind: Application
     patch: |
       - op: add
-        path: /spec/source/repoURL
-        value: https://gitlab.com/tiborpilz/infrastructure.git
-      - op: add
         path: /spec/syncPolicy
         value:
           automated:
