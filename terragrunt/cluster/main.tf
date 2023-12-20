@@ -28,6 +28,10 @@ variable "metallb_version" {
   description = "The metallb version to use"
 }
 
+variable "gitlab_infrastructure_project_id" {
+  description = "The id of the infrastructure project in gitlab"
+}
+
 variable "domain" {}
 variable "email" {}
 
@@ -61,7 +65,15 @@ terraform {
       source  = "rancher/rke"
       version = "1.4.3"
     }
+    gitlab = {
+      source  = "gitlabhq/gitlab"
+      version = "16.6.0"
+    }
   }
+}
+
+provider "gitlab" {
+  token = var.secrets.gitlab_token
 }
 
 output "kube_config_yaml" {
