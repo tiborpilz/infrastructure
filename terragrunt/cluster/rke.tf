@@ -1,7 +1,7 @@
 module "metallb" {
   source          = "./modules/metallb"
   ips             = var.ingress_ips
-  metallb_version = "v0.13.9"
+  metallb_version = var.metallb_version
 }
 
 module "hcloud_csi" {

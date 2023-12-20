@@ -23,6 +23,11 @@ variable "ingress_nginx_version" {
   description = "The ingress-nginx version to use"
 }
 
+variable "metallb_version" {
+  type    = string
+  description = "The metallb version to use"
+}
+
 variable "domain" {}
 variable "email" {}
 
