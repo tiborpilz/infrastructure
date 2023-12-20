@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+
 GIT_ROOT=$(git rev-parse --show-toplevel)
 
 if [ -z "$GITLAB_TOKEN" ]; then
@@ -51,7 +52,7 @@ for project in foundation extensions cluster; do
     echo "Initializing $project..."
     # Run terraform init with the derived values
     cd "$GIT_ROOT/terragrunt/$project"
-    terraform init \
+    terragrunt init \
         -reconfigure \
         -backend-config="address=https://gitlab.com/api/v4/projects/$PROJECT_ID/terraform/state/$project" \
         -backend-config="lock_address=https://gitlab.com/api/v4/projects/$PROJECT_ID/terraform/state/$project/lock" \
