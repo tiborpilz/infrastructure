@@ -5,4 +5,6 @@ namespace: weave
 
 resources:
   - https://github.com/weaveworks/scope/releases/download/v1.13.2/k8s-scope.yaml
+  - oauth2-service-bridge.yaml
+  - oauth2-ingress.yaml
   - ingress.yaml
