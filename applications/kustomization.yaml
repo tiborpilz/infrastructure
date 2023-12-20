@@ -2,6 +2,7 @@ resources:
   - scope/application.yaml
   - portainer/application.yaml
   - harbor/application.yaml
+  - hajimari/application.yaml
 
 patches:
   - target:
