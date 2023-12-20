@@ -6,6 +6,11 @@ metadata:
     kubernetes.io/ingress.class: nginx
     kubernetes.io/tls-acme: "true"
     acme.cert-manager.io/http01-edit-in-place: "true"
+    nginx.ingress.kubernetes.io/auth-url: "https://oauth.tbr.gg/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://oauth.tbr.gg/oauth2/start?rd=$scheme://$best_http_host$request_uri"
+    nginx.ingress.kubernetes.io/auth-response-headers: "x-auth-request-user,x-auth-request-email, x-auth-request-access-token, Authorization"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Authorization $http_authorization;
   name: scope
   namespace: weave
 spec:
