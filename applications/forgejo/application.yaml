@@ -6,8 +6,43 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://gitlab.com/tiborpilz/infrastucture.git
-    path: applications/forgejo
+    chart: forgejo
+    repoURL: codeberg.org/forgejo-contrib/forgejo
+    targetRevision: 1.0.2
+    helm:
+      releaseName: forgejo
+      values: |
+        ingress:
+          enabled: true
+          annotations:
+            kubernetes.io/ingress.class: nginx
+            kubernetes.io/tls-acme: "true"
+            cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+          hosts:
+            - host: git.tbr.gg
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - hosts:
+                - git.tbr.gg
+              secretName: forgejo-tls
+
+        gitea:
+          admin:
+            username: admin
+            password: admin
+
+          metrics:
+            enabled: false
+            serviceMonitor:
+              enabled: false
+              #  additionalLabels:
+              #    prometheus-release: prometheus
+              # TODO: add prometheus and enable this
+
+          oauth: [] # TODO: find a way to create oauth clients during TF apply that can then be used by other apps
+
   destination:
     namespace: forgejo
     server: 'https://kubernetes.default.svc'
