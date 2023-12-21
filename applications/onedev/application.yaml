@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: onedev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: onedev
+    repoURL: https://dl.cloudsmith.io/public/onedev/onedev/helm/charts
+    targetRevision: 9.4.5
+    helm:
+      releaseName: onedev
+      values: |
+        ingress:
+          enabled: true
+          annotations:
+            kubernetes.io/ingress.class: nginx
+            kubernetes.io/tls-acme: "true"
+            cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+          hosts:
+            - host: onedev.tbr.gg
+              paths:
+                - path: /
+                  pathType: Prefix
+        tls:
+          enabled: true
+          secretName: onedev-tls
+          mail: 'tibor@pilz.berlin'
+          production: false
+        value:
+          automated:
+            prune: true
+            selfHeal: true
+            allowEmpty: true
+          syncOptions:
+            - CreateNamespace=true
+            - Validate=false
+            - PrunePropagationPolicy=Foreground
+            - PruneLast=true
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: onedev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: true
+    syncOptions:
+      - CreateNamespace=true
+      - Validate=false
+      - PrunePropagationPolicy=Foreground
+      - PruneLast=true
+
+# TODO: set up with terraform https://registry.terraform.io/providers/goonedev/onedev/latest/docs/resources/configuration
