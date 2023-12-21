@@ -1,0 +1,28 @@
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+  hosts:
+    - host: git.tbr.gg
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - git.tbr.gg
+      secretName: forgejo-tls
+
+gitea:
+  admin:
+    username: admin
+    password: admin
+
+  metrics:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+        # prometheus-release: prometheus
+        # TODO: add prometheus and enable this
+  oauth: [] # TODO: find a way to create oauth clients during TF apply that can then be used by other apps
