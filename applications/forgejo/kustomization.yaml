@@ -35,3 +35,12 @@ helmCharts:
               # prometheus-release: prometheus
               # TODO: add prometheus and enable this
         oauth: [] # TODO: find a way to create oauth clients during TF apply that can then be used by other apps
+
+      redis-cluster:
+        enabled: false
+
+      postgresql-ha:
+        enabled: false
+
+      postgresql:
+        enabled: true
