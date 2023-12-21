@@ -14,34 +14,21 @@ spec:
       values: |
         global:
           fullnameoverride: "onedev.tbr.gg"
-        onedev:
-          ingress:
+        ingress:
+          enabled: true
+          annotations:
+            kubernetes.io/ingress.class: nginx
+            kubernetes.io/tls-acme: "true"
+            cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+          host: onedev.tbr.gg
+          tls:
             enabled: true
-            annotations:
-              kubernetes.io/ingress.class: nginx
-              kubernetes.io/tls-acme: "true"
-              cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
-            hosts:
-              - host: onedev.tbr.gg
-                paths:
-                  - path: /
-                    pathType: Prefix
-            tls:
-              enabled: true
-              secretName: onedev-tls
-              mail: 'tibor@pilz.berlin'
-              production: false
-          value:
-            automated:
-              prune: true
-              selfHeal: true
-              allowEmpty: true
-            syncOptions:
-              - CreateNamespace=true
-              - Validate=false
-              - PrunePropagationPolicy=Foreground
-              - PruneLast=true
-
+            secretName: onedev-tls
+            acme:
+              enabled: false
+              type: "letsencrypt"
+              mail: "tibor@pilz.berlin"
+              production: true
   destination:
     server: "https://kubernetes.default.svc"
     namespace: onedev

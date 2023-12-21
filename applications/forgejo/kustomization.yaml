@@ -14,13 +14,13 @@ helmCharts:
           kubernetes.io/tls-acme: "true"
           cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
         hosts:
-          - host: git.tbr.gg
+          - host: forgejo.tbr.gg
             paths:
               - path: /
                 pathType: Prefix
         tls:
           - hosts:
-              - git.tbr.gg
+              - forgejo.tbr.gg
             secretName: forgejo-tls
 
       gitea:

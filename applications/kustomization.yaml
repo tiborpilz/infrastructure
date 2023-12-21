@@ -3,7 +3,8 @@ resources:
   - portainer/application.yaml
   - harbor/application.yaml
   - hajimari/application.yaml
-  # - forgejo/application.yaml
+  - forgejo/application.yaml
+  - onedev/application.yaml
 
 patches:
   - target:
