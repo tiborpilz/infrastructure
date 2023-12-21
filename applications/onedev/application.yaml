@@ -23,11 +23,11 @@ spec:
               paths:
                 - path: /
                   pathType: Prefix
-        tls:
-          enabled: true
-          secretName: onedev-tls
-          mail: 'tibor@pilz.berlin'
-          production: false
+          tls:
+            enabled: true
+            secretName: onedev-tls
+            mail: 'tibor@pilz.berlin'
+            production: false
         value:
           automated:
             prune: true

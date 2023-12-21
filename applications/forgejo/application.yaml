@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     chart: forgejo
-    repoURL: codeberg.org/forgejo-contrib/forgejo
+    repoURL: codeberg.org/forgejo-contrib
     targetRevision: 1.0.2
     helm:
       releaseName: forgejo
@@ -37,11 +37,16 @@ spec:
             enabled: false
             serviceMonitor:
               enabled: false
+
+          config:
+            database:
+              DB_TYPE: postgres
               #  additionalLabels:
               #    prometheus-release: prometheus
               # TODO: add prometheus and enable this
 
-          oauth: [] # TODO: find a way to create oauth clients during TF apply that can then be used by other apps
+          # TODO: find a way to create oauth clients during TF apply that can then be used by other apps
+          # oauth: []
 
   destination:
     namespace: forgejo
