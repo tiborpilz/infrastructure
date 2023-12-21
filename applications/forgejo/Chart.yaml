@@ -1,0 +1,10 @@
+apiVersion: v2
+name: forgejo
+description: forgejo chart
+type: application
+version: 1.0.2
+
+dependencies:
+  - name: forgejo
+    version: 1.0.2
+    repository: "oci://codeberg.org/forgejo-contrib/forgejo"
