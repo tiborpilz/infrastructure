@@ -23,7 +23,7 @@ spec:
               paths:
                 - path: /
                   pathType: Prefix
-          tls:
+          tls:  
             - hosts:
                 - git.tbr.gg
               secretName: forgejo-tls
@@ -41,12 +41,16 @@ spec:
           config:
             database:
               DB_TYPE: postgres
-              #  additionalLabels:
-              #    prometheus-release: prometheus
-              # TODO: add prometheus and enable this
+        
+        postgresql:
+          enabled: true
 
-          # TODO: find a way to create oauth clients during TF apply that can then be used by other apps
-          # oauth: []
+        postgresql-ha:
+          enabled: false
+
+        redis-cluster:
+          enabled: false
+
 
   destination:
     namespace: forgejo
