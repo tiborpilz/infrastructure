@@ -8,6 +8,7 @@ spec:
   source:
     chart: forgejo-contrib/forgejo
     repoURL: oci://codeberg.org
+    targetRevision: 1.0.2
     helm:
       releaseName: forgejo
       values: |
