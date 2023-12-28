@@ -30,6 +30,7 @@ variable "users" {
 
 resource "keycloak_realm" "default" {
   realm   = "default"
+  display_name = "${var.domain} - Auth"
   enabled = true
 }
 
@@ -147,6 +148,7 @@ resource "keycloak_generic_protocol_mapper" "k8s_groups" {
     "userinfo.token.claim"                   = "true"
     "usermodel.clientRoleMapping.clientId"   = "kubernetes"
     "usermodel.clientRoleMapping.rolePrefix" = "kubernetes:"
+    "introspection.token.claim"            = "true"
   }
 }
 
