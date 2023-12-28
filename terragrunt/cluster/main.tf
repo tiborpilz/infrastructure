@@ -1,6 +1,7 @@
 variable "secrets" {
   type    = map(string)
   default = {}
+  description = "The secrets to use"
 }
 
 variable "rke_kubernetes_version" {
@@ -32,30 +33,41 @@ variable "gitlab_infrastructure_project_id" {
   description = "The id of the infrastructure project in gitlab"
 }
 
-variable "domain" {}
-variable "email" {}
+variable "domain" {
+  type = string
+  description = "The domain to use"
+}
+variable "email" {
+  type = string
+  description = "The email used for letsencrypt"
+}
 
 variable "nodes" {
   type    = map(any)
   default = {}
+  description = "Kubernetes nodes."
 }
 variable "ssh_key" {
   type    = map(string)
   default = {}
+  description = "SSH key to use for the k8s nodes."
 }
 variable "ingress_ips" {
   type    = list(string)
   default = []
+  description = "List of ingress IPs to use for metallb."
 }
 
 variable "cluster_connection" {
   type    = map(string)
   default = {}
+  description = "The cluster connection to use"
 }
 
 variable "kube_config_yaml" {
   type    = string
   default = ""
+  description = "The kube config yaml to use"
 }
 
 
