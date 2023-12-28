@@ -1,3 +1,10 @@
+/**
+ * # Cluster
+ *
+ * This module creates a kubernetes cluster using rke.
+ * It also installs argocd, keycloak, cert-manager, ingress-nginx and metallb.
+ */
+
 variable "secrets" {
   type    = map(string)
   default = {}
@@ -43,8 +50,10 @@ variable "email" {
 }
 
 variable "nodes" {
-  type    = map(any)
-  default = {}
+  type    = map(object({
+    role         = string,
+    ipv4_address = string
+  }))
   description = "Kubernetes nodes."
 }
 variable "ssh_key" {
