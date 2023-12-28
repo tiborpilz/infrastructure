@@ -1,17 +1,36 @@
+/**
+ * # Extensions
+ *
+ * This module installs extensions to an already existing Kubernetes cluster.
+ * For everything to work, the cluster needs to have Keycloak installed and set up.
+ */
+
 variable "secrets" {
   type    = map(string)
   default = {}
+  description = "The secrets to use"
 }
 
 variable "cluster_connection" {
   type    = map(string)
   default = {}
+  description = "The cluster connection to use"
 }
 
-variable "kube_config_yaml" {}
+variable "kube_config_yaml" {
+  type    = string
+  default = ""
+  description = "The kube config yaml to use"
+}
 
-variable "domain" {}
-variable "email" {}
+variable "domain" {
+  type        = string
+  description = "The domain to use"
+}
+variable "email" {
+  type        = string
+  description = "The email used for letsencrypt"
+}
 
 variable "rancher_version" {
   type        = string
@@ -32,6 +51,7 @@ variable "users" {
     first_name = string
     last_name  = string
   }))
+  description = "List of users to create. Those users will be created in Keycloak, and used for ArgoCD."
 }
 
 variable "gitlab_infrastructure_project_id" {

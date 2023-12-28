@@ -1,16 +1,26 @@
+/**
+ * # Foundation
+ *
+ * This module creates the foundation for a Kubernetes cluster.
+ * Based on a node config, it will create Hetzner Cloud servers and connect external IPs to them.
+ */
+
 variable "secrets" {
   type    = map(string)
   default = {}
+  description = "Encrypted secrets"
 }
-variable "nodes" {}
-variable "domain" {}
+variable "nodes" {
+  description = "Node configuration"
+}
+variable "domain" {
+  type        = string
+  description = "The domain to use"
+}
 variable "docker_login" {
   type    = bool
   default = false
-}
-variable "metallb_secret" {
-  type    = string
-  default = ""
+  description = "Whether to login to docker"
 }
 
 terraform {
@@ -51,8 +61,10 @@ output "ssh_key" {
 
 output "nodes" {
   value = local.nodes_with_roles
+  description = "Hetzner Cloud VMs with their respective roles."
 }
 
 output "ingress_ips" {
   value = [hcloud_floating_ip.floating_ip.ip_address]
+  description = "List of ingress IPs."
 }
