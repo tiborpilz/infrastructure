@@ -19,28 +19,38 @@ spec:
             kubernetes.io/tls-acme: "true"
             cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
           hosts:
-            - host: git.tbr.gg
+            - host: forgejo.tbr.gg
               paths:
                 - path: /
                   pathType: Prefix
           tls:  
             - hosts:
-                - git.tbr.gg
+                - forgejo.tbr.gg
               secretName: forgejo-tls
 
         gitea:
           admin:
-            username: admin
-            password: admin
-
+            username: tibor
+            password: changeme
           metrics:
             enabled: false
             serviceMonitor:
               enabled: false
-
           config:
             database:
               DB_TYPE: postgres
+            session:
+              PROVIDER: db
+            cache:
+              ADAPTER: memory
+            queue:
+              TYPE: level
+            indexer:
+              ISSUE_INDEXER_TYPE: bleve
+              REPO_INDEXER_ENABLED: true
+
+        persistence:
+          enable: true
         
         postgresql:
           enabled: true
