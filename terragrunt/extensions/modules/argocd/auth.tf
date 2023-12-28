@@ -23,6 +23,7 @@ resource "keycloak_generic_protocol_mapper" "argo_groups" {
     "multivalued"                          = "true"
     "userinfo.token.claim"                 = "true"
     "usermodel.clientRoleMapping.clientId" = "argocd"
+    "introspection.token.claim"            = "true"
   }
 }
 

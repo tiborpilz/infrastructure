@@ -31,6 +31,7 @@ server:
       - email
       - groups
       - openid
+      logoutURL: ${issuer_url}/protocol/openid-connect/logout
   rbacConfig:
     policy.csv: |
       g, admin, role:admin
