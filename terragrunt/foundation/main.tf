@@ -5,6 +5,15 @@
  * Based on a node config, it will create Hetzner Cloud servers and connect external IPs to them.
  */
 
+terraform {
+  required_providers {
+    rke = {
+      source  = "rancher/rke"
+      version = "1.4.1"
+    }
+  }
+}
+
 variable "secrets" {
   type    = map(string)
   default = {}
@@ -17,37 +26,19 @@ variable "domain" {
   type        = string
   description = "The domain to use"
 }
-variable "docker_login" {
-  type    = bool
-  default = false
-  description = "Whether to login to docker"
+
+module "hetzner" {
+  source = "./hetzner"
+  nodes  = var.nodes
+  hcloud_token = var.secrets.hcloud_token
 }
 
-terraform {
-  required_providers {
-    rke = {
-      source  = "rancher/rke"
-      version = "1.4.1"
-    }
-    hcloud = {
-      source  = "hetznercloud/hcloud"
-      version = "1.39.0"
-    }
-    cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = "4.6.0"
-    }
-  }
-}
-
-resource "tls_private_key" "ssh_key" {
-  algorithm = "RSA"
-}
-
-resource "local_file" "ssh_key" {
-  filename        = "${path.root}/../out/sshkey"
-  content         = tls_private_key.ssh_key.private_key_pem
-  file_permission = "0600"
+module "cloudflare" {
+  source = "./cloudflare"
+  nodes  = module.hetzner.nodes
+  domain = var.domain
+  floating_ip = module.hetzner.floating_ip
+  cloudflare_api_token = var.secrets.cloudflare_api_token
 }
 
 output "domain" {
@@ -55,16 +46,17 @@ output "domain" {
 }
 
 output "ssh_key" {
-  value     = tls_private_key.ssh_key
+  value     = module.hetzner.ssh_key
   sensitive = true
+  description = "The generated SSH key for connecting to the nodes."
 }
 
 output "nodes" {
-  value = local.nodes_with_roles
+  value = module.hetzner.nodes
   description = "Hetzner Cloud VMs with their respective roles."
 }
 
 output "ingress_ips" {
-  value = [hcloud_floating_ip.floating_ip.ip_address]
+  value = [module.hetzner.floating_ip]
   description = "List of ingress IPs."
 }
