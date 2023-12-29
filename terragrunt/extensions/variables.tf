@@ -1,15 +1,15 @@
 variable "secrets" {
-  type    = map(string)
+  type        = map(string)
   description = "Encrypted secrets"
 }
 
 variable "cluster_connection" {
-  type    = map(string)
+  type        = map(string)
   description = "The cluster connection to use"
 }
 
 variable "kube_config_yaml" {
-  type    = string
+  type        = string
   description = "The kube config yaml to use"
 }
 
