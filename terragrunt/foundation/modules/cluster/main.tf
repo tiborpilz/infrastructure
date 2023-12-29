@@ -1,36 +1,61 @@
+/**
+ * # Cluster
+ *
+ * This module creates a kubernetes cluster using rke.
+ * It also installs argocd, keycloak, cert-manager, ingress-nginx and metallb.
+ */
+
+terraform {
+  required_providers {
+    rke = {
+      source  = "rancher/rke"
+      version = "1.4.3"
+    }
+    gitlab = {
+      source  = "gitlabhq/gitlab"
+      version = "16.6.0"
+    }
+  }
+}
+
+provider "gitlab" {
+  token = var.gitlab_token
+}
+
 module "metallb" {
-  source          = "./modules/metallb"
+  source          = "../metallb"
   ips             = var.ingress_ips
-  metallb_version = var.metallb_version
+  metallb_version = var.versions.metallb
 }
 
 module "hcloud_csi" {
-  source       = "./modules/hcloud-csi"
-  hcloud_token = var.secrets.hcloud_token
+  source       = "../hcloud-csi"
+  hcloud_token = var.hcloud_token
 }
 
 module "keycloak" {
-  source           = "./modules/keycloak"
-  keycloak_version = var.keycloak_version
+  source           = "../keycloak"
+  keycloak_version = var.versions.keycloak
   domain           = var.domain
-  default_password = var.secrets.keycloak_admin_password
+  default_password = var.keycloak_admin_password
 }
 
 module "cert_manager" {
-  source               = "./modules/cert-manager"
-  cert_manager_version = var.cert_manager_version
+  source               = "../cert-manager"
+  cert_manager_version = var.versions.cert_manager
   email                = var.email
 }
 
 module "ingress_nginx" {
-  source                = "./modules/ingress-nginx"
-  ingress_nginx_version = var.ingress_nginx_version
+  source                = "../ingress-nginx"
+  ingress_nginx_version = var.versions.ingress_nginx
 }
 
 data "gitlab_project" "infrastructure" {
   id = var.gitlab_infrastructure_project_id
 }
 
+# TODO: Move to own module
 resource "gitlab_project_access_token" "registry_rke" {
   project    = data.gitlab_project.infrastructure.id
   name       = "rke"
@@ -44,11 +69,15 @@ resource "rke_cluster" "cluster" {
     content {
       address = nodes.value.ipv4_address
       user    = "root"
-      role    = nodes.value.role
+      role = [for role in [
+        nodes.value.labels["etcd"] == "true" ? "etcd" : null,
+        nodes.value.labels["controlplane"] == "true" ? "controlplane" : null,
+        nodes.value.labels["worker"] == "true" ? "worker" : null,
+      ] : role if role != null]
       ssh_key = var.ssh_key.private_key_pem
     }
   }
-  kubernetes_version = var.rke_kubernetes_version
+  kubernetes_version = var.versions.rke_kubernetes
   network {
     plugin = "canal"
   }
@@ -88,18 +117,21 @@ resource "rke_cluster" "cluster" {
   enable_cri_dockerd    = true
   ignore_docker_version = true
 
+  # TODO: something with for_each
   private_registries {
      url = "harbor.tbr.gg"
      password = "FGuBMgYQHWbJtFLOIu1uwD3LfYEPEpDR"
      user = "robot$kubernetes"
   }
 
+  # TODO: something with for_each
   private_registries {
     url = "gitlab.com"
     password = gitlab_project_access_token.registry_rke.token
     user = data.gitlab_project.infrastructure.name
   }
 
+  # Keycloak needs to be up before we can move on.
   provisioner "local-exec" {
     command    = "while true; do curl -k 'https://keycloak.${var.domain}' && break || sleep 3; done"
     on_failure = continue
@@ -114,4 +146,19 @@ resource "local_file" "kube_cluster_yaml" {
 resource "local_file" "rke_cluster_yaml" {
   filename = "${path.root}/../out/rke_cluster.yml"
   content  = rke_cluster.cluster.rke_cluster_yaml
+}
+
+output "cluster_connection" {
+  sensitive = true
+  value = {
+    host                   = rke_cluster.cluster.api_server_url
+    cluster_ca_certificate = rke_cluster.cluster.ca_crt
+    client_certificate     = rke_cluster.cluster.client_cert
+    client_key             = rke_cluster.cluster.client_key
+  }
+}
+
+output "kube_config_yaml" {
+  sensitive = true
+  value = rke_cluster.cluster.kube_config_yaml
 }

@@ -1,6 +1,6 @@
 # Infrastructure Deployment on Hetzner Cloud with Terragrunt, Kubernetes & ArgoCD
 
-This project leverages multiple Infrastructure-as-Code solutions to provision, configure and maintain a Kubernetes cluster on the Hetzner Cloud platform. It is entirely declarative, using Terraform, Terragrunt and Kubernetes to define the infrastructure as well as the applications that run on it. The cluster is then managed by Rancher2 and ArgoCD, which facilitate the deployment of applications and updates.
+This project leverages multiple Infrastructure-as-Code solutions to provision, configure and maintain a Kubernetes cluster on the Hetzner Cloud platform. It is entirely declarative, using Terraform, Terragrunt and Kubernetes to define the infrastructure as well as the applications that run on it. The cluster is then managed by Rancher2 and ArgoCD, which is responsible for the deployment of applications and updates.
 
 ## Project Structure
 
@@ -8,19 +8,17 @@ The repository can be divided into two parts: The infrastructure provisioning an
 
 ## Infrastructure Provisioning
 
-The provisioning is partitioned into three stages, which Terragrunt orchestrates in sequence:
+The provisioning is partitioned into two stages, which Terragrunt orchestrates in sequence:
 
-1. **Foundation**: This stage initiates the project by establishing cloud virtual machines on Hetzner, equipped with a floating IP and automatic DNS entries within Cloudflare.
+1. **[Foundation](./terragrunt/foundation)**: This stage includes the base infrastructure and the Kubernetes cluster components. It features Hetzner Cloud instances, external IPs, DNS records, and the Kubernetes cluster setup. The cluster is based on an RKE cluster integrated into the foundation infrastructure, along with critical Kubernetes resources such as `cert-manager` for managing certificates, `metallb` for load balancing, and `keycloak` for authentication.
 
-2. **Cluster**: This stage involves the creation of a Kubernetes Cluster using the Rancher Kubernetes Engine. At this point, the cluster's fundamental functionality, such as nginx ingress, MetalLB load balancer, cert manager, Keycloak instance, and HCloud CSI (enabling automatic storage provisioning), are implemented.
-
-3. **Extensions**: During this phase, the cluster is augmented with additional services like OAuth Proxy, Rancher2, and ArgoCD, broadening its capabilities.
+1. **[Extensions](./terragrunt/extensions)**: This stage encompasses additional infrastructure tools that enhance capabilities. It includes `argocd` for streamlined application deployment within the cluster, integrating with `keycloak`, and `rancher` for management of the Kubernetes cluster.
 
 ### Why Terragrunt?
 
-When you're using Terraform for infrastructure as code, it does a great job. But, it does have some limitations when dealing with complex projects that have interdependent resources. For example, in a project where we're setting up a Kubernetes cluster and then deploying resources into that same cluster, there's a catch. The resources need certain information from the deployment step, like the public IPv4 of the nodes, which aren't known beforehand. Because Terraform needs to understand the state of a resource before applying it, it can trip up when the Kubernetes cluster isn't there from the get-go.
+When you're using Terraform for infrastructure as code, it does a great job. But, it does have some limitations when dealing with complex projects that have interdependent resources. For example, in a project where we're setting up a Kubernetes cluster and then deploying resources into that same cluster, there's a catch. To query the state of Kubernetes resources (like a Helm release), the Kubernetes API needs to be present and able to respond. Because Terraform needs to understand the state of a resource before applying it, it can trip up when the Kubernetes cluster isn't there from the get-go.
 
-That's where Terragrunt comes in handy. It lets us define inter-project dependencies, lining up our Terraform projects in the right order. This way, the results of one project can be used as inputs for the next one. In scenarios like ours, where the same project deploys a Kubernetes cluster and then deploys resources into it, Terragrunt proves to be a really useful tool.
+That's where Terragrunt comes in handy. It lets us define inter-project dependencies, lining up our Terraform projects in the right order. This way, the results of one project can be used as inputs for the next one. In scenarios like these, where the same project deploys a Kubernetes cluster and then deploys resources into it, Terragrunt is a really useful tool.
 
 ## Overview of Technologies used
 
