@@ -1,21 +1,39 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base"],
-  "packageRules": [{
-    "matchPackagePatterns": ["*"],
-    "matchUpdateTypes": ["minor", "patch"],
-    "groupName": "all non-major updates",
-    "groupSlug": "minor-patch"
-  }],
-  "customManagers": [{
-    "customType": "regex",
-    "fileMatch": ["^kustomization.yaml$"],
-    "matchStrings": ["https:\/\/github.com\/(?<depName>.*\/.*?)\/releases\/download\/(?<currentValue>.*?)\/"],
-    "datasourceTemplate": "github-releases"
-  }, {
-    "customType": "regex",
-    "fileMatch": ["^kustomization.yaml$"],
-    "matchStrings": ["https:\/\/raw.githubusercontent.com\/(?<depName>[^\/]*\/[^\/]*)\/(?<currentValue>.*?)\/"],
-    "datasourceTemplate": "github-tags"
-  }]
+  "extends": [
+    "config:base"
+  ],
+  "packageRules": [
+    {
+      "matchPackagePatterns": [
+        "*"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "all non-major updates",
+      "groupSlug": "minor-patch"
+    }
+  ],
+  "customManagers": [
+    {
+      "fileMatch": [
+        "cluster\/.+\/kustomization.ya?ml$"
+      ],
+      "matchStrings": [
+        "https:\/\/github\\.com\/(?<depName>.*\/.*?)\/releases\/download\/(?<currentValue>.*?)\/"
+      ],
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "fileMatch": [
+        "cluster\/.+\/kustomization.ya?ml$"
+      ],
+      "matchStrings": [
+        "https:\/\/raw\\.githubusercontent\\.com\/(?<depName>[^\/]*\/[^\/]*)\/(?<currentValue>.*?)\/"
+      ],
+      "datasourceTemplate": "github-tags"
+    }
+  ]
 }
