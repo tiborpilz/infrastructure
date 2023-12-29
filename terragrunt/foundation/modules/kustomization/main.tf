@@ -22,7 +22,6 @@ resource "null_resource" "kustomize_build" {
   depends_on = [null_resource.kustomize, local_file.kustomization]
   triggers = {
     kustomization = local_file.kustomization.content
-    manifests     = data.local_file.manifests.content
   }
   provisioner "local-exec" {
     command = "kustomize build ${local.overlay_dir} -o ${local.out_dir}/manifests.yaml"
@@ -30,6 +29,7 @@ resource "null_resource" "kustomize_build" {
 }
 
 data "local_file" "manifests" {
+  depends_on = [null_resource.kustomize_build]
   filename = "${local.out_dir}/manifests.yaml"
 }
 
