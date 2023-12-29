@@ -33,13 +33,13 @@ No resources.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_argocd_version"></a> [argocd\_version](#input\_argocd\_version) | The argocd (helm chart) version to use | `string` | n/a | yes |
-| <a name="input_cluster_connection"></a> [cluster\_connection](#input\_cluster\_connection) | The cluster connection to use | `map(string)` | `{}` | no |
+| <a name="input_cluster_connection"></a> [cluster\_connection](#input\_cluster\_connection) | The cluster connection to use | `map(string)` | n/a | yes |
 | <a name="input_domain"></a> [domain](#input\_domain) | The domain to use | `string` | n/a | yes |
 | <a name="input_email"></a> [email](#input\_email) | The email used for letsencrypt | `string` | n/a | yes |
 | <a name="input_gitlab_infrastructure_project_id"></a> [gitlab\_infrastructure\_project\_id](#input\_gitlab\_infrastructure\_project\_id) | The id of the infrastructure project in gitlab | `any` | n/a | yes |
-| <a name="input_kube_config_yaml"></a> [kube\_config\_yaml](#input\_kube\_config\_yaml) | The kube config yaml to use | `string` | `""` | no |
+| <a name="input_kube_config_yaml"></a> [kube\_config\_yaml](#input\_kube\_config\_yaml) | The kube config yaml to use | `string` | n/a | yes |
 | <a name="input_rancher_version"></a> [rancher\_version](#input\_rancher\_version) | The rancher (helm chart) version to use | `string` | n/a | yes |
-| <a name="input_secrets"></a> [secrets](#input\_secrets) | The secrets to use | `map(string)` | `{}` | no |
+| <a name="input_secrets"></a> [secrets](#input\_secrets) | Encrypted secrets | `map(string)` | n/a | yes |
 | <a name="input_users"></a> [users](#input\_users) | List of users to create. Those users will be created in Keycloak, and used for ArgoCD. | <pre>map(object({<br>    username   = string<br>    password   = string<br>    email      = string<br>    is_admin   = bool<br>    first_name = string<br>    last_name  = string<br>  }))</pre> | n/a | yes |
 
 ## Outputs

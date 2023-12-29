@@ -32,7 +32,7 @@ No resources.
 | <a name="input_email"></a> [email](#input\_email) | The email to use for letsencrypt | `string` | n/a | yes |
 | <a name="input_gitlab_infrastructure_project_id"></a> [gitlab\_infrastructure\_project\_id](#input\_gitlab\_infrastructure\_project\_id) | The id of the infrastructure project in gitlab | `string` | n/a | yes |
 | <a name="input_nodes"></a> [nodes](#input\_nodes) | Node configuration | `any` | n/a | yes |
-| <a name="input_secrets"></a> [secrets](#input\_secrets) | Encrypted secrets | `map(string)` | `{}` | no |
+| <a name="input_secrets"></a> [secrets](#input\_secrets) | Encrypted secrets | `map(string)` | n/a | yes |
 | <a name="input_versions"></a> [versions](#input\_versions) | Versions for the various components to use | `map(string)` | n/a | yes |
 
 ## Outputs
