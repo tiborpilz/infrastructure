@@ -2,6 +2,7 @@
 **/out/*
 *.tfstate
 **/templates-out
+**/kustomize/overlay/*
 .env
 *.cache
 **/*.terraform.lock.hcl
