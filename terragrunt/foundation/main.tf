@@ -3,6 +3,7 @@
  *
  * This module creates the foundation for a Kubernetes cluster.
  * Based on a node config, it will create Hetzner Cloud servers and connect external IPs to them.
+ * Then, it will initialize the cluster using rke and install argocd, keycloak, cert-manager, ingress-nginx and metallb.
  */
 
 variable "secrets" {
