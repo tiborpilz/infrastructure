@@ -1,5 +1,5 @@
 variable "secrets" {
-  type    = map(string)
+  type        = map(string)
   description = "Encrypted secrets"
 }
 
@@ -8,7 +8,7 @@ variable "nodes" {
 }
 
 variable "versions" {
-  type = map(string)
+  type        = map(string)
   description = "Versions for the various components to use"
 }
 
@@ -18,7 +18,7 @@ variable "domain" {
 }
 
 variable "email" {
-  type = string
+  type        = string
   description = "The email to use for letsencrypt"
 }
 

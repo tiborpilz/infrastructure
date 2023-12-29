@@ -9,24 +9,24 @@ variable "cert_manager_version" {
 }
 
 module "kustomization" {
-  source = "../kustomization"
+  source        = "../kustomization"
   kustomize_dir = "${path.module}/kustomize"
   overlay = {
-    apiVersion: "kustomize.config.k8s.io/v1beta1",
-    kind:       "Kustomization",
-    resources:  [
+    apiVersion : "kustomize.config.k8s.io/v1beta1",
+    kind : "Kustomization",
+    resources : [
       "../base",
     ],
-    patches: [
+    patches : [
       {
-        target: {
-          kind: "ClusterIssuer",
-          name: "letsencrypt-clusteriusser"
+        target : {
+          kind : "ClusterIssuer",
+          name : "letsencrypt-clusteriusser"
         },
-        patch: yamlencode([{
-          op:    "add",
-          path:  "/spec/acme/email",
-          value: var.email
+        patch : yamlencode([{
+          op : "add",
+          path : "/spec/acme/email",
+          value : var.email
         }])
       }
     ]
