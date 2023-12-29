@@ -8,20 +8,31 @@ variable "cert_manager_version" {
   default     = "main"
 }
 
-locals {
-  letsencrypt_clusterissuer_manifest = templatefile("${path.module}/templates/letsencrypt-clusterissuer.tpl.yaml", {
-    email = var.email
-  })
-}
-
-resource "local_file" "letsencrypt_clusterissuer" {
-  filename = "${path.module}/templates-out/letsencrypt-clusterissuer.yaml"
-  content  = local.letsencrypt_clusterissuer_manifest
+module "kustomization" {
+  source = "../kustomization"
+  kustomize_dir = "${path.module}/kustomize"
+  overlay = {
+    apiVersion: "kustomize.config.k8s.io/v1beta1",
+    kind:       "Kustomization",
+    resources:  [
+      "../base",
+    ],
+    patches: [
+      {
+        target: {
+          kind: "ClusterIssuer",
+          name: "letsencrypt-clusteriusser"
+        },
+        patch: yamlencode([{
+          op:    "add",
+          path:  "/spec/acme/email",
+          value: var.email
+        }])
+      }
+    ]
+  }
 }
 
 output "files" {
-  value = [
-    "https://github.com/cert-manager/cert-manager/releases/download/${var.cert_manager_version}/cert-manager.yaml",
-    local_file.letsencrypt_clusterissuer.filename,
-  ]
+  value = [module.kustomization.manifests.filename]
 }
