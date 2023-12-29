@@ -52,7 +52,7 @@ It also installs argocd, keycloak, cert-manager, ingress-nginx and metallb.
 | <a name="input_keycloak_version"></a> [keycloak\_version](#input\_keycloak\_version) | The keycloak version to use | `string` | n/a | yes |
 | <a name="input_kube_config_yaml"></a> [kube\_config\_yaml](#input\_kube\_config\_yaml) | The kube config yaml to use | `string` | `""` | no |
 | <a name="input_metallb_version"></a> [metallb\_version](#input\_metallb\_version) | The metallb version to use | `string` | n/a | yes |
-| <a name="input_nodes"></a> [nodes](#input\_nodes) | Kubernetes nodes. | <pre>map(object({<br>    role         = string,<br>    ipv4_address = string<br>  }))</pre> | n/a | yes |
+| <a name="input_nodes"></a> [nodes](#input\_nodes) | Kubernetes nodes. | `map(any)` | n/a | yes |
 | <a name="input_rke_kubernetes_version"></a> [rke\_kubernetes\_version](#input\_rke\_kubernetes\_version) | The (rke) kubernetes version to use | `string` | n/a | yes |
 | <a name="input_secrets"></a> [secrets](#input\_secrets) | The secrets to use | `map(string)` | `{}` | no |
 | <a name="input_ssh_key"></a> [ssh\_key](#input\_ssh\_key) | SSH key to use for the k8s nodes. | `map(string)` | `{}` | no |
