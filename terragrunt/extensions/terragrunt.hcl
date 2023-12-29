@@ -3,8 +3,8 @@ include {
   merge_strategy = "deep"
 }
 
-dependency "cluster" {
-  config_path = "../cluster"
+dependency "foundation" {
+  config_path = "../foundation"
 
   mock_outputs = {
     cluster_connection = {
@@ -18,6 +18,6 @@ dependency "cluster" {
 }
 
 inputs = {
-  cluster_connection = dependency.cluster.outputs.cluster_connection
-  kube_config_yaml   = dependency.cluster.outputs.kube_config_yaml
+  cluster_connection = dependency.foundation.outputs.cluster_connection
+  kube_config_yaml   = dependency.foundation.outputs.kube_config_yaml
 }
