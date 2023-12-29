@@ -50,10 +50,7 @@ variable "email" {
 }
 
 variable "nodes" {
-  type    = map(object({
-    role         = string,
-    ipv4_address = string
-  }))
+  type    = map(any)
   description = "Kubernetes nodes."
 }
 variable "ssh_key" {
