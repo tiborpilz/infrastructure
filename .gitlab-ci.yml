@@ -94,7 +94,7 @@ init:
     - !reference [.git-crypt, before_script]
   script:
     - !reference [.pre-terragrunt, script]
-    - terragrunt run-all init -input=false -reconfigure
+    - terragrunt run-all init -input=false -reconfigure -upgrade
   artifacts:
     paths:
       - ${TF_ROOT}/**/.terraform
@@ -106,7 +106,7 @@ validate:
     - !reference [.git-crypt, before_script]
   script:
     - !reference [.pre-terragrunt, script]
-    - terragrunt run-all init -input=false -reconfigure
+    - terragrunt run-all init -input=false -reconfigure -upgrade
     - terragrunt validate-inputs
     - terragrunt run-all validate
 
@@ -117,7 +117,7 @@ build:
     - !reference [.git-crypt, before_script]
   script:
     - !reference [.pre-terragrunt, script]
-    - terragrunt run-all init -input=false -reconfigure
+    - terragrunt run-all init -input=false -reconfigure -upgrade
     - terragrunt run-all plan -input=false -out=plan.cache
     - terragrunt run-all show -json plan.cache | jq -r "${JQ_PLAN}" | jq -s 'map(to_entries) | flatten | group_by(.key) | map({(.[0].key):map(.value) | add}) | add' > plan.json
   artifacts:
