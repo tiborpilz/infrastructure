@@ -1,5 +1,20 @@
+/**
+ * # Cloudflare
+ *
+ * This module creates the DNS records for the Kubernetes cluster.
+ */
+
+terraform {
+  required_providers {
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "4.6.0"
+    }
+  }
+}
+
 provider "cloudflare" {
-  api_token = var.secrets.cloudflare_api_token
+  api_token = var.cloudflare_api_token
 }
 
 data "cloudflare_zones" "zone" {
@@ -9,7 +24,7 @@ data "cloudflare_zones" "zone" {
 }
 
 resource "cloudflare_record" "nodes" {
-  for_each = hcloud_server.nodes
+  for_each = var.nodes
   zone_id  = lookup(data.cloudflare_zones.zone.zones[0], "id")
   name     = "${each.value.name}.kube.${var.domain}"
   type     = "A"
@@ -20,5 +35,5 @@ resource "cloudflare_record" "ingress" {
   zone_id = lookup(data.cloudflare_zones.zone.zones[0], "id")
   name    = "*.${var.domain}"
   type    = "A"
-  value   = hcloud_floating_ip.floating_ip.ip_address
+  value   = var.floating_ip
 }
