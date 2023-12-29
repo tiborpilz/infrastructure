@@ -55,7 +55,7 @@ resource "hcloud_server" "nodes" {
     type      = "kube-node"
     terraform = "true"
     etcd      = contains(each.value.role, "etcd") ? "true" : "false"
-    control   = contains(each.value.role, "control") ? "true" : "false"
+    controlplane   = contains(each.value.role, "controlplane") ? "true" : "false"
     worker    = contains(each.value.role, "worker") ? "true" : "false"
   }
 

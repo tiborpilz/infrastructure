@@ -1,7 +1,7 @@
 # Terragrunt Configuration
 
-This directory contains the Terragrunt configuration for the infrastructure. It is split into three parts:
+This directory contains the Terragrunt configuration for the infrastructure, organized as follows:
 
-1. [foundation](./foundation) - The base infrastructure that all other infrastructure is built on top of. This includes Hetzner Cloud instances, external IPs and DNS records.
-2. [cluster](./cluster) - The Kubernetes cluster. This installs a RKE cluster on top of the foundation infrastructure - including a few base Kubernetes resources, like `cert-manager` for fetching certificates, `metallb` for load balancing and `keycloak` for authentication.
-3. [extensions](./extensions) - Additional infrastructure that is not required for the cluster to function, but is useful for development. This includes `argocd` for deploying applications to the cluster (complete with a `keycloak` integration), and `rancher` for managing the cluster.
+1. [foundation](./foundation) - This stage includes the base infrastructure and the Kubernetes cluster components. It features Hetzner Cloud instances, external IPs, DNS records, and the Kubernetes cluster setup. The cluster is based on an RKE cluster integrated into the foundation infrastructure, along with critical Kubernetes resources such as `cert-manager` for managing certificates, `metallb` for load balancing, and `keycloak` for authentication.
+
+2. [extensions](./extensions) - This stage encompasses additional infrastructure tools that enhance capabilities. It includes `argocd` for streamlined application deployment within the cluster, integrating with `keycloak`, and `rancher` for management of the Kubernetes cluster.
