@@ -2,15 +2,15 @@ terraform {
   required_providers {
     keycloak = {
       source  = "mrparkers/keycloak"
-      version = "4.3.1"
+      version = "4.4.0"
     }
     gitlab = {
       source  = "gitlabhq/gitlab"
-      version = "17.4.0"
+      version = "17.5.0"
     }
     kustomization = {
       source  = "kbst/kustomization"
-      version = "0.9.5"
+      version = "0.9.6"
     }
   }
 }
