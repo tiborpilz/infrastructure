@@ -9,7 +9,7 @@ terraform {
   required_providers {
     gitlab = {
       source  = "gitlabhq/gitlab"
-      version = "17.5.0"
+      version = "17.7.0"
     }
     kustomization = {
       source  = "kbst/kustomization"
@@ -25,7 +25,7 @@ terraform {
     }
     rancher2 = {
       source  = "rancher/rancher2"
-      version = "5.1.0"
+      version = "5.2.0"
     }
   }
 }
