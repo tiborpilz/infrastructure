@@ -6,11 +6,11 @@ terraform {
     }
     gitlab = {
       source  = "gitlabhq/gitlab"
-      version = "17.5.0"
+      version = "17.11.0"
     }
     kustomization = {
       source  = "kbst/kustomization"
-      version = "0.9.6"
+      version = "0.9.7"
     }
   }
 }
