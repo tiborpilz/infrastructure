@@ -9,11 +9,11 @@ terraform {
   required_providers {
     rke = {
       source  = "rancher/rke"
-      version = "1.6.0"
+      version = "1.7.5"
     }
     gitlab = {
       source  = "gitlabhq/gitlab"
-      version = "17.5.0"
+      version = "17.11.0"
     }
   }
 }
