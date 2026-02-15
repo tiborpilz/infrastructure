@@ -33,7 +33,6 @@ ingress:
     kubernetes.io/ingress.class: nginx
     kubernetes.io/tls-acme: "true"
     # nginx.ingress.kubernetes.io/rewrite-target: /oauth2
-    kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/server-snippet: |
       large_client_header_buffers 4 32k;
   tls:
