@@ -16,7 +16,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: oauth2-proxy-bridge
+                name: oauth2-service-bridge
                 port:
                   number: 80
   tls:
