@@ -2,6 +2,10 @@
 
 This project leverages multiple Infrastructure-as-Code solutions to provision, configure and maintain a Kubernetes cluster on the Hetzner Cloud platform,.
 
+## Prereqisites:
+
+> A working terrform/terragunt set hup.
+
 ## Project Structure
 
 The repository is divided into two parts: The infrastructure provisioning and the application deployment. For the initial infrastructure provisioning, Terraform and Terragrunt are used. The relevant files are located in the `terragrunt` directory. The application deployment is handled by ArgoCD, which uses the manifests in the `applications` directory.
