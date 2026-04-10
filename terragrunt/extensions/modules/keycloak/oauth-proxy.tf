@@ -43,7 +43,7 @@ resource "helm_release" "oauth2_proxy" {
   name             = "oauth2-proxy"
   repository       = "https://oauth2-proxy.github.io/manifests"
   chart            = "oauth2-proxy"
-  version          = "10.0.0"
+  version          = "10.4.2"
   namespace        = "oauth2-proxy"
   create_namespace = true
   values           = [data.template_file.oauth2_proxy_values.rendered]
