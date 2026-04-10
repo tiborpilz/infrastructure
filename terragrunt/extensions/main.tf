@@ -25,7 +25,7 @@ terraform {
     }
     rancher2 = {
       source  = "rancher/rancher2"
-      version = "13.1.4"
+      version = "14.1.0"
     }
   }
 }
