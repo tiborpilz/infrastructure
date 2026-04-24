@@ -2,7 +2,7 @@ terraform {
   required_providers {
     rancher2 = {
       source  = "rancher/rancher2"
-      version = "13.1.4"
+      version = "13.2.0"
     }
     keycloak = {
       source  = "mrparkers/keycloak"
