@@ -24,7 +24,11 @@ dependency "authentik" {
 }
 
 inputs = {
-  authentik_url   = dependency.authentik.outputs.authentik_url
-  authentik_token = dependency.authentik.outputs.bootstrap_admin_token
-  authentik_ready = dependency.authentik.outputs.ready
+  authentik_url              = dependency.authentik.outputs.authentik_url
+  authentik_token            = dependency.authentik.outputs.bootstrap_admin_token
+  authentik_ready            = dependency.authentik.outputs.ready
+  managed_users              = include.env.locals.managed_users
+  managed_user_passwords     = include.env.locals.managed_user_passwords
+  platform_admin_groups      = include.env.locals.platform_admin_groups
+  authentik_superuser_groups = include.env.locals.authentik_superuser_groups
 }

@@ -16,7 +16,7 @@ The `terragrunt/envs/<env>/` directory contains the layered Terragrunt stacks. A
 | `35-platform-data` | hcloud-csi (`hcloud-volumes` StorageClass) + CloudNativePG operator. |
 | `37-velero` | Velero (Kopia file-system backup) + Talos etcd snapshot CronJob → Hetzner Object Storage. |
 | `40-authentik` | authentik (OIDC provider) + CNPG `Cluster` + inlined Valkey. |
-| `45-authentik-config` | General authentik state — placeholder groups. No per-app clients. |
+| `45-authentik-config` | General authentik state — platform groups and declarative managed users. No per-app clients. |
 | `50-argocd-oidc` | Glue layer: creates the authentik objects matching Argo CD's TF-baked OIDC client. See "Argo CD exception" below. |
 | `55-forgejo` | Forgejo at `git.<domain>` + CNPG `Cluster` + app-owned authentik OIDC client/secrets. |
 
@@ -69,7 +69,7 @@ resource "kubectl_manifest" "argo_app_<app>" {
 
 **Argo CD is the exception.** Argo CD is deployed before authentik (because authentik runs as an Argo CD Application), so the convention can't apply directly — `20-argocd` can't `dependency` on `40-authentik` without a cycle. Instead, `20-argocd` generates the OIDC client_secret as a `random_password` and bakes it into the Helm values; a downstream glue layer `50-argocd-oidc` creates the matching authentik objects. Future apps deployed AFTER authentik (Forgejo, Woodpecker, Grafana, ...) follow the documented convention as-is.
 
-**What lives in `45-authentik-config`?** Only state that isn't tied to a specific app: groups, branding, SMTP, MFA policies, default flows. The `akadmin` password is already pinned upstream by `40-authentik` (TF-generated `random_password` mounted as `AUTHENTIK_BOOTSTRAP_PASSWORD`).
+**What lives in `45-authentik-config`?** Only state that isn't tied to a specific app: platform groups, declarative managed users, branding, SMTP, MFA policies, default flows. The `akadmin` password is already pinned upstream by `40-authentik` (TF-generated `random_password` mounted as `AUTHENTIK_BOOTSTRAP_PASSWORD`). Managed user passwords can be supplied from SOPS later, or omitted so Terraform creates stable random passwords.
 
 **Forgejo follows the convention.** `55-forgejo` owns the Forgejo Argo CD Application, matching authentik OAuth2 provider/Application, generated Kubernetes Secrets, Forgejo chart values, and the CNPG `Cluster` template. For this bootstrap slice, the Argo CD Application reads the upstream Forgejo chart directly and Terraform passes the rendered values/extra resources, so it does not depend on a platform repo commit being pushed first. SSH and Forgejo's package registry are intentionally deferred.
 
