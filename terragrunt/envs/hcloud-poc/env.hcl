@@ -26,4 +26,44 @@ locals {
   # Networking / DNS / TLS
   domain     = "tiborpilz.dev"
   acme_email = "tibor@pilz.berlin"
+
+  # Declarative Authentik users. Passwords can be supplied from SOPS
+  # later via managed_user_passwords; omitted users receive stable
+  # Terraform-generated random passwords.
+  platform_admin_groups = [
+    "platform-admins",
+    "kubernetes-admins",
+  ]
+
+  # Keep Authentik superuser separate from platform admin rights. Add
+  # "platform-admins" here if bootstrap admins should administer Authentik
+  # itself, not just downstream apps such as Argo CD and Kubernetes.
+  authentik_superuser_groups = [
+    "authentik-superusers",
+  ]
+
+  managed_users = {
+    example = {
+      name   = "Tibor"
+      email  = "tibor@pilz.berlin"
+      admin  = true
+      groups = ["platform-admins"]
+    }
+
+    example = {
+      name   = "Tine"
+      email  = "tine@olynet.de"
+      admin  = true
+      groups = []
+    }
+
+    # example = {
+    #   name   = "Example Admin"
+    #   email  = "admin@example.com"
+    #   admin  = true
+    #   groups = ["forgejo-users"]
+    # }
+  }
+
+  managed_user_passwords = {}
 }
