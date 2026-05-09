@@ -10,5 +10,9 @@ terraform {
       source  = "gavinbunney/kubectl"
       version = "~> 1.19"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.40"
+    }
   }
 }
