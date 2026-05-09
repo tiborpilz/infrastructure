@@ -18,6 +18,7 @@ The `terragrunt/envs/<env>/` directory contains the layered Terragrunt stacks. A
 | `40-authentik` | authentik (OIDC provider) + CNPG `Cluster` + inlined Valkey. |
 | `45-authentik-config` | General authentik state — placeholder groups. No per-app clients. |
 | `50-argocd-oidc` | Glue layer: creates the authentik objects matching Argo CD's TF-baked OIDC client. See "Argo CD exception" below. |
+| `55-forgejo` | Forgejo at `git.<domain>` + CNPG `Cluster` + app-owned authentik OIDC client/secrets. |
 
 ## Per-app identity convention
 
@@ -70,6 +71,8 @@ resource "kubectl_manifest" "argo_app_<app>" {
 
 **What lives in `45-authentik-config`?** Only state that isn't tied to a specific app: groups, branding, SMTP, MFA policies, default flows. The `akadmin` password is already pinned upstream by `40-authentik` (TF-generated `random_password` mounted as `AUTHENTIK_BOOTSTRAP_PASSWORD`).
 
+**Forgejo follows the convention.** `55-forgejo` owns the Forgejo Argo CD Application, matching authentik OAuth2 provider/Application, generated Kubernetes Secrets, Forgejo chart values, and the CNPG `Cluster` template. For this bootstrap slice, the Argo CD Application reads the upstream Forgejo chart directly and Terraform passes the rendered values/extra resources, so it does not depend on a platform repo commit being pushed first. SSH and Forgejo's package registry are intentionally deferred.
+
 ## Reaching the cluster
 
 After `terragrunt run --all apply`:
@@ -96,7 +99,7 @@ export HCLOUD_S3_ACCESS_KEY=...
 export HCLOUD_S3_SECRET_KEY=...
 ```
 
-The bucket itself is created by `37-velero` via the `aws` Terraform provider pointed at Hetzner's S3 endpoint — no manual bucket setup needed. (Migrating these creds to SOPS is on the M2 list.)
+The bucket itself is created by `37-velero` via the `aminueza/minio` Terraform provider pointed at Hetzner's S3 endpoint — no manual bucket setup needed. (Migrating these creds to SOPS is on the M2 list.)
 
 **Defaults.**
 
