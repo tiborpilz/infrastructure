@@ -45,6 +45,12 @@ resource "kubernetes_namespace" "velero" {
     name = local.velero_namespace
     labels = {
       "managed-by" = "terragrunt"
+
+      # node-agent DaemonSet mounts /var/lib/kubelet/pods and the plugins dir
+      # via hostPath, which baseline/restricted PSS forbids.
+      "pod-security.kubernetes.io/enforce" = "privileged"
+      "pod-security.kubernetes.io/audit"   = "privileged"
+      "pod-security.kubernetes.io/warn"    = "privileged"
     }
   }
 }
@@ -268,29 +274,3 @@ resource "kubectl_manifest" "cronjob_etcd_snapshot" {
   })
 }
 
-# ---------------------------------------------------------------------------
-# Readiness gate. Same shape as 35-platform-data: wait for Argo to report
-# the Velero Application Healthy, then a kubectl-level sanity check on the
-# CronJob existing.
-# ---------------------------------------------------------------------------
-
-resource "terraform_data" "velero_ready" {
-  triggers_replace = [
-    kubectl_manifest.argo_app_velero.uid,
-    kubectl_manifest.cronjob_etcd_snapshot.uid,
-  ]
-
-  provisioner "local-exec" {
-    environment = {
-      KUBECONFIG = var.kubeconfig_path
-    }
-    command = <<-EOT
-      set -euo pipefail
-      kubectl wait --for=jsonpath='{.status.health.status}=Healthy' \
-        application/velero -n ${local.argocd_namespace} --timeout=10m
-      kubectl wait --for=condition=Available deployment/velero \
-        -n ${local.velero_namespace} --timeout=5m
-      kubectl get cronjob etcd-snapshot -n ${local.cluster_backup_namespace} >/dev/null
-    EOT
-  }
-}

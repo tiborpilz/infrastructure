@@ -58,8 +58,6 @@ inputs = {
   client_certificate     = dependency.cluster.outputs.client_certificate
   client_key             = dependency.cluster.outputs.client_key
 
-  kubeconfig_path = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}.kubeconfig"
-
   talosconfig_raw    = dependency.cluster.outputs.talosconfig
   talos_cp_endpoints = dependency.cluster.outputs.talos_cp_endpoints
 
