@@ -69,6 +69,9 @@
             # GitOps
             argocd
 
+            # Backups (Velero CLI for restore drills against the cluster)
+            velero
+
             # Secrets
             sops
             age

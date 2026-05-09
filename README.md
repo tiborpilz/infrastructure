@@ -14,8 +14,10 @@ The `terragrunt/envs/<env>/` directory contains the layered Terragrunt stacks. A
 | `30-networking` | cert-manager, external-dns, public Gateway. |
 | `30-smoke-app` | Trivial nginx behind the Gateway. End-to-end TLS/DNS proof. |
 | `35-platform-data` | hcloud-csi (`hcloud-volumes` StorageClass) + CloudNativePG operator. |
+| `37-velero` | Velero (Kopia file-system backup) + Talos etcd snapshot CronJob → Hetzner Object Storage. |
 | `40-authentik` | authentik (OIDC provider) + CNPG `Cluster` + inlined Valkey. |
 | `45-authentik-config` | General authentik state — placeholder groups. No per-app clients. |
+| `50-argocd-oidc` | Glue layer: creates the authentik objects matching Argo CD's TF-baked OIDC client. See "Argo CD exception" below. |
 
 ## Per-app identity convention
 
@@ -64,6 +66,8 @@ resource "kubectl_manifest" "argo_app_<app>" {
 
 **Why not a central `40-post-config` layer?** PLAN.md flagged that as awkward. Colocating the identity client with the consumer means adding/removing an app is one module change, the dependency graph stays local, and there's no single layer that knows about every app. Multiple core apps may share one Terragrunt env layer (e.g. `50-core-apps`) — they don't each need a dedicated layer.
 
+**Argo CD is the exception.** Argo CD is deployed before authentik (because authentik runs as an Argo CD Application), so the convention can't apply directly — `20-argocd` can't `dependency` on `40-authentik` without a cycle. Instead, `20-argocd` generates the OIDC client_secret as a `random_password` and bakes it into the Helm values; a downstream glue layer `50-argocd-oidc` creates the matching authentik objects. Future apps deployed AFTER authentik (Forgejo, Woodpecker, Grafana, ...) follow the documented convention as-is.
+
 **What lives in `45-authentik-config`?** Only state that isn't tied to a specific app: groups, branding, SMTP, MFA policies, default flows. The `akadmin` password is already pinned upstream by `40-authentik` (TF-generated `random_password` mounted as `AUTHENTIK_BOOTSTRAP_PASSWORD`).
 
 ## Reaching the cluster
@@ -81,6 +85,38 @@ authentik bootstrap admin password (first login):
 terragrunt --working-dir terragrunt/envs/hcloud-poc/40-authentik output -raw bootstrap_admin_password
 ```
 
+## Backups
+
+`37-velero` runs Velero (Kopia file-system backup) and a Talos etcd snapshot CronJob, both targeting one Hetzner Object Storage bucket per env (`backups-<env_name>`). Layout: `velero/` for cluster + PV backups, `etcd/` for raw etcd snapshots.
+
+**One-time prerequisite.** Hetzner Object Storage S3 access keys aren't yet creatable via the `hcloud` Terraform provider. Generate them once in the Hetzner Console (Project → Security → Object Storage) and export:
+
+```sh
+export HCLOUD_S3_ACCESS_KEY=...
+export HCLOUD_S3_SECRET_KEY=...
+```
+
+The bucket itself is created by `37-velero` via the `aws` Terraform provider pointed at Hetzner's S3 endpoint — no manual bucket setup needed. (Migrating these creds to SOPS is on the M2 list.)
+
+**Defaults.**
+
+- Velero: daily backup at 02:00 cluster time, 14-day retention, all namespaces.
+- etcd snapshots: every 6 hours, 7-day retention.
+
+**Restore drill** (run quarterly — untested backups are not backups):
+
+```sh
+# Create a throwaway namespace, back it up, delete, restore.
+kubectl create ns smoke-restore
+kubectl -n smoke-restore create deploy nginx --image=nginx
+velero backup create smoke-$(date +%s) --include-namespaces smoke-restore --wait
+kubectl delete ns smoke-restore
+velero restore create --from-backup smoke-... --wait
+kubectl -n smoke-restore get deploy nginx
+```
+
+`velero` is in the dev shell (`flake.nix`).
+
 ## Local development
 
-`shell.nix` / `flake.nix` pin the toolchain. `nix develop` (or `direnv allow`) brings in `terragrunt`, `tofu`, `talosctl`, `kubectl`, `argocd`, `helm`, etc.
+`shell.nix` / `flake.nix` pin the toolchain. `nix develop` (or `direnv allow`) brings in `terragrunt`, `tofu`, `talosctl`, `kubectl`, `argocd`, `helm`, `velero`, etc.

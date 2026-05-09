@@ -51,3 +51,8 @@ output "talos_version" {
   description = "Talos version applied to the cluster."
   value       = var.talos_version
 }
+
+output "talos_cp_endpoints" {
+  description = "Public IPv4 addresses of the control-plane Talos endpoints (port 50000). Used by downstream layers that talk directly to the Talos API, e.g., the etcd snapshot CronJob in 37-velero."
+  value       = [for n in local.cp_nodes : n.public_ipv4]
+}
