@@ -12,3 +12,7 @@ provider "kubectl" {
   client_key             = var.client_key
   load_config_file       = false
 }
+
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
+}

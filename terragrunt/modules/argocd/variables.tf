@@ -56,6 +56,17 @@ variable "argocd_chart_version" {
   default     = "9.5.13"
 }
 
+variable "domain" {
+  description = "Public domain. Argo CD UI is exposed at argocd.<domain>."
+  type        = string
+}
+
+variable "argocd_subdomain" {
+  description = "Subdomain for the Argo CD UI."
+  type        = string
+  default     = "argocd"
+}
+
 variable "gateway_api_version" {
   description = "Gateway API version. CRDs are fetched from the kubernetes-sigs/gateway-api release at this tag and applied before Cilium reconciles Gateway resources."
   type        = string

@@ -203,6 +203,65 @@ resource "kubectl_manifest" "httproute_argocd" {
   })
 }
 
+# ---------------------------------------------------------------------------
+# Wildcard DNS catch-all. Points *.<domain> at the Hetzner LB the Gateway
+# Service got allocated. New apps work the moment their HTTPRoute is in
+# place — no waiting on external-dns + DNS propagation.
+#
+# Specific A/AAAA records that external-dns publishes per HTTPRoute take
+# precedence (DNS spec: more-specific labels win), so this only ever serves
+# subdomains that don't have an explicit external-dns record. If the LB is
+# ever recreated with a new IP, re-running terragrunt apply on this layer
+# updates the wildcard. external-dns isn't aware of the wildcard and won't
+# touch it.
+# ---------------------------------------------------------------------------
+
+data "cloudflare_zone" "this" {
+  name = var.domain
+}
+
+# Wait for the Hetzner LB to actually have an IP before we try to publish
+# it. This data source re-reads on every apply, so a recreated LB rolls in
+# automatically.
+data "kubernetes_service" "gateway" {
+  metadata {
+    name      = "cilium-gateway-public"
+    namespace = kubernetes_namespace.gateway_system.metadata[0].name
+  }
+
+  depends_on = [kubectl_manifest.public_gateway]
+}
+
+locals {
+  lb_ingress       = try(data.kubernetes_service.gateway.status[0].load_balancer[0].ingress, [])
+  lb_ipv4_ingress  = [for ing in local.lb_ingress : ing.ip if can(regex("^[0-9.]+$", ing.ip))]
+  lb_ipv6_ingress  = [for ing in local.lb_ingress : ing.ip if can(regex(":", ing.ip))]
+}
+
+resource "cloudflare_record" "wildcard_a" {
+  count = length(local.lb_ipv4_ingress) > 0 ? 1 : 0
+
+  zone_id = data.cloudflare_zone.this.id
+  name    = "*"
+  type    = "A"
+  content = local.lb_ipv4_ingress[0]
+  ttl     = 1 # 1 = Cloudflare "auto" (5 min for DNS-only)
+  proxied = false
+  comment = "Catch-all → Hetzner LB."
+}
+
+resource "cloudflare_record" "wildcard_aaaa" {
+  count = length(local.lb_ipv6_ingress) > 0 ? 1 : 0
+
+  zone_id = data.cloudflare_zone.this.id
+  name    = "*"
+  type    = "AAAA"
+  content = local.lb_ipv6_ingress[0]
+  ttl     = 1
+  proxied = false
+  comment = "Catch-all → Hetzner LB IPv6."
+}
+
 resource "kubectl_manifest" "public_gateway" {
   yaml_body = yamlencode({
     apiVersion = "gateway.networking.k8s.io/v1"
