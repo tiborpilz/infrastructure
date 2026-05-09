@@ -43,4 +43,6 @@ inputs = {
 
   hcloud_token      = get_env("HCLOUD_TOKEN", "")
   hcloud_network_id = dependency.machines.outputs.network_id
+
+  domain = include.env.locals.domain
 }
