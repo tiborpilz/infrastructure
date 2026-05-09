@@ -1,6 +1,6 @@
 output "bucket_name" {
   description = "S3 bucket holding Velero backups and Talos etcd snapshots."
-  value       = aws_s3_bucket.backups.bucket
+  value       = minio_s3_bucket.backups.bucket
 }
 
 output "velero_namespace" {

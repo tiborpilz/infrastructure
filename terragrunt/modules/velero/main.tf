@@ -28,17 +28,9 @@ locals {
 # var.etcd_snapshot_retention_days.
 # ---------------------------------------------------------------------------
 
-resource "aws_s3_bucket" "backups" {
+resource "minio_s3_bucket" "backups" {
   bucket = var.bucket_name
-}
-
-resource "aws_s3_bucket_public_access_block" "backups" {
-  bucket = aws_s3_bucket.backups.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+  acl    = "private"
 }
 
 # ---------------------------------------------------------------------------
@@ -227,7 +219,7 @@ resource "kubectl_manifest" "cronjob_etcd_snapshot" {
                   env = [
                     { name = "TALOS_NODE", value = "127.0.0.1" },
                     { name = "S3_ENDPOINT", value = local.s3_endpoint },
-                    { name = "BUCKET", value = aws_s3_bucket.backups.bucket },
+                    { name = "BUCKET", value = minio_s3_bucket.backups.bucket },
                     { name = "RETENTION_DAYS", value = tostring(var.etcd_snapshot_retention_days) },
                   ]
 

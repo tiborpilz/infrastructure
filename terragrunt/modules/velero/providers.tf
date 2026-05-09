@@ -13,23 +13,13 @@ provider "kubectl" {
   load_config_file       = false
 }
 
-# S3 client pointed at Hetzner Object Storage. The aws provider is the
-# best-supported S3 client in the Terraform registry; the "aws" name is a
-# misnomer here. All AWS-specific lookups (STS, metadata, account ID) are
-# disabled because Hetzner doesn't speak them.
-provider "aws" {
-  region     = var.hcloud_object_storage_region
-  access_key = var.hcloud_s3_access_key
-  secret_key = var.hcloud_s3_secret_key
-
-  skip_credentials_validation = true
-  skip_metadata_api_check     = true
-  skip_region_validation      = true
-  skip_requesting_account_id  = true
-
-  s3_use_path_style = true
-
-  endpoints {
-    s3 = "https://${var.hcloud_object_storage_region}.your-objectstorage.com"
-  }
+# S3 client pointed at Hetzner Object Storage. The minio provider speaks the
+# S3 wire protocol and skips the AWS-only IAM/STS plumbing the aws provider
+# tries (and fails) to use against Hetzner.
+provider "minio" {
+  minio_server   = "${var.hcloud_object_storage_region}.your-objectstorage.com"
+  minio_user     = var.hcloud_s3_access_key
+  minio_password = var.hcloud_s3_secret_key
+  minio_ssl      = true
+  minio_region   = var.hcloud_object_storage_region
 }
