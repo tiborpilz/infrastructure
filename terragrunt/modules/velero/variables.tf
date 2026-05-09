@@ -21,11 +21,6 @@ variable "client_key" {
   sensitive   = true
 }
 
-variable "kubeconfig_path" {
-  description = "Path to a kubeconfig file. Used by the readiness wait's local-exec kubectl call."
-  type        = string
-}
-
 variable "talosconfig_raw" {
   description = "Raw talosconfig YAML. Mounted as a Secret into the etcd snapshot CronJob so talosctl can authenticate against the Talos API."
   type        = string
