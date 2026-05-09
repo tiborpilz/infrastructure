@@ -67,7 +67,7 @@ variable "bucket_name" {
 variable "velero_chart_version" {
   description = "vmware-tanzu/velero Helm chart version."
   type        = string
-  default     = "8.5.0"
+  default     = "12.0.1"
 }
 
 variable "velero_values" {

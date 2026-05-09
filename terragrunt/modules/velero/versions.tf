@@ -10,12 +10,12 @@ terraform {
       source  = "gavinbunney/kubectl"
       version = "~> 1.19"
     }
-    # The aws provider here is just an S3 client. Hetzner Object Storage is
-    # S3-compatible; we point the provider's endpoint at Hetzner's host. No
-    # actual AWS account is involved.
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+    # Bucket management on Hetzner Object Storage. The aws provider works for
+    # creates but errors on s3:GetPublicAccessBlock (Hetzner doesn't expose
+    # that API), and signing-quirks make a few other resources flaky.
+    minio = {
+      source  = "aminueza/minio"
+      version = "~> 3.0"
     }
   }
 }
