@@ -160,6 +160,34 @@ resource "kubernetes_namespace" "argocd" {
   depends_on = [helm_release.hcloud_ccm]
 }
 
+# OIDC client_secret for Argo CD's authentik integration. Generated here so
+# the value is baked into the Helm release at deploy time. The matching
+# `authentik_provider_oauth2.argocd` lives in `50-argocd-oidc` (a downstream
+# glue layer) — Argo CD is deployed BEFORE authentik (authentik runs as an
+# Argo CD Application), so the per-app convention can't apply here without
+# a dependency cycle. Future apps deployed AFTER authentik own both halves
+# in one module.
+#
+# `special = false` because Argo CD's `$secretRef` syntax in oidc.config
+# is sensitive to symbols that get YAML-interpreted.
+resource "random_password" "argocd_oidc_client_secret" {
+  length  = 48
+  special = false
+}
+
+locals {
+  argocd_url               = "https://${var.argocd_subdomain}.${var.domain}"
+  argocd_oidc_redirect_uri = "${local.argocd_url}/auth/callback"
+
+  argocd_oidc_config = yamlencode({
+    name           = "authentik"
+    issuer         = "https://auth.${var.domain}/application/o/argocd/"
+    clientID       = "argocd"
+    clientSecret   = "$oidc.argocd.clientSecret"
+    requestedScopes = ["openid", "profile", "email", "groups"]
+  })
+}
+
 # Argo CD itself, plus the three AppProjects via extraObjects.
 # Inlining AppProjects in the same release avoids the kubernetes_manifest
 # plan-time CRD lookup problem.
@@ -180,6 +208,37 @@ resource "helm_release" "argocd" {
       extraArgs = [
         "--insecure",
       ]
+    }
+
+    configs = {
+      # argocd-cm fields. The chart re-renders the ConfigMap on every
+      # upgrade, so this is the chart-supported path for OIDC config.
+      cm = {
+        "url"            = local.argocd_url
+        "oidc.config"    = local.argocd_oidc_config
+        # Disable the chart-generated `admin/password` shared login. To
+        # re-enable for break-glass, flip this back to "true" and apply.
+        "admin.enabled"  = "false"
+      }
+
+      # argocd-secret fields. `clientSecret: $oidc.argocd.clientSecret` in
+      # the cm above resolves to the value of this Secret key at runtime.
+      secret = {
+        extra = {
+          "oidc.argocd.clientSecret" = random_password.argocd_oidc_client_secret.result
+        }
+      }
+
+      # RBAC. authentik users land in `role:readonly` by default; the
+      # `platform-admins` group (created in 45-authentik-config) maps to
+      # `role:admin`.
+      rbac = {
+        "policy.csv"     = "g, platform-admins, role:admin"
+        "policy.default" = "role:readonly"
+        # Read groups claim from OIDC; default field is "groups" which
+        # matches what authentik emits.
+        "scopes" = "[groups]"
+      }
     }
   })]
 
