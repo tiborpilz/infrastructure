@@ -19,6 +19,7 @@ output "argocd_oidc_redirect_uri" {
   value       = module.argocd.argocd_oidc_redirect_uri
 }
 
+
 output "gateway_namespace" {
   description = "Namespace hosting the public Gateway."
   value       = module.networking.gateway_namespace
@@ -66,7 +67,4 @@ output "smoke_app_url" {
   value       = module.smoke_app.url
 }
 
-output "backup_bucket_name" {
-  description = "Velero and etcd snapshot bucket."
-  value       = module.velero.bucket_name
-}
+

@@ -14,9 +14,5 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.8"
     }
-    gitea = {
-      source  = "Lerentis/gitea"
-      version = "~> 0.16"
-    }
   }
 }

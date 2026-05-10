@@ -13,8 +13,3 @@ provider "kubectl" {
   load_config_file       = false
 }
 
-provider "gitea" {
-  base_url = var.forgejo_url
-  username = data.kubernetes_secret.forgejo_admin.data["username"]
-  password = data.kubernetes_secret.forgejo_admin.data["password"]
-}

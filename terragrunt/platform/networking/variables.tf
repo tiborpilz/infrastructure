@@ -26,6 +26,16 @@ variable "domain" {
   type        = string
 }
 
+variable "hcloud_location" {
+  description = "Hetzner Cloud location (e.g. fsn1) for the Gateway's LoadBalancer. Hetzner CCM refuses to create the LB without this."
+  type        = string
+}
+
+variable "kubeconfig_path" {
+  description = "Path to the kubeconfig. Used by the local-exec poll that waits for the Gateway's LoadBalancer Service to receive its external IP."
+  type        = string
+}
+
 variable "cloudflare_api_token" {
   description = "Cloudflare API token. Scoped to the zone with Zone:Read + Zone:DNS:Edit. Used by both cert-manager (DNS-01 challenge) and external-dns."
   type        = string

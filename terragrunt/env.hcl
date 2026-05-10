@@ -1,4 +1,5 @@
 locals {
+  secrets = yamldecode(sops_decrypt_file("${get_repo_root()}/terragrunt/secrets.enc.yaml"))
   env_name     = "hetzernetes"
   cluster_name = local.env_name
   location     = "fsn1"
@@ -43,7 +44,7 @@ locals {
   ]
 
   managed_users = {
-    example = {
+    tibor = {
       name   = "Tibor"
       email  = "tibor@pilz.berlin"
       admin  = true
@@ -65,7 +66,9 @@ locals {
     # }
   }
 
-  managed_user_passwords = {}
+  managed_user_passwords = {
+    tibor = local.secrets.authentik_tibor_password
+  }
 
   # Valid dummy PEM material for Terragrunt dependency mocks. Providers parse
   # Kubernetes TLS fields during plan, so plain strings like "mock-ca" fail

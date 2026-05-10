@@ -38,3 +38,4 @@ output "argocd_oidc_redirect_uri" {
   description = "Redirect URI authentik must whitelist for the OIDC handshake."
   value       = local.argocd_oidc_redirect_uri
 }
+

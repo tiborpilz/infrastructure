@@ -14,6 +14,8 @@ module "argocd" {
   hcloud_token      = var.hcloud_token
   hcloud_network_id = var.hcloud_network_id
 
+  sops_age_key = var.sops_age_key
+
   domain = var.domain
 }
 
@@ -27,6 +29,8 @@ module "networking" {
 
   argocd_ready         = local.argocd_ready
   domain               = var.domain
+  hcloud_location      = var.hcloud_location
+  kubeconfig_path      = var.kubeconfig_path
   cloudflare_api_token = var.cloudflare_api_token
   cert_manager_values  = var.cert_manager_values
   external_dns_values  = var.external_dns_values
@@ -59,26 +63,6 @@ module "platform_data" {
 
   hcloud_csi_values = var.hcloud_csi_values
   cnpg_values       = var.cnpg_values
-}
-
-module "velero" {
-  source = "./velero"
-
-  kubernetes_host        = var.kubernetes_host
-  cluster_ca_certificate = var.cluster_ca_certificate
-  client_certificate     = var.client_certificate
-  client_key             = var.client_key
-
-  argocd_ready        = local.argocd_ready
-  platform_data_ready = local.platform_data_ready
-  talosconfig_raw     = var.talosconfig_raw
-  talos_cp_endpoints  = var.talos_cp_endpoints
-
-  hcloud_object_storage_region = var.hcloud_object_storage_region
-  hcloud_s3_access_key         = var.hcloud_s3_access_key
-  hcloud_s3_secret_key         = var.hcloud_s3_secret_key
-  bucket_name                  = var.bucket_name
-  velero_values                = var.velero_values
 }
 
 module "authentik" {

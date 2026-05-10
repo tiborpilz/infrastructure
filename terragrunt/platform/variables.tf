@@ -26,17 +26,6 @@ variable "kubeconfig_path" {
   type        = string
 }
 
-variable "talosconfig_raw" {
-  description = "Raw talosconfig YAML for the etcd snapshot job."
-  type        = string
-  sensitive   = true
-}
-
-variable "talos_cp_endpoints" {
-  description = "Public IPv4 addresses of Talos control-plane endpoints."
-  type        = list(string)
-}
-
 variable "hcloud_token" {
   description = "Hetzner Cloud API token."
   type        = string
@@ -47,25 +36,9 @@ variable "hcloud_network_id" {
   description = "Hetzner Cloud private network ID."
   type        = string
 }
-variable "hcloud_object_storage_region" {
-  description = "Hetzner Object Storage region."
-  type        = string
-}
 
-variable "hcloud_s3_access_key" {
-  description = "Hetzner Object Storage S3 access key."
-  type        = string
-  sensitive   = true
-}
-
-variable "hcloud_s3_secret_key" {
-  description = "Hetzner Object Storage S3 secret key."
-  type        = string
-  sensitive   = true
-}
-
-variable "bucket_name" {
-  description = "Backup bucket name."
+variable "hcloud_location" {
+  description = "Hetzner Cloud location (e.g. fsn1)."
   type        = string
 }
 
@@ -81,6 +54,12 @@ variable "admin_email" {
 
 variable "cloudflare_api_token" {
   description = "Cloudflare API token."
+  type        = string
+  sensitive   = true
+}
+
+variable "sops_age_key" {
+  description = "Cluster age private key (whole keys.txt body). Mounted into Argo CD's repo-server so KSOPS can decrypt manifests pulled from Git."
   type        = string
   sensitive   = true
 }
@@ -102,11 +81,6 @@ variable "hcloud_csi_values" {
 
 variable "cnpg_values" {
   description = "Rendered Helm values for CloudNativePG."
-  type        = string
-}
-
-variable "velero_values" {
-  description = "Rendered Helm values for Velero."
   type        = string
 }
 

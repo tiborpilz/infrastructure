@@ -1,6 +1,6 @@
 locals {
   argocd_namespace = "argocd"
-  domain_slug = replace(var.domain, ".", "-")
+  domain_slug      = replace(var.domain, ".", "-")
 }
 
 resource "terraform_data" "argocd_gate" {
@@ -220,16 +220,44 @@ data "cloudflare_zone" "this" {
   name = var.domain
 }
 
-# Wait for the Hetzner LB to actually have an IP before we try to publish
-# it. This data source re-reads on every apply, so a recreated LB rolls in
-# automatically.
+# Hetzner CCM populates the Service's external IP ~30s after Cilium creates
+# it. kubectl_manifest.public_gateway returns before that hop completes, so
+# the wildcard A/AAAA below would otherwise read an empty ingress list.
+resource "terraform_data" "wait_for_gateway_lb" {
+  triggers_replace = {
+    gateway_uid = kubectl_manifest.public_gateway.uid
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
+    command     = <<-EOT
+      export KUBECONFIG="${var.kubeconfig_path}"
+      ns="${kubernetes_namespace.gateway_system.metadata[0].name}"
+      svc="cilium-gateway-public"
+      for i in $(seq 1 60); do
+        ip=$(kubectl -n "$ns" get svc "$svc" \
+          -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+        if [ -n "$ip" ]; then
+          echo "Gateway LB has address $ip"
+          exit 0
+        fi
+        echo "waiting for Hetzner LB on $ns/$svc (attempt $i/60)..."
+        sleep 5
+      done
+      echo "Gateway LB never received an address after 5 minutes" >&2
+      kubectl -n "$ns" get svc "$svc" -o yaml >&2 || true
+      exit 1
+    EOT
+  }
+}
+
 data "kubernetes_service" "gateway" {
   metadata {
     name      = "cilium-gateway-public"
     namespace = kubernetes_namespace.gateway_system.metadata[0].name
   }
 
-  depends_on = [kubectl_manifest.public_gateway]
+  depends_on = [terraform_data.wait_for_gateway_lb]
 }
 
 locals {
@@ -239,8 +267,6 @@ locals {
 }
 
 resource "cloudflare_record" "wildcard_a" {
-  count = length(local.lb_ipv4_ingress) > 0 ? 1 : 0
-
   zone_id = data.cloudflare_zone.this.id
   name    = "*"
   type    = "A"
@@ -251,8 +277,6 @@ resource "cloudflare_record" "wildcard_a" {
 }
 
 resource "cloudflare_record" "wildcard_aaaa" {
-  count = length(local.lb_ipv6_ingress) > 0 ? 1 : 0
-
   zone_id = data.cloudflare_zone.this.id
   name    = "*"
   type    = "AAAA"
@@ -275,6 +299,16 @@ resource "kubectl_manifest" "public_gateway" {
     }
     spec = {
       gatewayClassName = "cilium"
+
+      # Hetzner CCM requires `location` (or `network-zone`) to provision the
+      # LB. `disable-private-ingress` keeps the LB's private 10.x IP out of
+      # status.loadBalancer.ingress so external-dns doesn't publish it.
+      infrastructure = {
+        annotations = {
+          "load-balancer.hetzner.cloud/location"                = var.hcloud_location
+          "load-balancer.hetzner.cloud/disable-private-ingress" = "true"
+        }
+      }
 
       listeners = [
         {
