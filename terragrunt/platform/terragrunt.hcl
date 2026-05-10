@@ -21,8 +21,6 @@ dependency "cluster" {
     client_certificate     = include.env.locals.mock_kubernetes_certificate_pem
     client_key             = include.env.locals.mock_kubernetes_key_pem
     network_id             = "0"
-    talosconfig            = "mock-talosconfig"
-    talos_cp_endpoints     = ["203.0.113.1"]
   }
   mock_outputs_allowed_terraform_commands = ["validate", "init", "plan"]
 }
@@ -34,18 +32,13 @@ inputs = {
   client_key             = dependency.cluster.outputs.client_key
 
   kubeconfig_path      = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}.kubeconfig"
-  talosconfig_raw      = dependency.cluster.outputs.talosconfig
-  talos_cp_endpoints   = dependency.cluster.outputs.talos_cp_endpoints
-  hcloud_token         = get_env("HCLOUD_TOKEN", "")
+  hcloud_token         = include.env.locals.secrets.hcloud_token
   hcloud_network_id    = dependency.cluster.outputs.network_id
+  hcloud_location      = include.env.locals.location
   domain               = include.env.locals.domain
   admin_email          = include.env.locals.acme_email
-  cloudflare_api_token = get_env("CLOUDFLARE_API_TOKEN", "")
-
-  hcloud_object_storage_region = include.env.locals.location
-  hcloud_s3_access_key         = get_env("HCLOUD_S3_ACCESS_KEY", "")
-  hcloud_s3_secret_key         = get_env("HCLOUD_S3_SECRET_KEY", "")
-  bucket_name                  = "backups-${include.env.locals.env_name}"
+  cloudflare_api_token = include.env.locals.secrets.cloudflare_api_token
+  sops_age_key         = include.env.locals.secrets.sops_age_key
 
   cert_manager_values = templatefile(
     "${get_repo_root()}/applications/cert-manager/values.yaml.tpl",
@@ -70,14 +63,6 @@ inputs = {
   cnpg_values = templatefile(
     "${get_repo_root()}/applications/cnpg-operator/values.yaml.tpl",
     {}
-  )
-
-  velero_values = templatefile(
-    "${get_repo_root()}/applications/velero/values.yaml.tpl",
-    {
-      bucket_name = "backups-${include.env.locals.env_name}"
-      region      = include.env.locals.location
-    }
   )
 
   authentik_values_yaml = templatefile(

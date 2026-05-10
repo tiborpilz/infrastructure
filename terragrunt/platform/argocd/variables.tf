@@ -72,3 +72,15 @@ variable "gateway_api_version" {
   type        = string
   default     = "v1.2.1"
 }
+
+variable "ksops_image" {
+  description = "viaductoss/ksops image used as an initContainer to drop ksops + kustomize binaries into the Argo CD repo-server."
+  type        = string
+  default     = "viaductoss/ksops:v4.3.2"
+}
+
+variable "sops_age_key" {
+  description = "Cluster age private key (whole keys.txt body). Mounted into Argo CD's repo-server at ~/.config/sops/age/keys.txt so KSOPS can decrypt SOPS-encrypted manifests pulled from Git."
+  type        = string
+  sensitive   = true
+}

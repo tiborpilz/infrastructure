@@ -9,8 +9,8 @@ output "woodpecker_namespace" {
 }
 
 output "forgejo_oauth_app_name" {
-  description = "Forgejo OAuth2 application name used by Woodpecker."
-  value       = gitea_oauth2_app.woodpecker.name
+  description = "Forgejo OAuth2 application name registered by the bootstrap Job."
+  value       = local.forgejo_oauth_name
 }
 
 output "forgejo_oauth_redirect_uri" {

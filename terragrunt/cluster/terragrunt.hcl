@@ -10,6 +10,17 @@ include "env" {
 
 terraform {
   source = "."
+
+  # The hcloud provider has no explicit `token =` config in the cluster
+  # layer; it reads HCLOUD_TOKEN from the environment. Inject it from SOPS
+  # (decrypted once in env.hcl, exposed via include.env.locals.secrets) so
+  # the user/CI doesn't need to `export` anything before running.
+  extra_arguments "secrets" {
+    commands = get_terraform_commands_that_need_vars()
+    env_vars = {
+      HCLOUD_TOKEN = include.env.locals.secrets.hcloud_token
+    }
+  }
 }
 
 inputs = {
