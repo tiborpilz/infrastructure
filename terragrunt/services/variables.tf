@@ -1,0 +1,146 @@
+variable "kubernetes_host" {
+  description = "Kubernetes API server URL."
+  type        = string
+}
+
+variable "cluster_ca_certificate" {
+  description = "Kubernetes cluster CA certificate."
+  type        = string
+  sensitive   = true
+}
+
+variable "client_certificate" {
+  description = "Kubernetes client certificate."
+  type        = string
+  sensitive   = true
+}
+
+variable "client_key" {
+  description = "Kubernetes client key."
+  type        = string
+  sensitive   = true
+}
+
+variable "kubeconfig_path" {
+  description = "Path to the kubeconfig used by readiness waits."
+  type        = string
+}
+
+variable "domain" {
+  description = "Public domain."
+  type        = string
+}
+
+variable "admin_email" {
+  description = "Platform admin email."
+  type        = string
+}
+
+variable "gateway_namespace" {
+  description = "Namespace of the public Gateway."
+  type        = string
+}
+
+variable "gateway_name" {
+  description = "Name of the public Gateway."
+  type        = string
+}
+
+variable "storage_class" {
+  description = "Default platform StorageClass."
+  type        = string
+}
+
+variable "platform_data_ready" {
+  description = "Sentinel proving platform data controllers are ready."
+  type        = bool
+}
+
+variable "authentik_url" {
+  description = "Public URL of the authentik instance."
+  type        = string
+}
+
+variable "authentik_token" {
+  description = "Bootstrap admin token for the authentik API."
+  type        = string
+  sensitive   = true
+}
+
+variable "authentik_ready" {
+  description = "Sentinel proving authentik is reachable."
+  type        = bool
+}
+
+variable "argocd_url" {
+  description = "Public URL of the Argo CD UI."
+  type        = string
+}
+
+variable "argocd_oidc_client_id" {
+  description = "OIDC client_id baked into Argo CD."
+  type        = string
+}
+
+variable "argocd_oidc_client_secret" {
+  description = "OIDC client_secret baked into Argo CD."
+  type        = string
+  sensitive   = true
+}
+
+variable "argocd_oidc_redirect_uri" {
+  description = "Redirect URI authentik must whitelist for Argo CD."
+  type        = string
+}
+
+variable "managed_users" {
+  description = "Declarative Authentik users keyed by username."
+  type = map(object({
+    name       = string
+    email      = string
+    admin      = optional(bool, false)
+    groups     = optional(list(string), [])
+    is_active  = optional(bool, true)
+    path       = optional(string, "users/managed")
+    attributes = optional(map(string), {})
+  }))
+  default = {}
+}
+
+variable "managed_user_passwords" {
+  description = "Optional plaintext passwords for managed users."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+variable "platform_admin_groups" {
+  description = "Groups assigned to managed users with admin = true."
+  type        = list(string)
+}
+
+variable "authentik_superuser_groups" {
+  description = "Managed groups whose members should be authentik superusers."
+  type        = list(string)
+}
+
+variable "forgejo_values_yaml" {
+  description = "Rendered Helm values for Forgejo."
+  type        = string
+}
+
+variable "forgejo_database_yaml" {
+  description = "Rendered CNPG Cluster YAML for Forgejo."
+  type        = string
+}
+
+variable "woodpecker_values_yaml" {
+  description = "Rendered Helm values for Woodpecker."
+  type        = string
+}
+
+variable "woodpecker_admins" {
+  description = "Forgejo usernames that should become Woodpecker admins."
+  type        = list(string)
+  default     = []
+}
