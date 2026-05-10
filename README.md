@@ -19,6 +19,7 @@ The `terragrunt/envs/<env>/` directory contains the layered Terragrunt stacks. A
 | `45-authentik-config` | General authentik state — platform groups and declarative managed users. No per-app clients. |
 | `50-argocd-oidc` | Glue layer: creates the authentik objects matching Argo CD's TF-baked OIDC client. See "Argo CD exception" below. |
 | `55-forgejo` | Forgejo at `git.<domain>` + CNPG `Cluster` + app-owned authentik OIDC client/secrets. |
+| `60-woodpecker` | Woodpecker CI at `ci.<domain>` + Forgejo OAuth2 application + Kubernetes agent backend. |
 
 ## Per-app identity convention
 
