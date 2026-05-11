@@ -318,6 +318,38 @@ resource "kubectl_manifest" "argo_app_woodpecker" {
   ]
 }
 
+# See oauth2-proxy module: same Cilium race. Wait until the chart-deployed
+# Service exists before applying the HTTPRoute so backendRefs resolve on the
+# first reconcile.
+resource "terraform_data" "wait_for_woodpecker_svc" {
+  triggers_replace = {
+    namespace = kubernetes_namespace.woodpecker.metadata[0].name
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
+    environment = {
+      KUBECONFIG = var.kubeconfig_path
+    }
+    command = <<-EOT
+      set -euo pipefail
+      ns="${kubernetes_namespace.woodpecker.metadata[0].name}"
+      for i in $(seq 1 60); do
+        if kubectl -n "$ns" get svc woodpecker-server >/dev/null 2>&1; then
+          echo "$ns/woodpecker-server ready"
+          exit 0
+        fi
+        echo "waiting for $ns/woodpecker-server (attempt $i/60)..."
+        sleep 5
+      done
+      echo "$ns/woodpecker-server never appeared after 5 minutes" >&2
+      exit 1
+    EOT
+  }
+
+  depends_on = [kubectl_manifest.argo_app_woodpecker]
+}
+
 resource "kubectl_manifest" "httproute_woodpecker" {
   yaml_body = yamlencode({
     apiVersion = "gateway.networking.k8s.io/v1"
@@ -358,7 +390,7 @@ resource "kubectl_manifest" "httproute_woodpecker" {
   })
 
   depends_on = [
-    kubectl_manifest.argo_app_woodpecker,
+    terraform_data.wait_for_woodpecker_svc,
   ]
 }
 
