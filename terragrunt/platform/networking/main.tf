@@ -392,3 +392,4 @@ resource "kubectl_manifest" "httproute_https_redirect" {
 
   depends_on = [kubectl_manifest.public_gateway]
 }
+

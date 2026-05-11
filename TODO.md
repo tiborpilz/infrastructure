@@ -54,4 +54,21 @@ https://tekton.dev/docs/pipelines-as-code/
 ## External Secrets Operator/Provider
 
 ## Cilium
-+ Hubble
+
+### Expose the Hubble UI
+
+Hubble relay + UI are already enabled in the Cilium chart values (`hubble.relay.enabled`, `hubble.ui.enabled`) but the UI Service is ClusterIP-only. Add an HTTPRoute attaching to the public Gateway (or a separate auth-gated Gateway) so it's reachable at `hubble.<domain>`. Probably wants OIDC auth in front since Hubble exposes full L7 flow data; easiest is to put it behind oauth2-proxy backed by authentik, similar to how Argo CD is wired.
+
+### HTTPRoute / Service ordering against Cilium — TEMPORARY workaround
+
+Treat the current per-module `terraform_data.wait_for_*_svc` pattern as a stopgap, not a long-term answer.
+
+Cilium's gatewayAPI controller resolves HTTPRoute `backendRefs` at create time and the Service watcher doesn't reliably re-reconcile when the Service appears later. Right now each service module (`services/oauth2-proxy`, `services/woodpecker`, …) has a `local-exec` block that polls `kubectl get svc` before the HTTPRoute is applied. Each new service needs the same boilerplate, which isn't sustainable.
+
+Better landing spots to evaluate:
+
+- HTTPRoute owned by the chart, not Terraform. When the chart applies its own HTTPRoute alongside the Service, Argo's sync ordering puts the Service first and the race goes away. Forgejo already works this way via `gateway.routes` in chart values; do the same for Woodpecker (chart supports it) and inline-render an HTTPRoute manifest into the oauth2-proxy chart's `extraManifests`.
+- Confirm/file the upstream Cilium bug. The Service-watch re-reconcile failure is the actual defect. Search Cilium issues for "HTTPRoute ResolvedRefs Service not found", attach a minimal repro if no matching ticket exists, then track the fix version and drop the waits when we land on it.
+- Move to a controller that handles ext_authz / per-route filters natively (Envoy Gateway, Traefik), covered separately in the "shared oauth2-proxy via CiliumEnvoyConfig" thread; same migration could eliminate this class of race entirely.
+
+When bumping `cilium_chart_version`, re-check the race; if a freshly applied HTTPRoute reliably resolves its Service after the chart finishes rolling out, delete every `wait_for_*_svc` block.
