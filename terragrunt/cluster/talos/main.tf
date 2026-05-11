@@ -1,12 +1,12 @@
 locals {
-  cp_nodes      = var.nodes.control_plane
-  worker_nodes  = var.nodes.workers
-  first_cp_key  = sort(keys(local.cp_nodes))[0]
-  first_cp_node = local.cp_nodes[local.first_cp_key]
+  control_plane_nodes      = var.nodes.control_plane
+  worker_nodes             = var.nodes.workers
+  first_control_plane_key  = sort(keys(local.control_plane_nodes))[0]
+  first_control_plane_node = local.control_plane_nodes[local.first_control_plane_key]
 
   effective_endpoint = coalesce(
     var.cluster_endpoint,
-    "https://${local.first_cp_node.public_ipv4}:6443",
+    "https://${local.first_control_plane_node.public_ipv4}:6443",
   )
 
   # Cluster-wide config patch.
@@ -35,7 +35,7 @@ locals {
 # before attempting to apply config. Uses bash's built-in /dev/tcp so no
 # external tool is required.
 resource "terraform_data" "wait_for_maintenance" {
-  for_each = local.cp_nodes
+  for_each = local.control_plane_nodes
 
   triggers_replace = {
     public_ipv4 = each.value.public_ipv4
@@ -65,7 +65,7 @@ resource "talos_machine_secrets" "this" {
 
 # Per-CP-node machine config (control-plane role).
 data "talos_machine_configuration" "control_plane" {
-  for_each = local.cp_nodes
+  for_each = local.control_plane_nodes
 
   cluster_name       = var.cluster_name
   cluster_endpoint   = local.effective_endpoint
@@ -87,7 +87,7 @@ data "talos_machine_configuration" "control_plane" {
 # Apply the config to each CP node. The provider uses --insecure mode
 # automatically when the node has no client cert (i.e., maintenance mode).
 resource "talos_machine_configuration_apply" "control_plane" {
-  for_each = local.cp_nodes
+  for_each = local.control_plane_nodes
 
   client_configuration        = talos_machine_secrets.this.client_configuration
   machine_configuration_input = data.talos_machine_configuration.control_plane[each.key].machine_configuration
@@ -165,8 +165,8 @@ resource "talos_machine_configuration_apply" "worker" {
 # already bootstrapped.
 resource "talos_machine_bootstrap" "this" {
   client_configuration = talos_machine_secrets.this.client_configuration
-  node                 = local.first_cp_node.public_ipv4
-  endpoint             = local.first_cp_node.public_ipv4
+  node                 = local.first_control_plane_node.public_ipv4
+  endpoint             = local.first_control_plane_node.public_ipv4
 
   depends_on = [talos_machine_configuration_apply.control_plane]
 }
@@ -174,8 +174,8 @@ resource "talos_machine_bootstrap" "this" {
 # Fetch kubeconfig once the cluster is bootstrapped.
 resource "talos_cluster_kubeconfig" "this" {
   client_configuration = talos_machine_secrets.this.client_configuration
-  node                 = local.first_cp_node.public_ipv4
-  endpoint             = local.first_cp_node.public_ipv4
+  node                 = local.first_control_plane_node.public_ipv4
+  endpoint             = local.first_control_plane_node.public_ipv4
 
   depends_on = [talos_machine_bootstrap.this]
 }
@@ -184,8 +184,8 @@ resource "talos_cluster_kubeconfig" "this" {
 data "talos_client_configuration" "this" {
   cluster_name         = var.cluster_name
   client_configuration = talos_machine_secrets.this.client_configuration
-  endpoints            = [for n in local.cp_nodes : n.public_ipv4]
-  nodes                = [for n in local.cp_nodes : n.public_ipv4]
+  endpoints            = [for n in local.control_plane_nodes : n.public_ipv4]
+  nodes                = [for n in local.control_plane_nodes : n.public_ipv4]
 }
 
 # Optionally write kubeconfig + talosconfig to disk for direct CLI use.
@@ -204,4 +204,66 @@ resource "local_sensitive_file" "talosconfig" {
   filename        = var.talosconfig_path
   content         = data.talos_client_configuration.this.talos_config
   file_permission = "0600"
+}
+
+# Bootstrap returns once etcd is initialized, and config_apply returns once
+# Talos has accepted the machine config — neither waits for the apiserver to
+# be fully responsive or for the kubelet on each node to register. Platform
+# hits the API before that and stalls. Block here until /healthz is OK and
+# every expected node is visible (NotReady is fine — CNI is platform's job).
+resource "terraform_data" "wait_for_cluster" {
+  triggers_replace = {
+    nodes = join(",", concat(
+      [for k, _ in local.control_plane_nodes : k],
+      [for k, _ in local.worker_nodes : k],
+    ))
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
+    environment = {
+      KUBECONFIG = local_sensitive_file.kubeconfig[0].filename
+    }
+    command = <<-EOT
+      set -euo pipefail
+
+      for i in $(seq 1 60); do
+        if kubectl get --raw /healthz >/dev/null 2>&1; then
+          echo "apiserver /healthz OK"
+          break
+        fi
+        echo "waiting for apiserver (attempt $i/60)..."
+        sleep 5
+      done
+      kubectl get --raw /healthz >/dev/null
+
+      expected="${join(" ", concat(
+        [for k, _ in local.control_plane_nodes : k],
+        [for k, _ in local.worker_nodes : k],
+      ))}"
+
+      for i in $(seq 1 60); do
+        missing=""
+        for node in $expected; do
+          if ! kubectl get node "$node" >/dev/null 2>&1; then
+            missing="$missing $node"
+          fi
+        done
+        if [ -z "$missing" ]; then
+          echo "all nodes registered: $expected"
+          exit 0
+        fi
+        echo "waiting for nodes to register, missing:$missing (attempt $i/60)..."
+        sleep 5
+      done
+      echo "nodes never registered within 5 minutes: $missing" >&2
+      exit 1
+    EOT
+  }
+
+  depends_on = [
+    talos_cluster_kubeconfig.this,
+    talos_machine_configuration_apply.worker,
+    local_sensitive_file.kubeconfig,
+  ]
 }

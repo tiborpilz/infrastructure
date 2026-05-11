@@ -240,6 +240,40 @@ locals {
   }
 }
 
+resource "terraform_data" "wait_for_argocd_crds" {
+  triggers_replace = {
+    chart_version = var.argocd_chart_version
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
+    environment = {
+      KUBECONFIG = var.kubeconfig_path
+    }
+    command = <<-EOT
+      set -euo pipefail
+      for i in $(seq 1 60); do
+        if kubectl get crd applications.argoproj.io >/dev/null 2>&1 \
+           && kubectl get crd appprojects.argoproj.io >/dev/null 2>&1; then
+          # Ensure the API endpoint is actually being served (CRD established
+          # doesn't always mean discovery has refreshed).
+          if kubectl get applications.argoproj.io -A >/dev/null 2>&1 \
+             && kubectl get appprojects.argoproj.io -A >/dev/null 2>&1; then
+            echo "Argo CD CRDs ready and served"
+            exit 0
+          fi
+        fi
+        echo "waiting for Argo CD CRDs (attempt $i/60)..."
+        sleep 5
+      done
+      echo "Argo CD CRDs never became ready" >&2
+      exit 1
+    EOT
+  }
+
+  depends_on = [helm_release.argocd]
+}
+
 resource "kubectl_manifest" "appproject" {
   for_each = local.appprojects
 
@@ -258,5 +292,5 @@ resource "kubectl_manifest" "appproject" {
     )
   })
 
-  depends_on = [helm_release.argocd]
+  depends_on = [terraform_data.wait_for_argocd_crds]
 }

@@ -78,7 +78,7 @@ output "talos_version" {
   value       = module.talos.talos_version
 }
 
-output "talos_cp_endpoints" {
+output "talos_control_plane_endpoints" {
   description = "Public IPv4 addresses of Talos control-plane endpoints."
-  value       = module.talos.talos_cp_endpoints
+  value       = module.talos.talos_control_plane_endpoints
 }

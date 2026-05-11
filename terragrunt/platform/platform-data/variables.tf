@@ -55,7 +55,7 @@ variable "cnpg_values" {
 }
 
 variable "argocd_ready" {
-  description = "Sentinel proving Argo CD and its Application CRD exist before this module applies Application resources."
-  type        = bool
-  default     = true
+  description = "Sentinel proving Argo CD and its Application/AppProject CRDs are served by the apiserver before this module applies Application resources. Carries the upstream wait's resource ID."
+  type        = string
+  default     = ""
 }

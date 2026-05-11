@@ -3,6 +3,11 @@ output "argocd_namespace" {
   value       = kubernetes_namespace.argocd.metadata[0].name
 }
 
+output "argocd_ready" {
+  description = "Readiness sentinel — non-empty once Argo CD's CRDs (Application, AppProject) are served by the apiserver. Downstream modules that apply Argo CD Application CRs should gate on this."
+  value       = terraform_data.wait_for_argocd_crds.id
+}
+
 output "argocd_chart_version" {
   description = "Argo CD Helm chart version that was applied."
   value       = var.argocd_chart_version

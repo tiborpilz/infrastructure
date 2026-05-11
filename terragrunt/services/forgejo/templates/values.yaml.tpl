@@ -52,7 +52,9 @@ service:
 gitea:
   admin:
     existingSecret: forgejo-admin
-    email: ${admin_email}
+    # Dedicated address so ACCOUNT_LINKING=auto can't match it against a
+    # real user's OIDC email and silently link them to this bootstrap admin.
+    email: ${bootstrap_admin_email}
     passwordMode: keepUpdated
 
   oauth:
@@ -60,6 +62,12 @@ gitea:
       provider: openidConnect
       existingSecret: forgejo-oidc
       autoDiscoverUrl: ${oidc_discovery_url}
+      # Read the OIDC `groups` claim (authentik's profile mapping emits it)
+      # and promote any user whose claim contains `forgejo-admins` to site
+      # admin on every login. Removes the need to flip the admin flag in the
+      # Forgejo UI when adding a new platform admin.
+      groupClaimName: groups
+      adminGroup: forgejo-admins
 
   podAnnotations:
     checksum/forgejo-admin-secret: ${admin_secret_checksum}
@@ -83,7 +91,10 @@ gitea:
       SCHEMA: public
     oauth2_client:
       ENABLE_AUTO_REGISTRATION: true
-      OPENID_CONNECT_SCOPES: email profile
+      ACCOUNT_LINKING: auto
+      USERNAME: preferred_username
+      UPDATE_AVATAR: true
+      OPENID_CONNECT_SCOPES: openid email profile
     openid:
       ENABLE_OPENID_SIGNIN: false
       ENABLE_OPENID_SIGNUP: false

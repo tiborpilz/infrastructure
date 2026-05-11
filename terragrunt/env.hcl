@@ -25,8 +25,14 @@ locals {
   admin_ip_cidrs = []
 
   # Networking / DNS / TLS
-  domain     = "tiborpilz.dev"
+  domain     = "tibor.sh"
   acme_email = "tibor@pilz.berlin"
+
+  # Shared "no-real-mailbox" address for chart-managed bootstrap admin users
+  # (Forgejo's `forgejo_admin`, etc.). Must NOT collide with any managed-user
+  # email — Forgejo's ACCOUNT_LINKING=auto and equivalents link OIDC identities
+  # to the existing local user with a matching email.
+  bootstrap_admin_email = "admin@${local.domain}"
 
   # Declarative Authentik users. Passwords can be supplied from SOPS
   # later via managed_user_passwords; omitted users receive stable
@@ -34,6 +40,7 @@ locals {
   platform_admin_groups = [
     "platform-admins",
     "kubernetes-admins",
+    "forgejo-admins",
   ]
 
   # Keep Authentik superuser separate from platform admin rights. Add
