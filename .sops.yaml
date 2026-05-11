@@ -1,9 +1,11 @@
 keys:
   - &tibor age1gzf883y8p0wfy5yjn5l3l2axnqxdgtw2zdcp8jqsrk65m7gf6y6qzgkf63
+  - &cluster age1eagn023gem8ekv6q8gx7rc37x2rsxfscpyt2znd4j5l8ryehksdqzjek59
 creation_rules:
   - path_regex: \.enc\.yaml$
     key_groups:
       - age:
           - *tibor
+          - *cluster
         pgp:
           - 03746612698994281D322B09923BC5E9B4E9509B

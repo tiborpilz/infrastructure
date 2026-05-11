@@ -312,6 +312,17 @@ resource "kubectl_manifest" "public_gateway" {
 
       listeners = [
         {
+          name     = "http"
+          protocol = "HTTP"
+          port     = 80
+          hostname = "*.${var.domain}"
+          allowedRoutes = {
+            namespaces = {
+              from = "Same"
+            }
+          }
+        },
+        {
           name     = "https"
           protocol = "HTTPS"
           port     = 443
@@ -342,4 +353,42 @@ resource "kubectl_manifest" "public_gateway" {
   depends_on = [
     kubectl_manifest.argo_app_cert_manager,
   ]
+}
+
+# 301 every plaintext request to its HTTPS counterpart. Attaches only to the
+# http listener via sectionName so HTTPS traffic isn't double-handled.
+resource "kubectl_manifest" "httproute_https_redirect" {
+  yaml_body = yamlencode({
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata = {
+      name      = "https-redirect"
+      namespace = kubernetes_namespace.gateway_system.metadata[0].name
+    }
+    spec = {
+      parentRefs = [
+        {
+          name        = "public"
+          namespace   = kubernetes_namespace.gateway_system.metadata[0].name
+          sectionName = "http"
+        }
+      ]
+      hostnames = ["*.${var.domain}"]
+      rules = [
+        {
+          filters = [
+            {
+              type = "RequestRedirect"
+              requestRedirect = {
+                scheme     = "https"
+                statusCode = 301
+              }
+            }
+          ]
+        }
+      ]
+    }
+  })
+
+  depends_on = [kubectl_manifest.public_gateway]
 }

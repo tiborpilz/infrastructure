@@ -34,17 +34,14 @@ inputs = {
   talos_version      = include.env.locals.talos_version
 
   control_plane_nodes = {
-    cp-1 = {
-      server_type = "cx43"
+    controlplane-1 = {
+      server_type = "cpx32"
     }
   }
 
-  # One worker, smallest type. Existence (not capacity) is what matters:
-  # control-plane nodes are excluded from Hetzner LB Services, so a worker
-  # gives the Gateway LoadBalancer at least one valid target.
   worker_nodes = {
     worker-1 = {
-      server_type = "cx33"
+      server_type = "cpx22"
     }
   }
 

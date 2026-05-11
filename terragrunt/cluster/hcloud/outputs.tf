@@ -2,10 +2,10 @@ output "nodes" {
   description = "Generic node inventory consumed by the Talos cluster module."
   value = {
     control_plane = {
-      for k, s in hcloud_server.cp : k => {
+      for k, s in hcloud_server.control_plane : k => {
         name         = s.name
-        ipv4         = hcloud_server_network.cp[k].ip
-        public_ipv4  = hcloud_primary_ip.cp[k].ip_address
+        ipv4         = hcloud_server_network.control_plane[k].ip
+        public_ipv4  = hcloud_primary_ip.control_plane[k].ip_address
         install_disk = "/dev/sda"
         arch         = var.talos_image_labels["arch"]
         provider_id  = "hcloud://${s.id}"

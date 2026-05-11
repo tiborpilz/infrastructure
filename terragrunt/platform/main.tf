@@ -1,5 +1,5 @@
 locals {
-  argocd_ready        = module.argocd.argocd_namespace != ""
+  argocd_ready        = module.argocd.argocd_ready
   platform_data_ready = module.platform_data.ready
 }
 
@@ -14,7 +14,8 @@ module "argocd" {
   hcloud_token      = var.hcloud_token
   hcloud_network_id = var.hcloud_network_id
 
-  sops_age_key = var.sops_age_key
+  sops_age_key    = var.sops_age_key
+  kubeconfig_path = var.kubeconfig_path
 
   domain = var.domain
 }

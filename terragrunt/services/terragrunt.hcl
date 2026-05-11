@@ -83,6 +83,7 @@ inputs = {
     "${get_terragrunt_dir()}/forgejo/templates/values.yaml.tpl",
     {
       admin_email           = include.env.locals.acme_email
+      bootstrap_admin_email = include.env.locals.bootstrap_admin_email
       admin_secret_checksum = "tf-managed"
       forgejo_data_size     = "20Gi"
       forgejo_url           = "https://git.${include.env.locals.domain}"

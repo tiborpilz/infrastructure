@@ -84,3 +84,8 @@ variable "sops_age_key" {
   type        = string
   sensitive   = true
 }
+
+variable "kubeconfig_path" {
+  description = "Path to a kubeconfig file on disk. Used by local-exec waits in this module."
+  type        = string
+}

@@ -30,10 +30,9 @@ data "hcloud_image" "talos" {
 }
 
 resource "hcloud_network" "main" {
-  name              = "${var.env_name}-main"
-  ip_range          = var.network_cidr
-  delete_protection = true
-  labels            = local.common_labels
+  name     = "${var.env_name}-main"
+  ip_range = var.network_cidr
+  labels   = local.common_labels
 }
 
 resource "hcloud_network_subnet" "main" {
@@ -89,7 +88,7 @@ resource "hcloud_firewall" "cluster" {
   }
 }
 
-resource "hcloud_primary_ip" "cp" {
+resource "hcloud_primary_ip" "control_plane" {
   for_each = var.control_plane_nodes
 
   name              = "${var.env_name}-${each.key}-ipv4"
@@ -100,7 +99,7 @@ resource "hcloud_primary_ip" "cp" {
   labels            = local.common_labels
 }
 
-resource "hcloud_server" "cp" {
+resource "hcloud_server" "control_plane" {
   for_each = var.control_plane_nodes
 
   name               = each.key
@@ -112,7 +111,7 @@ resource "hcloud_server" "cp" {
 
   public_net {
     ipv4_enabled = true
-    ipv4         = hcloud_primary_ip.cp[each.key].id
+    ipv4         = hcloud_primary_ip.control_plane[each.key].id
     ipv6_enabled = false
   }
 
@@ -129,10 +128,10 @@ resource "hcloud_server" "cp" {
   }
 }
 
-resource "hcloud_server_network" "cp" {
+resource "hcloud_server_network" "control_plane" {
   for_each = var.control_plane_nodes
 
-  server_id = hcloud_server.cp[each.key].id
+  server_id = hcloud_server.control_plane[each.key].id
   subnet_id = hcloud_network_subnet.main.id
   ip        = each.value.private_ipv4
 
