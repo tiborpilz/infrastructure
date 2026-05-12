@@ -29,6 +29,7 @@ httpRoute:
       kind: Gateway
       name: ${gateway_name}
       namespace: ${gateway_namespace}
+      sectionName: https
   hostnames:
     - ${hostname}
   matches:
