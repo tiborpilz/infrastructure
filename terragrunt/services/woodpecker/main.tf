@@ -361,10 +361,11 @@ resource "kubectl_manifest" "httproute_woodpecker" {
     spec = {
       parentRefs = [
         {
-          group     = "gateway.networking.k8s.io"
-          kind      = "Gateway"
-          name      = var.gateway_name
-          namespace = var.gateway_namespace
+          group       = "gateway.networking.k8s.io"
+          kind        = "Gateway"
+          name        = var.gateway_name
+          namespace   = var.gateway_namespace
+          sectionName = "https"
         }
       ]
       hostnames = [local.hostname]

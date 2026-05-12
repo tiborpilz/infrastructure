@@ -192,8 +192,9 @@ resource "kubectl_manifest" "httproute_authentik" {
     spec = {
       parentRefs = [
         {
-          name      = var.gateway_name
-          namespace = var.gateway_namespace
+          name        = var.gateway_name
+          namespace   = var.gateway_namespace
+          sectionName = "https"
         }
       ]
       hostnames = [local.hostname]

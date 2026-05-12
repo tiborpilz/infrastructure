@@ -15,6 +15,17 @@ agent:
     enabled: true
     size: ${agent_data_size}
     storageClass: ${storage_class}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]
 
 server:
   enabled: true
@@ -36,3 +47,14 @@ server:
     port: 80
   ingress:
     enabled: false
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    capabilities:
+      drop: ["ALL"]

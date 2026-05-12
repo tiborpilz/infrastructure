@@ -176,8 +176,9 @@ resource "kubectl_manifest" "httproute_argocd" {
     spec = {
       parentRefs = [
         {
-          name      = "public"
-          namespace = kubernetes_namespace.gateway_system.metadata[0].name
+          name        = "public"
+          namespace   = kubernetes_namespace.gateway_system.metadata[0].name
+          sectionName = "https"
         }
       ]
       hostnames = ["argocd.${var.domain}"]
