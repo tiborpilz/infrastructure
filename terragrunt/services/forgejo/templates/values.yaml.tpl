@@ -103,7 +103,13 @@ gitea:
       DISABLE_REGISTRATION: true
       ALLOW_ONLY_EXTERNAL_REGISTRATION: true
       SHOW_REGISTRATION_BUTTON: false
-      ENABLE_INTERNAL_SIGNIN: true
+      # Hide the local username/password form on the login page; only the
+      # Authentik OAuth button is shown. ENABLE_BASIC_AUTHENTICATION stays
+      # true so git CLI pushes (`git push https://user:pat@...`) and any
+      # programmatic API auth keep working — this only affects the UI form.
+      # Break-glass for the chart-managed `forgejo_admin` user is via
+      # `kubectl exec` into the forgejo pod and `forgejo admin user`.
+      ENABLE_INTERNAL_SIGNIN: false
       ENABLE_BASIC_AUTHENTICATION: true
     packages:
       ENABLED: false
