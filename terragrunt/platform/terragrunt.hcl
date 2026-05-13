@@ -1,0 +1,116 @@
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
+
+include "env" {
+  path           = find_in_parent_folders("env.hcl")
+  expose         = true
+  merge_strategy = "no_merge"
+}
+
+terraform {
+  source = "."
+}
+
+dependency "cluster" {
+  config_path = "../cluster"
+
+  mock_outputs = {
+    kubernetes_host        = "https://203.0.113.1:6443"
+    cluster_ca_certificate = include.env.locals.mock_kubernetes_certificate_pem
+    client_certificate     = include.env.locals.mock_kubernetes_certificate_pem
+    client_key             = include.env.locals.mock_kubernetes_key_pem
+    network_id             = "0"
+  }
+  mock_outputs_allowed_terraform_commands = ["validate", "init", "plan"]
+}
+
+inputs = {
+  kubernetes_host        = dependency.cluster.outputs.kubernetes_host
+  cluster_ca_certificate = dependency.cluster.outputs.cluster_ca_certificate
+  client_certificate     = dependency.cluster.outputs.client_certificate
+  client_key             = dependency.cluster.outputs.client_key
+
+  kubeconfig_path      = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}.kubeconfig"
+  hcloud_token         = include.env.locals.secrets.hcloud_token
+  hcloud_network_id    = dependency.cluster.outputs.network_id
+  hcloud_location      = include.env.locals.location
+  domain               = include.env.locals.domain
+  admin_email          = include.env.locals.acme_email
+  cloudflare_api_token = include.env.locals.secrets.cloudflare_api_token
+  sops_age_key         = include.env.locals.secrets.sops_age_key
+
+  cert_manager_values = templatefile(
+    "${get_repo_root()}/applications/cert-manager/values.yaml.tpl",
+    {
+      domain = include.env.locals.domain
+      email  = include.env.locals.acme_email
+    }
+  )
+
+  external_dns_values = templatefile(
+    "${get_repo_root()}/applications/external-dns/values.yaml.tpl",
+    {
+      domain = include.env.locals.domain
+    }
+  )
+
+  hcloud_csi_values = templatefile(
+    "${get_repo_root()}/applications/hcloud-csi/values.yaml.tpl",
+    {}
+  )
+
+  cnpg_values = templatefile(
+    "${get_repo_root()}/applications/cnpg-operator/values.yaml.tpl",
+    {}
+  )
+
+  metrics_server_values = templatefile(
+    "${get_repo_root()}/applications/metrics-server/values.yaml.tpl",
+    {}
+  )
+
+  kube_prometheus_stack_values = templatefile(
+    "${get_repo_root()}/applications/kube-prometheus-stack/values.yaml.tpl",
+    {
+      authentik_url        = "https://auth.${include.env.locals.domain}"
+      grafana_url          = "https://grafana.${include.env.locals.domain}"
+      grafana_hostname     = "grafana.${include.env.locals.domain}"
+      storage_class        = "hcloud-volumes"
+      oidc_secret_checksum = "tf-managed"
+      # JMESPath: any user in platform-admins → Admin, else empty (rejected
+      # by Grafana when role_attribute_strict: true).
+      role_attribute_path = "contains(groups[*], 'platform-admins') && 'Admin' || ''"
+    }
+  )
+
+  longhorn_values = templatefile(
+    "${get_repo_root()}/applications/longhorn/values.yaml.tpl",
+    {}
+  )
+
+  authentik_values_yaml = templatefile(
+    "${get_repo_root()}/applications/authentik/values.yaml.tpl",
+    {}
+  )
+
+  authentik_database_yaml = templatefile(
+    "${get_repo_root()}/applications/authentik/database.yaml.tpl",
+    {
+      pg_storage_size = "10Gi"
+      storage_class   = "hcloud-volumes"
+    }
+  )
+
+  authentik_valkey_service_yaml = templatefile(
+    "${get_repo_root()}/applications/authentik/valkey-service.yaml.tpl",
+    {}
+  )
+
+  authentik_valkey_statefulset_yaml = templatefile(
+    "${get_repo_root()}/applications/authentik/valkey-statefulset.yaml.tpl",
+    {
+      valkey_image = "valkey/valkey:8"
+    }
+  )
+}

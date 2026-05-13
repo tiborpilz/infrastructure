@@ -1,0 +1,52 @@
+output "kubeconfig" {
+  description = "kubeconfig for kubectl. Sensitive."
+  value       = talos_cluster_kubeconfig.this.kubeconfig_raw
+  sensitive   = true
+}
+
+output "talosconfig" {
+  description = "talosconfig for talosctl. Sensitive."
+  value       = data.talos_client_configuration.this.talos_config
+  sensitive   = true
+}
+
+output "cluster_endpoint" {
+  description = "Cluster API endpoint URL."
+  value       = local.effective_endpoint
+}
+
+output "cluster_name" {
+  description = "Cluster name."
+  value       = var.cluster_name
+}
+
+output "kubernetes_host" {
+  description = "Kubernetes API server host URL (from kubeconfig)."
+  value       = talos_cluster_kubeconfig.this.kubernetes_client_configuration.host
+}
+
+output "cluster_ca_certificate" {
+  description = "Kubernetes cluster CA certificate (PEM, decoded)."
+  value       = base64decode(talos_cluster_kubeconfig.this.kubernetes_client_configuration.ca_certificate)
+}
+
+output "client_certificate" {
+  description = "Kubernetes client certificate (PEM, decoded)."
+  value       = base64decode(talos_cluster_kubeconfig.this.kubernetes_client_configuration.client_certificate)
+}
+
+output "client_key" {
+  description = "Kubernetes client key (PEM, decoded). Sensitive."
+  value       = base64decode(talos_cluster_kubeconfig.this.kubernetes_client_configuration.client_key)
+  sensitive   = true
+}
+
+output "talos_version" {
+  description = "Talos version applied to the cluster."
+  value       = var.talos_version
+}
+
+output "talos_control_plane_endpoints" {
+  description = "Public IPv4 addresses of the control-plane Talos endpoints (port 50000). Used by downstream layers that talk directly to the Talos API."
+  value       = [for n in local.control_plane_nodes : n.public_ipv4]
+}
