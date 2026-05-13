@@ -143,10 +143,10 @@ locals {
   argocd_oidc_redirect_uri = "${local.argocd_url}/auth/callback"
 
   argocd_oidc_config = yamlencode({
-    name           = "authentik"
-    issuer         = "https://auth.${var.domain}/application/o/argocd/"
-    clientID       = "argocd"
-    clientSecret   = "$oidc.argocd.clientSecret"
+    name            = "authentik"
+    issuer          = "https://auth.${var.domain}/application/o/argocd/"
+    clientID        = "argocd"
+    clientSecret    = "$oidc.argocd.clientSecret"
     requestedScopes = ["openid", "profile", "email", "groups"]
   })
 }
@@ -160,15 +160,15 @@ resource "helm_release" "argocd" {
 
   values = [yamlencode({
     server = {
-      service = { type = "ClusterIP" }
+      service   = { type = "ClusterIP" }
       extraArgs = ["--insecure"]
     }
 
     configs = {
       cm = {
-        "url"            = local.argocd_url
-        "oidc.config"    = local.argocd_oidc_config
-        "admin.enabled"  = "false"
+        "url"           = local.argocd_url
+        "oidc.config"   = local.argocd_oidc_config
+        "admin.enabled" = "false"
       }
 
       secret = {
@@ -178,9 +178,13 @@ resource "helm_release" "argocd" {
       }
 
       rbac = {
-        "policy.csv"     = "g, platform-admins, role:admin"
-        "policy.default" = "role:readonly"
-        "scopes" = "[groups]"
+        "policy.csv" = "g, platform-admins, role:admin"
+        # Empty default means any authenticated user not in a granted group
+        # gets no Argo CD access. Without this, the chart's `role:readonly`
+        # default leaks Application/cluster topology to every Authentik user
+        # (including freshly-enrolled invitees who have no Argo business).
+        "policy.default" = ""
+        "scopes"         = "[groups]"
       }
     }
   })]
