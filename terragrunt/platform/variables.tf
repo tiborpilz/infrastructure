@@ -84,6 +84,21 @@ variable "cnpg_values" {
   type        = string
 }
 
+variable "metrics_server_values" {
+  description = "Rendered Helm values for metrics-server."
+  type        = string
+}
+
+variable "kube_prometheus_stack_values" {
+  description = "Rendered Helm values for kube-prometheus-stack."
+  type        = string
+}
+
+variable "longhorn_values" {
+  description = "Rendered Helm values for Longhorn."
+  type        = string
+}
+
 variable "authentik_values_yaml" {
   description = "Rendered base Helm values for authentik."
   type        = string
