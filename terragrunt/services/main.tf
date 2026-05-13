@@ -125,3 +125,43 @@ module "hubble_proxy" {
   gateway_namespace = var.gateway_namespace
   gateway_name      = var.gateway_name
 }
+
+module "tekton" {
+  source = "./tekton"
+
+  kubernetes_host        = var.kubernetes_host
+  cluster_ca_certificate = var.cluster_ca_certificate
+  client_certificate     = var.client_certificate
+  client_key             = var.client_key
+
+  kubeconfig_path     = var.kubeconfig_path
+  platform_data_ready = var.platform_data_ready
+}
+
+module "tekton_dashboard_proxy" {
+  source = "./oauth2-proxy"
+
+  name         = "tekton"
+  display_name = "Tekton Dashboard"
+
+  upstream_service_namespace = module.tekton.components_namespace
+  upstream_service_name      = module.tekton.dashboard_service_name
+  upstream_service_port      = module.tekton.dashboard_service_port
+
+  admin_groups = ["platform-admins"]
+
+  kubernetes_host        = var.kubernetes_host
+  cluster_ca_certificate = var.cluster_ca_certificate
+  client_certificate     = var.client_certificate
+  client_key             = var.client_key
+  kubeconfig_path        = var.kubeconfig_path
+
+  authentik_url          = var.authentik_url
+  authentik_token        = var.authentik_token
+  authentik_ready        = var.authentik_ready
+  authentik_config_ready = local.authentik_config_ready
+
+  domain            = var.domain
+  gateway_namespace = var.gateway_namespace
+  gateway_name      = var.gateway_name
+}
