@@ -73,6 +73,31 @@ module "woodpecker" {
   woodpecker_values_yaml = var.woodpecker_values_yaml
 }
 
+module "omni" {
+  source = "./omni"
+
+  kubernetes_host        = var.kubernetes_host
+  cluster_ca_certificate = var.cluster_ca_certificate
+  client_certificate     = var.client_certificate
+  client_key             = var.client_key
+
+  kubeconfig_path        = var.kubeconfig_path
+  domain                 = var.domain
+  gateway_namespace      = var.gateway_namespace
+  gateway_name           = var.gateway_name
+  storage_class          = var.storage_class
+  platform_data_ready    = var.platform_data_ready
+  authentik_url          = var.authentik_url
+  authentik_token        = var.authentik_token
+  authentik_ready        = var.authentik_ready
+  authentik_config_ready = local.authentik_config_ready
+
+  omni_etcd_gpg_key             = var.omni_etcd_gpg_key
+  omni_admin_emails             = var.omni_admin_emails
+  siderolink_wireguard_endpoint = var.omni_siderolink_wireguard_endpoint
+  omni_values_yaml              = var.omni_values_yaml
+}
+
 module "hubble_proxy" {
   source = "./oauth2-proxy"
 

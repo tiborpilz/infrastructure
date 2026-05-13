@@ -144,3 +144,28 @@ variable "woodpecker_admins" {
   type        = list(string)
   default     = []
 }
+
+variable "omni_values_yaml" {
+  description = "Rendered Helm values for Omni."
+  type        = string
+  default     = ""
+}
+
+variable "omni_etcd_gpg_key" {
+  description = "GPG private key (ASCII-armored) used by Omni to encrypt its embedded etcd. Empty string keeps the Omni module dormant; supply via SOPS once you've run the gpg --quick-gen-key bootstrap (see services/omni/README.md)."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "omni_admin_emails" {
+  description = "Emails of initial Omni admins. Only applied on the first Omni boot — manage further admins via the Omni UI / omnictl thereafter."
+  type        = list(string)
+  default     = []
+}
+
+variable "omni_siderolink_wireguard_endpoint" {
+  description = "Public `<ip>:<port>` endpoint that managed Talos nodes use to establish SideroLink WireGuard tunnels. Typically a worker public IP + the WireGuard NodePort (default 30180)."
+  type        = string
+  default     = ""
+}
