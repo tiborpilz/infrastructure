@@ -86,6 +86,16 @@ resource "hcloud_firewall" "cluster" {
     protocol   = "icmp"
     source_ips = ["0.0.0.0/0", "::/0"]
   }
+
+  # Omni SideroLink WireGuard NodePort. Managed Talos nodes establish their
+  # tunnel by dialing this UDP port on a worker public IP; the WireGuard
+  # handshake authenticates so leaving it open to the internet is fine.
+  rule {
+    direction  = "in"
+    protocol   = "udp"
+    port       = "30180"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
 }
 
 resource "hcloud_primary_ip" "control_plane" {
