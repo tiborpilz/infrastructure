@@ -160,23 +160,23 @@ locals {
     }
 
     extraArgs = {
-      provider                    = "oidc"
-      "oidc-issuer-url"           = local.oidc_issuer_url
-      "redirect-url"              = local.oidc_redirect_uri
-      upstream                    = local.upstream_url
-      "email-domain"              = "*"
+      provider          = "oidc"
+      "oidc-issuer-url" = local.oidc_issuer_url
+      "redirect-url"    = local.oidc_redirect_uri
+      upstream          = local.upstream_url
+      "email-domain"    = "*"
       # Trust X-Forwarded-* headers from Cilium Gateway. Without this,
       # cookie-secure=true blocks the session cookie because the in-cluster
       # connection from Envoy is plain HTTP and oauth2-proxy treats the
       # request as insecure — causing an endless redirect loop after login.
-      "reverse-proxy"             = "true"
-      "cookie-secure"             = "true"
-      "cookie-domain"             = local.hostname
+      "reverse-proxy" = "true"
+      "cookie-secure" = "true"
+      "cookie-domain" = local.hostname
       # Lax lets the CSRF cookie ride along on the top-level GET back from
       # authentik. Default is unset (browser-dependent) and intermittently
       # drops the cookie, triggering "CSRF token mismatch" at /oauth2/callback.
-      "cookie-samesite"           = "lax"
-      "whitelist-domain"          = local.hostname
+      "cookie-samesite"  = "lax"
+      "whitelist-domain" = local.hostname
       # Bind the auth request to a per-session secret (PKCE). authentik
       # supports S256; oauth2-proxy logs a warning if it isn't enabled.
       "code-challenge-method"     = "S256"

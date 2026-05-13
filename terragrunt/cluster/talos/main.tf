@@ -238,9 +238,9 @@ resource "terraform_data" "wait_for_cluster" {
       kubectl get --raw /healthz >/dev/null
 
       expected="${join(" ", concat(
-        [for k, _ in local.control_plane_nodes : k],
-        [for k, _ in local.worker_nodes : k],
-      ))}"
+    [for k, _ in local.control_plane_nodes : k],
+    [for k, _ in local.worker_nodes : k],
+))}"
 
       for i in $(seq 1 60); do
         missing=""
@@ -259,11 +259,11 @@ resource "terraform_data" "wait_for_cluster" {
       echo "nodes never registered within 5 minutes: $missing" >&2
       exit 1
     EOT
-  }
+}
 
-  depends_on = [
-    talos_cluster_kubeconfig.this,
-    talos_machine_configuration_apply.worker,
-    local_sensitive_file.kubeconfig,
-  ]
+depends_on = [
+  talos_cluster_kubeconfig.this,
+  talos_machine_configuration_apply.worker,
+  local_sensitive_file.kubeconfig,
+]
 }
