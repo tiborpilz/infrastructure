@@ -1,0 +1,12 @@
+*.terraform
+**/out/*
+*.tfstate
+**/templates-out
+**/kustomize/overlay/*
+.env
+*.cache
+.terragrunt-cache/
+.terragrunt-state/
+.direnv/
+.kube/
+.talos/
