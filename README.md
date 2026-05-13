@@ -8,9 +8,34 @@ The `terragrunt/` directory contains the staged Terragrunt stack. Each stage kee
 
 | Layer | Purpose |
 | --- | --- |
-| `cluster` | Hetzner network + VMs, then Talos config/bootstrap. Outputs kubeconfig material and cloud IDs. |
-| `platform` | Cilium, Hetzner CCM, Argo CD/AppProjects, networking, hcloud-csi, CNPG, Velero, authentik, and the smoke app. |
-| `services` | Live API/provider configuration after the platform exists: authentik users/groups, Argo CD OIDC glue, Forgejo, and Woodpecker. |
+| `cluster` | Hetzner network + VMs, Talos config/bootstrap. Outputs kubeconfig material and cloud IDs. |
+| `platform` | Cluster-wide infra: Cilium (CNI + Gateway), Argo CD, networking (cert-manager, external-dns), hcloud-csi, CNPG operator, metrics-server, longhorn (opt-in storage), kube-prometheus-stack (observability), authentik. |
+| `services` | Layer that talks to live application APIs: authentik users/groups + invitation flow, Argo CD OIDC, Forgejo, Woodpecker, Tekton (operator + dashboard via oauth2-proxy), Omni (gated on `omni_etcd_gpg_key` in SOPS), Hubble UI via oauth2-proxy. |
+| `modules/` | Reusable cross-unit modules. Currently: `hcloud-nixos-server` — provisions a Hetzner VM + first-boot `nixos-anywhere` install. Used by future `vms/<workload>/` units for NixOS workloads adjacent to the cluster (Hydra, etc.). |
+
+### Storage classes
+
+- `hcloud-volumes` (default): Hetzner block storage, network-attached. For durable workloads where node death must not lose data (CNPG postgres, Forgejo, Omni etcd).
+- `longhorn` (opt-in): replicated block storage on local disks. For workloads that can be rebuilt (Prometheus retention, Grafana dashboards, Tekton workspaces). Requires the `siderolabs/iscsi-tools` Talos extension.
+
+### Identity model
+
+- Per-app OIDC client lives with the app (convention in `services/<app>/`).
+- Native OIDC when the app speaks it: Argo CD, Forgejo, Grafana, Omni.
+- oauth2-proxy in front when the app doesn't: Hubble UI, Tekton Dashboard.
+- Forgejo's local login form is disabled (`ENABLE_INTERNAL_SIGNIN: false`); break-glass via `kubectl exec` + `forgejo admin user`.
+- Argo CD default RBAC is no-access; only `platform-admins` get any role at all.
+
+### CI/CD
+
+- Woodpecker: general-purpose CI (`npm`, web builds, etc.), in-cluster k8s runner.
+- Tekton: Kubernetes-native pipelines, Triggers (webhook-driven), Chains (SLSA provenance). Dashboard at `tekton.<domain>` behind oauth2-proxy.
+- NixOS / Hydra: runs on the homeserver, not in cluster. If a second Nix workload appears, use the `hcloud-nixos-server` module to provision an adjacent VM.
+
+### Known scoping decisions
+
+- Self-hosted Omni runs in the same cluster it would manage. Documented foot-gun: this cluster isn't recoverable from Omni. Omni is for spinning up *other* clusters; SideroLink reaches managed nodes via NodePort `30180/UDP` (Hetzner firewall has the rule).
+- No KubeVirt. Considered and rejected: Hetzner CPX has no `/dev/kvm`, and CCX-with-nested-virt is ~€16/mo always-on. The adjacent-VM pattern (`hcloud-nixos-server`) covers the NixOS-shaped use case at €4-5/mo per workload.
 
 If an environment has already been applied with the older `terragrunt/envs/hcloud-poc` per-component layer layout, migrate the local Terraform state before applying this layout. The backend path and module addresses changed: state now lives under `.terragrunt-state/<stage>/...`, and resources are nested under stage modules such as `module.hcloud`, `module.talos`, `module.argocd`, and `module.forgejo`. Applying without a state migration will look like a fresh install.
 

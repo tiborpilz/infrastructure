@@ -1,5 +1,26 @@
 # TODO
 
+## Talos upgrade: hostname can drift to `talos-<hash>` after image swap
+
+After running `talosctl upgrade --image factory.talos.dev/installer/<schematic>:vX.Y.Z` on a node, the rebooted node sometimes comes back registered as `talos-<random-hash>` instead of its configured name (`controlplane-1`, `worker-1`). Symptom: `kubectl get nodes` shows two entries: the old name `NotReady` (kubelet stopped posting), the new `talos-<hash>` Running. Root cause: the Hetzner platform-metadata-derived hostname (HostnameConfig with `auto: hcloud`) doesn't reliably apply across the A/B swap.
+
+Tried codifying a fix in TF (`config_patches` pushing `HostnameConfig` doc with explicit hostname). Doesn't work because:
+- v1alpha1 `machine.network.hostname` conflicts with the auto-created HostnameConfig (Talos rejects "static hostname is already set").
+- A patch overriding the HostnameConfig doc itself merges hostname *in addition to* `auto`, hitting "auto and hostname cannot be set at the same time".
+- `auto: ""` and `auto: null` fail validation ("does not belong to AutoHostnameKind values").
+- Strategic-merge `$patch: replace` directive may or may not be supported by the Talos provider; not investigated further.
+
+Manual recovery (proven, do this after every upgrade if hostname drift happens):
+```bash
+talosctl --talosconfig <talosconfig> -n <node-ip> edit machineconfig
+# Find `kind: HostnameConfig`, delete the `auto: hcloud` line, add `hostname: <name>`
+# Save + exit, choose `reboot` apply mode
+kubectl uncordon <node-name>
+kubectl delete node talos-<old-hash>  # prune zombie if present
+```
+
+Worth revisiting: investigate whether the Talos provider's `talos_image_factory_*` resources can be configured to generate a base config without `auto: hcloud` in HostnameConfig, or whether there's a patch directive that fully replaces a sub-document.
+
 ## Investigate the kube-hetzner SSH-only bootstrap pattern
 
 `terraform-hcloud-kube-hetzner` declares no `kubernetes`, `helm`, or `kubectl` providers. It bootstraps and configures the cluster entirely through:
@@ -46,6 +67,21 @@ https://github.com/crossplane-contrib/crossview
 Host
 https://github.com/nix-community/buildbot-nix
 https://tekton.dev/docs/pipelines-as-code/
+
+## NixOS-shaped workloads: adjacent VMs, not KubeVirt
+
+We have a path for "I want a NixOS-flavored service" at `terragrunt/modules/hcloud-nixos-server/`. Provisions a Hetzner VM, attaches it to the cluster's private network, runs `nixos-anywhere` to install from `~/Code/nixos`. Ongoing updates via `deploy-rs` (already configured upstream for `klaus`).
+
+Considered but rejected: KubeVirt in-cluster. Two blockers, one architectural:
+- No `/dev/kvm` on CPX workers. Hetzner's shared-vCPU line doesn't expose nested virt. Confirmed by checking the worker.
+- CCX13 to fix would cost €16/mo always-on. Hetzner bills stopped servers at full rate, so the only way to avoid the floor is destroy/recreate cycles, which is operationally painful.
+- Operator weight not justified for personal-volume use. KubeVirt earns its keep when you have several VMs that benefit from k8s-native scheduling, live migration, and shared networking. With one or two NixOS services and no migration needs, it pays infrastructure cost for capability we wouldn't exercise.
+
+Division of labor for the adjacent-VM pattern:
+- `terragrunt/` owns the Hetzner side (hcloud_server, public IP, private network attach, firewall).
+- `~/Code/nixos` owns the NixOS side (`hosts/nixos/<workload>/`, services, sops, disko, deploy-rs).
+
+Revisit KubeVirt if (a) we add a CCX worker for unrelated reasons, (b) the NixOS workload count grows past ~3, and (c) any of them actually benefit from kubectl-native VM lifecycle. None of those is true today.
 
 ## Cluster Autoscaler on Talos
 
