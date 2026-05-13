@@ -55,7 +55,7 @@ locals {
       name   = "Tibor"
       email  = "tibor@pilz.berlin"
       admin  = true
-      groups = ["platform-admins"]
+      groups = ["platform-admins", "authentik-superusers"]
     }
 
     example = {
