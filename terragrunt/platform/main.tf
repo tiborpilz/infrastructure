@@ -66,6 +66,34 @@ module "platform_data" {
   cnpg_values       = var.cnpg_values
 }
 
+module "metrics_server" {
+  source = "./metrics-server"
+
+  kubernetes_host        = var.kubernetes_host
+  cluster_ca_certificate = var.cluster_ca_certificate
+  client_certificate     = var.client_certificate
+  client_key             = var.client_key
+
+  argocd_ready    = local.argocd_ready
+  kubeconfig_path = var.kubeconfig_path
+
+  metrics_server_values = var.metrics_server_values
+}
+
+module "longhorn" {
+  source = "./longhorn"
+
+  kubernetes_host        = var.kubernetes_host
+  cluster_ca_certificate = var.cluster_ca_certificate
+  client_certificate     = var.client_certificate
+  client_key             = var.client_key
+
+  argocd_ready    = local.argocd_ready
+  kubeconfig_path = var.kubeconfig_path
+
+  longhorn_values = var.longhorn_values
+}
+
 module "authentik" {
   source = "./authentik"
 
@@ -86,4 +114,26 @@ module "authentik" {
   database_yaml           = var.authentik_database_yaml
   valkey_service_yaml     = var.authentik_valkey_service_yaml
   valkey_statefulset_yaml = var.authentik_valkey_statefulset_yaml
+}
+
+module "observability" {
+  source = "./observability"
+
+  kubernetes_host        = var.kubernetes_host
+  cluster_ca_certificate = var.cluster_ca_certificate
+  client_certificate     = var.client_certificate
+  client_key             = var.client_key
+
+  kubeconfig_path     = var.kubeconfig_path
+  domain              = var.domain
+  argocd_ready        = local.argocd_ready
+  platform_data_ready = local.platform_data_ready
+  authentik_url       = module.authentik.authentik_url
+  authentik_token     = module.authentik.bootstrap_admin_token
+  authentik_ready     = module.authentik.ready
+  storage_class       = module.platform_data.storage_class
+  gateway_namespace   = module.networking.gateway_namespace
+  gateway_name        = module.networking.gateway_name
+
+  kube_prometheus_stack_values = var.kube_prometheus_stack_values
 }

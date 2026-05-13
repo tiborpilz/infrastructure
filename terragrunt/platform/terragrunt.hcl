@@ -65,6 +65,30 @@ inputs = {
     {}
   )
 
+  metrics_server_values = templatefile(
+    "${get_repo_root()}/applications/metrics-server/values.yaml.tpl",
+    {}
+  )
+
+  kube_prometheus_stack_values = templatefile(
+    "${get_repo_root()}/applications/kube-prometheus-stack/values.yaml.tpl",
+    {
+      authentik_url        = "https://auth.${include.env.locals.domain}"
+      grafana_url          = "https://grafana.${include.env.locals.domain}"
+      grafana_hostname     = "grafana.${include.env.locals.domain}"
+      storage_class        = "hcloud-volumes"
+      oidc_secret_checksum = "tf-managed"
+      # JMESPath: any user in platform-admins → Admin, else empty (rejected
+      # by Grafana when role_attribute_strict: true).
+      role_attribute_path = "contains(groups[*], 'platform-admins') && 'Admin' || ''"
+    }
+  )
+
+  longhorn_values = templatefile(
+    "${get_repo_root()}/applications/longhorn/values.yaml.tpl",
+    {}
+  )
+
   authentik_values_yaml = templatefile(
     "${get_repo_root()}/applications/authentik/values.yaml.tpl",
     {}
