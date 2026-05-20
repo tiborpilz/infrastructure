@@ -82,3 +82,14 @@ output "talos_control_plane_endpoints" {
   description = "Public IPv4 addresses of Talos control-plane endpoints."
   value       = module.talos.talos_control_plane_endpoints
 }
+
+output "worker_machine_config_template" {
+  description = "Generic worker MachineConfig (Talos YAML) for cluster-autoscaler to inject as Hetzner user-data."
+  value       = module.talos.worker_machine_config_template
+  sensitive   = true
+}
+
+output "talos_image_id" {
+  description = "Numeric Hetzner snapshot ID of the Talos image currently in use."
+  value       = module.hcloud.talos_image_id
+}

@@ -55,8 +55,21 @@ resource "kubectl_manifest" "argo_app_longhorn" {
         syncOptions = [
           "ServerSideApply=true",
           "CreateNamespace=false",
+          "RespectIgnoreDifferences=true",
         ]
       }
+      # Longhorn CRDs ship with the deprecated `preserveUnknownFields: false`
+      # on apiextensions.k8s.io/v1; the apiserver normalises it away, so Argo
+      # otherwise reports permanent OutOfSync on every CRD.
+      ignoreDifferences = [
+        {
+          group = "apiextensions.k8s.io"
+          kind  = "CustomResourceDefinition"
+          jsonPointers = [
+            "/spec/preserveUnknownFields",
+          ]
+        },
+      ]
     }
   })
 
