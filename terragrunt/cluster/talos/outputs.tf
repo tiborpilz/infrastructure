@@ -50,3 +50,9 @@ output "talos_control_plane_endpoints" {
   description = "Public IPv4 addresses of the control-plane Talos endpoints (port 50000). Used by downstream layers that talk directly to the Talos API."
   value       = [for n in local.control_plane_nodes : n.public_ipv4]
 }
+
+output "worker_machine_config_template" {
+  description = "Generic worker MachineConfig for cluster-autoscaler to inject as Hetzner user-data. Sensitive — contains cluster bootstrap material."
+  value       = data.talos_machine_configuration.worker_template.machine_configuration
+  sensitive   = true
+}

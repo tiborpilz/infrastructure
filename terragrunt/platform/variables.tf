@@ -118,3 +118,14 @@ variable "authentik_valkey_statefulset_yaml" {
   description = "Rendered Valkey StatefulSet YAML."
   type        = string
 }
+
+variable "worker_machine_config" {
+  description = "Talos worker MachineConfig (YAML) injected as user-data on autoscaler-provisioned nodes."
+  type        = string
+  sensitive   = true
+}
+
+variable "cluster_autoscaler_values" {
+  description = "Rendered Helm values for cluster-autoscaler."
+  type        = string
+}
