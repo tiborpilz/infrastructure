@@ -39,6 +39,9 @@ inputs = {
     }
   }
 
+  # Static baseline worker. Burst capacity comes from cluster-autoscaler
+  # (terragrunt/platform/cluster-autoscaler), which provisions cpx32 workers
+  # in fsn1 up to a configured max.
   worker_nodes = {
     worker-1 = {
       server_type = "cpx22"

@@ -177,15 +177,29 @@ Cilium's Gateway API controller doesn't fully enforce `allowedRoutes.namespaces.
 
 ## Node sizing notes
 
-Current: 1× `cpx32` control plane (8 GB), 1× `cpx22` worker (4 GB).
+Current: 1× `cpx32` control plane (8 GB), 1× `cpx22` worker (4 GB) as static baseline. Burst capacity on top comes from `cluster-autoscaler` (see "Cluster autoscaler" below) — pool of cpx32 workers, scales 0→3 in response to Pending pods, scales back to 0 after 5m unused.
 
-After stacking Authentik + Forgejo + Woodpecker + Tekton + Omni + ArgoCD + observability + Longhorn, **the worker hits ~80% memory** during normal operation. Authentik OOM-kills first when memory pressure spikes (gets killed by kernel, exit code 137).
+History: with this single static worker the cluster hits ~80% memory in steady state under the full stack (Authentik + Forgejo + Woodpecker + Tekton + Omni + ArgoCD + observability + Longhorn). Authentik and Woodpecker pipeline pods OOM-killed first (exit 137) when pressure spiked. Bursty CI now lifts capacity via the autoscaler instead of running a permanently-oversized worker.
 
 Practical mitigations applied:
 - ArgoCD scheduler now places pods on the control plane too (`allowSchedulingOnControlPlanes = true`).
 - Prometheus retention dropped to 5d, resources trimmed in the values file.
 
-Real fix when this becomes recurring: bump worker to `cpx31` (8 GB, ~€10/mo) or add a second worker. One-line change in `cluster/terragrunt.hcl`.
+If Woodpecker jobs still hit 137 on specific pipelines after worker sizing, the fix is per-step memory in `.woodpecker.yml`, not more nodes:
+
+```yaml
+steps:
+  build:
+    image: node:20
+    commands: [npm ci, npm run build]
+    backend_options:
+      kubernetes:
+        resources:
+          requests: { memory: 2Gi }
+          limits:   { memory: 4Gi }
+```
+
+Woodpecker 3.x has no env var for cluster-wide default pod resources (only per-step `backend_options.kubernetes.resources` is honored — upstream feature request `woodpecker-ci/woodpecker#1303`). For a namespace-wide default, apply a Kubernetes `LimitRange` to the `woodpecker` namespace; the agent's spawned pods will inherit defaults from it.
 
 Rebalancing pods after install storms:
 ```bash
@@ -193,6 +207,46 @@ kubectl drain worker-1 --ignore-daemonsets --delete-emptydir-data --disable-evic
 kubectl uncordon worker-1
 # Pods reschedule; scheduler uses both nodes
 ```
+
+---
+
+## Cluster autoscaler
+
+`terragrunt/platform/cluster-autoscaler/` deploys the upstream `cluster-autoscaler` Helm chart with the Hetzner cloud-provider. One burst pool, configured in `terragrunt/platform/terragrunt.hcl`:
+
+```
+pool_name          = "hetzernetes-burst"
+pool_instance_type = "cpx32"
+pool_min           = 0
+pool_max           = 3
+```
+
+When unschedulable pods appear, the autoscaler dials the Hetzner API and provisions a new server from the same Talos snapshot the static workers use. Bootstrap is driven by Hetzner user-data — the generic worker MachineConfig is plumbed through:
+
+```
+cluster/talos/main.tf       → data.talos_machine_configuration.worker_template
+cluster/outputs.tf          → worker_machine_config_template (sensitive)
+platform/terragrunt.hcl     → reads it from dependency.cluster.outputs
+platform/cluster-autoscaler → base64-encodes into Secret as HCLOUD_CLOUD_INIT
+```
+
+New nodes register, kubelet joins, scheduler places the Pending pod. When the node sits unused for 5m (`scale-down-unneeded-time`), the autoscaler decommissions it.
+
+### Caveats
+
+- **Talos version drift.** The autoscaler boots from `HCLOUD_IMAGE = talos_image_id`. After `talosctl upgrade --image …` on the running nodes, new autoscaled nodes still boot from the OLD snapshot until the snapshot is rebuilt (`setup/upload-talos-image.sh`) and `cluster` is re-applied. Bump in lockstep with cluster upgrades.
+- **No retry on bad node.** Talos has no shell, so a half-bootstrapped node can't be debugged in-place. `max-node-provision-time: 8m` means CAS deletes and re-provisions after that timeout. If pools keep flapping, check the Talos kernel logs via Hetzner console.
+- **Pool change ≠ in-place edit.** Changing `pool_instance_type` or `pool_location` in terragrunt doesn't migrate running burst nodes; they keep their original shape until they scale down. Force a fresh provision by setting `pool_max` to current count, waiting for scale-down, then restoring.
+- **Hetzner LimitRange.** The Hetzner project has a server-count quota (default 10). Burst pool max + static workers + CP must fit. Lift the quota in the Hetzner console if needed.
+
+### Observing it
+
+```bash
+kubectl -n cluster-autoscaler logs deploy/cluster-autoscaler-hetzner-cluster-autoscaler -f
+kubectl get nodes -l 'hcloud/node-group=hetzernetes-burst'
+```
+
+The cluster-autoscaler logs scale-up decisions with the pending pod + simulated node-group fit. If pods stay Pending and the autoscaler logs `no node group can satisfy`, the pod requests more memory/CPU than the pool's instance type provides — bump `pool_instance_type` or the per-step `backend_options.kubernetes.resources` in `.woodpecker.yml`.
 
 ---
 

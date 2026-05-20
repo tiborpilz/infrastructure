@@ -80,6 +80,22 @@ module "metrics_server" {
   metrics_server_values = var.metrics_server_values
 }
 
+module "cluster_autoscaler" {
+  source = "./cluster-autoscaler"
+
+  kubernetes_host        = var.kubernetes_host
+  cluster_ca_certificate = var.cluster_ca_certificate
+  client_certificate     = var.client_certificate
+  client_key             = var.client_key
+
+  argocd_ready    = local.argocd_ready
+  kubeconfig_path = var.kubeconfig_path
+
+  hcloud_token              = var.hcloud_token
+  worker_machine_config     = var.worker_machine_config
+  cluster_autoscaler_values = var.cluster_autoscaler_values
+}
+
 module "longhorn" {
   source = "./longhorn"
 
