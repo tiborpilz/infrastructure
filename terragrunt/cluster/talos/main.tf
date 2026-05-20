@@ -74,11 +74,19 @@ data "talos_machine_configuration" "control_plane" {
   talos_version      = "v${var.talos_version}"
   kubernetes_version = var.kubernetes_version
 
+  # `storage.longhorn.io/eligible=true` opts this node into hosting Longhorn
+  # system components. Set on control planes too because
+  # `allowSchedulingOnControlPlanes` is on — workloads (and their volumes)
+  # can land here. Burst nodes (worker_template, below) deliberately lack the
+  # label so their instance-manager PDB can't block CAS scale-down.
   config_patches = [
     local.base_patch,
     yamlencode({
       machine = {
         install = { disk = each.value.install_disk }
+        nodeLabels = {
+          "storage.longhorn.io/eligible" = "true"
+        }
       }
     }),
   ]
@@ -136,11 +144,41 @@ data "talos_machine_configuration" "worker" {
   talos_version      = "v${var.talos_version}"
   kubernetes_version = var.kubernetes_version
 
+  # `storage.longhorn.io/eligible=true` opts this node into hosting Longhorn
+  # system components. Burst nodes provisioned by cluster-autoscaler use the
+  # `worker_template` config below, which omits this label — keeping Longhorn
+  # (manager + instance-manager) off them so their instance-manager PDB can't
+  # block scale-down.
   config_patches = [
     local.base_patch,
     yamlencode({
       machine = {
         install = { disk = each.value.install_disk }
+        nodeLabels = {
+          "storage.longhorn.io/eligible" = "true"
+        }
+      }
+    }),
+  ]
+}
+
+# Generic worker MachineConfig with no per-node specifics. Consumed by the
+# cluster-autoscaler in the platform layer as cloud-init user-data for
+# autoscaler-provisioned Hetzner servers. /dev/sda matches all Hetzner CPX
+# workers; if a new server type with different naming appears, parameterise.
+data "talos_machine_configuration" "worker_template" {
+  cluster_name       = var.cluster_name
+  cluster_endpoint   = local.effective_endpoint
+  machine_type       = "worker"
+  machine_secrets    = talos_machine_secrets.this.machine_secrets
+  talos_version      = "v${var.talos_version}"
+  kubernetes_version = var.kubernetes_version
+
+  config_patches = [
+    local.base_patch,
+    yamlencode({
+      machine = {
+        install = { disk = "/dev/sda" }
       }
     }),
   ]

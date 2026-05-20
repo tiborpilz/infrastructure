@@ -122,6 +122,21 @@ resource "kubectl_manifest" "tekton_config" {
         keep      = var.pruner_keep
         schedule  = var.pruner_schedule
       }
+      # Scale the remote-resolvers Deployment to 0 — we don't fetch
+      # PipelineRuns from git/bundle/hub URLs (yet), and the resolver pod
+      # was contributing to memory pressure on the static pool. Re-enable
+      # by removing this block when we start using cross-cluster Task refs.
+      pipeline = {
+        options = {
+          deployments = {
+            tekton-pipelines-remote-resolvers = {
+              spec = {
+                replicas = 0
+              }
+            }
+          }
+        }
+      }
     }
   })
 

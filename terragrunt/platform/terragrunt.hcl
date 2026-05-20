@@ -16,13 +16,22 @@ dependency "cluster" {
   config_path = "../cluster"
 
   mock_outputs = {
-    kubernetes_host        = "https://203.0.113.1:6443"
-    cluster_ca_certificate = include.env.locals.mock_kubernetes_certificate_pem
-    client_certificate     = include.env.locals.mock_kubernetes_certificate_pem
-    client_key             = include.env.locals.mock_kubernetes_key_pem
-    network_id             = "0"
+    kubernetes_host                = "https://203.0.113.1:6443"
+    cluster_ca_certificate         = include.env.locals.mock_kubernetes_certificate_pem
+    client_certificate             = include.env.locals.mock_kubernetes_certificate_pem
+    client_key                     = include.env.locals.mock_kubernetes_key_pem
+    network_id                     = "0"
+    firewall_id                    = null
+    talos_image_id                 = "0"
+    worker_machine_config_template = "version: v1alpha1\n# mock-machine-config\n"
   }
   mock_outputs_allowed_terraform_commands = ["validate", "init", "plan"]
+
+  # Shallow-merge mocks over live state so adding a new cluster output doesn't
+  # break this layer's parse on stale state. Real outputs always win when
+  # present; mocks fill in the gaps until `terragrunt --working-dir
+  # terragrunt/cluster apply` refreshes them.
+  mock_outputs_merge_strategy_with_state = "shallow"
 }
 
 inputs = {
@@ -111,6 +120,31 @@ inputs = {
     "${get_repo_root()}/applications/authentik/valkey-statefulset.yaml.tpl",
     {
       valkey_image = "valkey/valkey:8"
+    }
+  )
+
+  # Cluster-autoscaler: burst pool spec + cluster wiring. Bump pool_max if
+  # CI / Woodpecker pipelines hit the ceiling; bump pool_instance_type if a
+  # single job needs more than the pool's per-node memory.
+  worker_machine_config = dependency.cluster.outputs.worker_machine_config_template
+
+  cluster_autoscaler_values = templatefile(
+    "${get_repo_root()}/applications/cluster-autoscaler/values.yaml.tpl",
+    {
+      cluster_name  = include.env.locals.cluster_name
+      pool_location = include.env.locals.location
+      # Multi-tier burst pools. `least-waste` (set in values.yaml.tpl) routes
+      # pending pods to the smallest pool that fits. Pool names must not
+      # contain underscores — the chart's extraArgs renderer splits on `_`
+      # to allow duplicate-flag keys (nodes_<tier> → --nodes=...).
+      pools = [
+        { name = "burst-medium", instance_type = "cpx32", min = 0, max = 3 },
+        { name = "burst-large", instance_type = "cpx52", min = 0, max = 2 },
+      ]
+      hcloud_image_id    = tostring(dependency.cluster.outputs.talos_image_id)
+      hcloud_network_id  = tostring(dependency.cluster.outputs.network_id)
+      hcloud_firewall_id = try(tostring(dependency.cluster.outputs.firewall_id), "")
+      secret_name        = "cluster-autoscaler-hcloud"
     }
   )
 }

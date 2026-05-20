@@ -83,19 +83,6 @@ Division of labor for the adjacent-VM pattern:
 
 Revisit KubeVirt if (a) we add a CCX worker for unrelated reasons, (b) the NixOS workload count grows past ~3, and (c) any of them actually benefit from kubectl-native VM lifecycle. None of those is true today.
 
-## Cluster Autoscaler on Talos
-
-Out of scope for now, but the design is sketched. To make this work later:
-
-- Pre-generate a worker MachineConfig once via the talos provider; it's idempotent for workers and the same blob joins any number of nodes.
-- Stash it as a Secret available to the Cluster Autoscaler config (large, sensitive — contains cluster CA + machine CA bootstrap material).
-- Configure `cluster-autoscaler-hetzner` with one or more node groups, each pointing at: the existing Talos image ID (from the upload script), the worker MachineConfig as `cloud-init` user-data, a Hetzner network ID, location, server type, and min/max bounds.
-- New VMs boot with the embedded MachineConfig, Talos applies it, kubelet joins via the same flow as a manually-provisioned worker.
-- Failure mode is "delete and recreate" (no shell on Talos for retry) — keep `max-node-provision-time` low and `unremovable-node-recheck-timeout` aggressive.
-- Image pipeline is the gotcha: any drift between the cluster's running Talos version and the autoscaler's `image` field results in new nodes joining at a different Talos version. Bump them in lockstep.
-
-If we ever need this in earnest, consider Cluster API Provider Hetzner instead — it absorbs more of the bootstrap mechanics but adds its own operator footprint.
-
 ## Cluster API Provider
 
 ## Renovate

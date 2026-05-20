@@ -39,6 +39,13 @@ defaultSettings:
   # aggressive on small Hetzner instances.
   storageMinimalAvailablePercentage: 10
 
+  # Pin instance-manager (and other Longhorn-spawned system pods) to nodes
+  # explicitly labelled as storage-eligible — i.e., the static workers, not
+  # cluster-autoscaler burst nodes. Without this, instance-manager pods land
+  # on burst nodes and their `minAvailable=1` PDB blocks CAS from draining
+  # them, pinning the burst node forever. Format is `key:value` per Longhorn.
+  systemManagedComponentsNodeSelector: "storage.longhorn.io/eligible:true"
+
 # ---------------------------------------------------------------------------
 # StorageClass settings — keep Longhorn OPT-IN (don't override hcloud-volumes
 # as cluster default).
@@ -67,6 +74,14 @@ service:
 # ---------------------------------------------------------------------------
 longhornManager:
   priorityClass: system-cluster-critical
+  nodeSelector:
+    storage.longhorn.io/eligible: "true"
 
 longhornDriver:
   priorityClass: system-cluster-critical
+  nodeSelector:
+    storage.longhorn.io/eligible: "true"
+
+longhornUI:
+  nodeSelector:
+    storage.longhorn.io/eligible: "true"
