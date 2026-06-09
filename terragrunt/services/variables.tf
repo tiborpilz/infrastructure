@@ -169,3 +169,22 @@ variable "omni_siderolink_wireguard_endpoint" {
   type        = string
   default     = ""
 }
+
+variable "tangled_owner_did" {
+  description = "AT Protocol DID owning the tangled knot. Empty keeps the module dormant. Supplied via SOPS."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "tangled_knot_image" {
+  description = "Container image for the tangled knot."
+  type        = string
+  default     = "ghcr.io/dvjn/tangled-knot"
+}
+
+variable "tangled_knot_image_tag" {
+  description = "Tag for the tangled knot container image."
+  type        = string
+  default     = "v1.14.0-alpha"
+}

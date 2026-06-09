@@ -146,6 +146,7 @@ inputs = {
   )
 
   omni_etcd_gpg_key = try(include.env.locals.secrets.omni_etcd_gpg_key, "")
+  tangled_owner_did = try(include.env.locals.secrets.tangled_owner_did, "")
   omni_admin_emails = local.omni_admin_emails
   # SideroLink WireGuard advertisedEndpoint must be IP:PORT (hostnames are not
   # supported by the WireGuard config). 30180 is the chart's default NodePort.
