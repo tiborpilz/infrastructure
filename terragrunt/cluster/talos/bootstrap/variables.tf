@@ -61,31 +61,26 @@ variable "external_dns_chart_version" {
   default     = "1.21.1"
 }
 
-variable "acme_email" {
-  description = "Email address for Let's Encrypt account registration."
-  type        = string
-  default     = "tbrpilz@googlemail.com"
-}
-
 variable "hcloud_csi_chart_version" {
   description = "Initial hcloud-csi chart version."
   type        = string
   default     = "2.21.2"
 }
 
-variable "cnpg_chart_version" {
-  description = "Initial CloudNativePG chart version."
-  type        = string
-  default     = "0.21.3"
-}
-
-variable "authentik_chart_version" {
-  description = "Initial authentik Helm chart version."
-  type        = string
-  default     = "2024.12.1"
-}
-
 variable "admin_email" {
-  description = "Admin email for Let's Encrypt + Authentik."
+  description = "Admin email for Let's Encrypt account registration."
   type        = string
+  default     = "tbrpilz@googlemail.com"
+}
+
+variable "gateway_api_version" {
+  description = "Gateway API CRD release version (experimental install, includes TCPRoute)."
+  type        = string
+  default     = "v1.2.1"
+}
+
+variable "argocd_age_key" {
+  description = "Age private key for SOPS decryption by ArgoCD."
+  type        = string
+  sensitive   = true
 }

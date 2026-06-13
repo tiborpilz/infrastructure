@@ -34,17 +34,21 @@ resource "hcloud_floating_ip_assignment" "ingress" {
 module "talos" {
   source = "./talos"
 
-  cluster_name         = var.cluster_name
-  talos_version        = var.talos_version
-  nodes                = module.hcloud_server.nodes
-  kubeconfig_path      = var.kubeconfig_path
-  talosconfig_path     = var.talosconfig_path
-  hcloud_token         = var.hcloud_token
-  network_name         = module.hcloud_network.network_name
-  domain               = var.domain
-  location             = var.location
-  cloudflare_api_token = var.cloudflare_api_token
-  floating_ip_address  = module.hcloud_network.floating_ip_address
+  cluster_name             = var.cluster_name
+  talos_version            = var.talos_version
+  nodes                    = module.hcloud_server.nodes
+  kubeconfig_path          = var.kubeconfig_path
+  talosconfig_path         = var.talosconfig_path
+  hcloud_token             = var.hcloud_token
+  network_name             = module.hcloud_network.network_name
+  domain                   = var.domain
+  location                 = var.location
+  cloudflare_api_token     = var.cloudflare_api_token
+  admin_email              = var.admin_email
+  floating_ip_address      = module.hcloud_network.floating_ip_address
+  bootstrap_manifests_path = var.bootstrap_manifests_path
+  authentik_secret_key     = var.authentik_secret_key
+  argocd_age_key           = var.argocd_age_key
 }
 
 module "dns" {

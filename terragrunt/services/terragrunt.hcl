@@ -106,32 +106,6 @@ inputs = {
   authentik_superuser_groups = include.env.locals.authentik_superuser_groups
   woodpecker_admins          = local.woodpecker_admins
 
-  forgejo_values_yaml = templatefile(
-    "${get_terragrunt_dir()}/forgejo/templates/values.yaml.tpl",
-    {
-      admin_email           = include.env.locals.acme_email
-      bootstrap_admin_email = include.env.locals.bootstrap_admin_email
-      admin_secret_checksum = "tf-managed"
-      forgejo_data_size     = "20Gi"
-      forgejo_url           = "https://git.${include.env.locals.domain}"
-      gateway_name          = dependency.platform.outputs.gateway_name
-      gateway_namespace     = dependency.platform.outputs.gateway_namespace
-      hostname              = "git.${include.env.locals.domain}"
-      oidc_discovery_url    = "${dependency.platform.outputs.authentik_url}/application/o/forgejo/.well-known/openid-configuration"
-      oidc_secret_checksum  = "tf-managed"
-      pg_storage_size       = "10Gi"
-      storage_class         = dependency.platform.outputs.storage_class
-    }
-  )
-
-  forgejo_database_yaml = templatefile(
-    "${get_terragrunt_dir()}/forgejo/templates/database.yaml.tpl",
-    {
-      pg_storage_size = "10Gi"
-      storage_class   = dependency.platform.outputs.storage_class
-    }
-  )
-
   woodpecker_values_yaml = templatefile(
     "${get_terragrunt_dir()}/woodpecker/templates/values.yaml.tpl",
     {
