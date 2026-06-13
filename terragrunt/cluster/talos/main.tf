@@ -21,7 +21,7 @@ locals {
       }
       proxy = { disabled = true } # Cilium is going to replace kube-proxy.
       externalCloudProvider = {
-        enabled = true # Enabled to Hetzner cloud manager thing works correctly.
+        enabled = true
       }
     }
   })
@@ -52,12 +52,10 @@ resource "terraform_data" "wait_for_maintenance" {
   }
 }
 
-# Cluster-wide secrets: cluster CA, etcd CA, etc.
 resource "talos_machine_secrets" "this" {
   talos_version = "v${var.talos_version}"
 }
 
-# Control-plane nodes configuration.
 data "talos_machine_configuration" "control_plane" {
   for_each = local.control_plane_nodes
 
@@ -81,7 +79,6 @@ data "talos_machine_configuration" "control_plane" {
   ]
 }
 
-# Apply the config to each control plane node.
 resource "talos_machine_configuration_apply" "control_plane" {
   for_each = local.control_plane_nodes
 
@@ -91,13 +88,7 @@ resource "talos_machine_configuration_apply" "control_plane" {
 
   depends_on = [terraform_data.wait_for_maintenance]
 }
-
-# ---------------------------------------------------------------------------
-# Worker nodes: wait for maintenance API, render config, apply.
-# Workers don't bootstrap etcd — they join via the same cluster_endpoint as
-# CP nodes and trust the cluster CA from talos_machine_secrets.
-# ---------------------------------------------------------------------------
-
+#
 resource "terraform_data" "wait_for_maintenance_worker" {
   for_each = local.worker_nodes
 
@@ -181,32 +172,27 @@ resource "talos_machine_configuration_apply" "worker" {
 
   depends_on = [
     terraform_data.wait_for_maintenance_worker,
-    # Workers join AFTER the cluster is bootstrapped, otherwise they have
-    # no apiserver to talk to.
     talos_machine_bootstrap.this,
   ]
 }
 
-# Bootstrap etcd on the first CP node. Idempotent — errors gracefully if
-# already bootstrapped.
 resource "talos_machine_bootstrap" "this" {
   client_configuration = talos_machine_secrets.this.client_configuration
   node                 = local.first_control_plane_node.public_ipv4
   endpoint             = local.first_control_plane_node.public_ipv4
 
-  depends_on = [talos_machine_configuration_apply.control_plane]
+  # depends_on = [talos_machine_configuration_apply.control_plane]
 }
 
-# Fetch kubeconfig once the cluster is bootstrapped.
 resource "talos_cluster_kubeconfig" "this" {
   client_configuration = talos_machine_secrets.this.client_configuration
   node                 = local.first_control_plane_node.public_ipv4
   endpoint             = local.first_control_plane_node.public_ipv4
 
-  depends_on = [talos_machine_bootstrap.this]
+  # depends_on = [talos_machine_bootstrap.this]
 }
 
-# talosctl client configuration for break-glass / management.
+# talosctl client configuration manual intervention
 data "talos_client_configuration" "this" {
   cluster_name         = var.cluster_name
   client_configuration = talos_machine_secrets.this.client_configuration
@@ -214,8 +200,7 @@ data "talos_client_configuration" "this" {
   nodes                = [for n in local.control_plane_nodes : n.public_ipv4]
 }
 
-# Optionally write kubeconfig + talosconfig to disk for direct CLI use.
-# `local_sensitive_file` keeps the contents out of plan output.
+# kubeconfig for manual intervention
 resource "local_sensitive_file" "kubeconfig" {
   count = var.kubeconfig_path != null ? 1 : 0
 

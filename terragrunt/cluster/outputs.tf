@@ -23,11 +23,6 @@ output "location" {
   value       = module.hcloud.location
 }
 
-output "network_zone" {
-  description = "Hetzner Cloud network zone."
-  value       = module.hcloud.network_zone
-}
-
 output "kubeconfig" {
   description = "kubeconfig for kubectl."
   value       = module.talos.kubeconfig
