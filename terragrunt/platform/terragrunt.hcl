@@ -66,49 +66,13 @@ inputs = {
     {}
   )
 
-  kube_prometheus_stack_values = templatefile(
-    "${get_repo_root()}/applications/kube-prometheus-stack/values.yaml.tpl",
-    {
-      authentik_url        = "https://auth.${include.env.locals.domain}"
-      grafana_url          = "https://grafana.${include.env.locals.domain}"
-      grafana_hostname     = "grafana.${include.env.locals.domain}"
-      storage_class        = "hcloud-volumes"
-      oidc_secret_checksum = "tf-managed"
-      # JMESPath: any user in platform-admins → Admin, else empty (rejected
-      # by Grafana when role_attribute_strict: true).
-      role_attribute_path = "contains(groups[*], 'platform-admins') && 'Admin' || ''"
-    }
-  )
-
-  authentik_values_yaml = templatefile(
-    "${get_repo_root()}/applications/authentik/values.yaml.tpl",
-    {}
-  )
-
-  authentik_database_yaml = templatefile(
-    "${get_repo_root()}/applications/authentik/database.yaml.tpl",
-    {
-      pg_storage_size = "10Gi"
-      storage_class   = "hcloud-volumes"
-    }
-  )
-
-  authentik_valkey_service_yaml = templatefile(
-    "${get_repo_root()}/applications/authentik/valkey-service.yaml.tpl",
-    {}
-  )
-
-  authentik_valkey_statefulset_yaml = templatefile(
-    "${get_repo_root()}/applications/authentik/valkey-statefulset.yaml.tpl",
-    {
-      valkey_image = "valkey/valkey:8"
-    }
-  )
-
   # Cluster-autoscaler: burst pool spec + cluster wiring. Bump pool_max if
   # CI / Woodpecker pipelines hit the ceiling; bump pool_instance_type if a
   # single job needs more than the pool's per-node memory.
   worker_machine_config = dependency.cluster.outputs.worker_machine_config_template
+
+  argocd_oidc_client_secret = dependency.cluster.outputs.argocd_oidc_client_secret
+  authentik_bootstrap_token = dependency.cluster.outputs.authentik_bootstrap_token
 
   cluster_autoscaler_values = templatefile(
     "${get_repo_root()}/applications/cluster-autoscaler/values.yaml.tpl",

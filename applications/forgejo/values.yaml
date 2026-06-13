@@ -1,13 +1,13 @@
-storageClass: ${storage_class}
+storageClass: hcloud-volumes
 
 database:
-  storageSize: ${pg_storage_size}
+  storageSize: 10Gi
 
 test:
   enabled: false
 
 global:
-  storageClass: ${storage_class}
+  storageClass: hcloud-volumes
 
 namespaceOverride: forgejo
 
@@ -16,8 +16,8 @@ persistence:
   create: true
   mount: true
   claimName: forgejo-data
-  size: ${forgejo_data_size}
-  storageClass: ${storage_class}
+  size: 20Gi
+  storageClass: hcloud-volumes
 
 ingress:
   enabled: false
@@ -27,11 +27,11 @@ httpRoute:
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: ${gateway_name}
-      namespace: ${gateway_namespace}
+      name: public
+      namespace: gateway-system
       sectionName: https
   hostnames:
-    - ${hostname}
+    - git.$(DOMAIN)
   matches:
     path:
       type: PathPrefix
@@ -53,35 +53,29 @@ service:
 gitea:
   admin:
     existingSecret: forgejo-admin
-    # Dedicated address so ACCOUNT_LINKING=auto can't match it against a
-    # real user's OIDC email and silently link them to this bootstrap admin.
-    email: ${bootstrap_admin_email}
+    email: admin@tibor.sh
     passwordMode: keepUpdated
 
   oauth:
     - name: authentik
       provider: openidConnect
       existingSecret: forgejo-oidc
-      autoDiscoverUrl: ${oidc_discovery_url}
-      # Read the OIDC `groups` claim (authentik's profile mapping emits it)
-      # and promote any user whose claim contains `forgejo-admins` to site
-      # admin on every login. Removes the need to flip the admin flag in the
-      # Forgejo UI when adding a new platform admin.
+      autoDiscoverUrl: https://auth.$(DOMAIN)/application/o/forgejo/.well-known/openid-configuration
       groupClaimName: groups
       adminGroup: forgejo-admins
 
   podAnnotations:
-    checksum/forgejo-admin-secret: ${admin_secret_checksum}
-    checksum/forgejo-oidc-secret: ${oidc_secret_checksum}
+    checksum/forgejo-admin-secret: "argocd-managed"
+    checksum/forgejo-oidc-secret: "argocd-managed"
 
   config:
     APP_NAME: Forgejo
     server:
-      DOMAIN: ${hostname}
-      ROOT_URL: ${forgejo_url}/
+      DOMAIN: git.$(DOMAIN)
+      ROOT_URL: https://git.$(DOMAIN)/
       PROTOCOL: http
       HTTP_PORT: 3000
-      SSH_DOMAIN: ${hostname}
+      SSH_DOMAIN: git.$(DOMAIN)
       DISABLE_SSH: true
       START_SSH_SERVER: false
     database:
@@ -103,12 +97,6 @@ gitea:
       DISABLE_REGISTRATION: true
       ALLOW_ONLY_EXTERNAL_REGISTRATION: true
       SHOW_REGISTRATION_BUTTON: false
-      # Hide the local username/password form on the login page; only the
-      # Authentik OAuth button is shown. ENABLE_BASIC_AUTHENTICATION stays
-      # true so git CLI pushes (`git push https://user:pat@...`) and any
-      # programmatic API auth keep working — this only affects the UI form.
-      # Break-glass for the chart-managed `forgejo_admin` user is via
-      # `kubectl exec` into the forgejo pod and `forgejo admin user`.
       ENABLE_INTERNAL_SIGNIN: false
       ENABLE_BASIC_AUTHENTICATION: true
     packages:

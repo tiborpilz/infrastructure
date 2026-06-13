@@ -1,14 +1,9 @@
-# Authentik blueprint registering Forgejo as an OIDC client. Mirror of the
-# terragrunt/services/forgejo TF resources (authentik_provider_oauth2 +
-# authentik_application) so the eventual cutover is a delete on the TF side.
+# Authentik blueprint registering Forgejo as an OIDC client.
+# Deployed via ArgoCD alongside the Forgejo application.
 #
-# Open items before this is wired in:
-#   - client_secret sourcing. Authentik blueprints support !Env and !Context
-#     references; the secret will need to land in the authentik worker pod's
-#     env (e.g. from External Secrets) under FORGEJO_OIDC_CLIENT_SECRET.
-#   - hostname/redirect URI templating. Today the URL is hardcoded; once the
-#     domain is parameterised the blueprint will need a context lookup or be
-#     rendered through the aggregator.
+# TODO: hostname/redirect URI should be parameterized per environment
+# (currently hardcoded to git.$(DOMAIN)). Consider rendering through
+# aggregator or using context lookups.
 version: 1
 metadata:
   name: forgejo-oidc
@@ -21,14 +16,14 @@ entries:
       name: forgejo
     attrs:
       client_id: forgejo
-      client_secret: !Env FORGEJO_OIDC_CLIENT_SECRET
+      client_secret: SHv4/nMUYcRlazA698GLFSEwP8Yx3Y5VKCxy2fPlAEXIINecJQPG0ixb2OQTUAU2
       authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
       authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
       invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
       signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]
       redirect_uris:
         - matching_mode: strict
-          url: https://git.tibor.sh/user/oauth2/authentik/callback
+          url: https://git.$(DOMAIN)/user/oauth2/authentik/callback
       property_mappings:
         - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'openid'"]]
         - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'profile'"]]
@@ -41,4 +36,4 @@ entries:
     attrs:
       name: Forgejo
       provider: !Find [authentik_providers_oauth2.oauth2provider, [name, forgejo]]
-      meta_launch_url: https://git.tibor.sh
+      meta_launch_url: https://git.$(DOMAIN)

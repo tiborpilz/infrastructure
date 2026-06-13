@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-cd
+    targetRevision: 7.8.9
+    helm:
+      valuesObject:
+        configs:
+          params:
+            server.insecure: "true"
+          cm:
+            kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
+            oidc.config: |
+              name: Authentik
+              issuer: https://auth.tibor.sh/application/o/argocd/
+              clientID: argocd
+              clientSecret: $argocd-oidc:oidc.clientSecret
+              requestedScopes:
+                - openid
+                - profile
+                - email
+                - groups
+          rbac:
+            policy.csv: |
+              g, authentik Admins, role:admin
+            policy.default: role:readonly
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /status/terminatingReplicas

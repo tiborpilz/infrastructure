@@ -1,6 +1,7 @@
 module "bootstrap" {
   source = "./bootstrap"
 
+  admin_email          = var.admin_email
   # helm template needs a concrete version; Talos picks its own when null.
   kubernetes_version   = coalesce(var.kubernetes_version, "1.30.0")
   hcloud_token         = var.hcloud_token
@@ -8,6 +9,7 @@ module "bootstrap" {
   location             = var.location
   cloudflare_api_token = var.cloudflare_api_token
   network_name         = var.network_name
+  argocd_age_key       = var.argocd_age_key
 }
 
 locals {
@@ -209,6 +211,14 @@ resource "local_sensitive_file" "talosconfig" {
   file_permission = "0600"
 }
 
+resource "local_file" "bootstrap_manifests" {
+  count = var.bootstrap_manifests_path != null ? 1 : 0
+
+  filename        = var.bootstrap_manifests_path
+  content         = module.bootstrap.rendered_yaml
+  file_permission = "0644"
+}
+
 resource "terraform_data" "wait_for_cluster" {
   triggers_replace = {
     nodes = join(",", concat(
@@ -234,6 +244,66 @@ resource "terraform_data" "wait_for_cluster" {
   ]
 }
 
+resource "random_password" "authentik_valkey" {
+  length  = 32
+  special = false
+}
+
+resource "random_password" "authentik_bootstrap_token" {
+  length  = 40
+  special = false
+}
+
+resource "random_password" "argocd_oidc_client_secret" {
+  length  = 48
+  special = false
+}
+
+resource "terraform_data" "app_secrets" {
+  triggers_replace = [
+    sha256(var.authentik_secret_key),
+    sha256(random_password.authentik_valkey.result),
+    sha256(random_password.authentik_bootstrap_token.result),
+    sha256(random_password.argocd_oidc_client_secret.result),
+  ]
+
+  provisioner "local-exec" {
+    environment = {
+      KUBECONFIG                  = local_sensitive_file.kubeconfig[0].filename
+      AUTHENTIK_SECRET_KEY        = var.authentik_secret_key
+      VALKEY_PASSWORD             = random_password.authentik_valkey.result
+      AUTHENTIK_BOOTSTRAP_TOKEN   = random_password.authentik_bootstrap_token.result
+      ARGOCD_OIDC_CLIENT_SECRET   = random_password.argocd_oidc_client_secret.result
+    }
+    command = <<-BASH
+      kubectl create namespace authentik --dry-run=client -o yaml | kubectl apply -f -
+      kubectl create secret generic authentik-bootstrap \
+        --namespace=authentik \
+        --from-literal=AUTHENTIK_SECRET_KEY="$AUTHENTIK_SECRET_KEY" \
+        --from-literal=AUTHENTIK_BOOTSTRAP_TOKEN="$AUTHENTIK_BOOTSTRAP_TOKEN" \
+        --from-literal=AUTHENTIK_REDIS__HOST=authentik-valkey \
+        --from-literal=AUTHENTIK_REDIS__PASSWORD="$VALKEY_PASSWORD" \
+        --from-literal=AUTHENTIK_POSTGRESQL__HOST=authentik-db-rw \
+        --from-literal=AUTHENTIK_POSTGRESQL__USER=authentik \
+        --from-literal=AUTHENTIK_POSTGRESQL__NAME=authentik \
+        --from-literal=AUTHENTIK_POSTGRESQL__PORT=5432 \
+        --from-literal=ARGOCD_OIDC_CLIENT_SECRET="$ARGOCD_OIDC_CLIENT_SECRET" \
+        --dry-run=client -o yaml | kubectl apply -f -
+      kubectl create secret generic authentik-valkey \
+        --namespace=authentik \
+        --from-literal=password="$VALKEY_PASSWORD" \
+        --dry-run=client -o yaml | kubectl apply -f -
+      kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+      kubectl create secret generic argocd-oidc \
+        --namespace=argocd \
+        --from-literal=oidc.clientSecret="$ARGOCD_OIDC_CLIENT_SECRET" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    BASH
+  }
+
+  depends_on = [terraform_data.wait_for_cluster]
+}
+
 resource "terraform_data" "cilium_lb_pool" {
   triggers_replace = {
     floating_ip = var.floating_ip_address
@@ -243,18 +313,7 @@ resource "terraform_data" "cilium_lb_pool" {
     environment = {
       KUBECONFIG = local_sensitive_file.kubeconfig[0].filename
     }
-    command = <<-EOT
-      kubectl apply -f - <<YAML
-      apiVersion: cilium.io/v2alpha1
-      kind: CiliumLoadBalancerIPPool
-      metadata:
-        name: default
-      spec:
-        blocks:
-          - start: ${var.floating_ip_address}
-            stop: ${var.floating_ip_address}
-      YAML
-    EOT
+    command = "${path.module}/../scripts/apply-cilium-lb-pool.sh ${var.floating_ip_address}"
   }
 
   depends_on = [terraform_data.wait_for_cluster]
