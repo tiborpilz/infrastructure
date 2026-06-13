@@ -1,26 +1,26 @@
 output "nodes" {
   description = "Generic node inventory."
-  value       = module.hcloud.nodes
+  value       = module.hcloud_server.nodes
 }
 
 output "network_id" {
   description = "Hetzner Cloud network ID."
-  value       = module.hcloud.network_id
+  value       = module.hcloud_network.network_id
 }
 
 output "subnet_id" {
   description = "Hetzner Cloud subnet ID."
-  value       = module.hcloud.subnet_id
+  value       = module.hcloud_network.subnet_id
 }
 
-# output "firewall_id" {
-#   description = "Cluster firewall ID, or null if disabled."
-#   value       = module.hcloud.firewall_id
-# }
-#
+output "firewall_ids" {
+  description = "Cluster firewall IDs (empty list if firewall is disabled)."
+  value       = module.hcloud_network.firewall_ids
+}
+
 output "location" {
   description = "Hetzner Cloud location."
-  value       = module.hcloud.location
+  value       = module.hcloud_server.location
 }
 
 output "kubeconfig" {
@@ -86,5 +86,16 @@ output "worker_machine_config_template" {
 
 output "talos_image_id" {
   description = "Numeric Hetzner snapshot ID of the Talos image currently in use."
-  value       = module.hcloud.talos_image_id
+  value       = module.hcloud_server.talos_image_id
+}
+
+
+output "node_fqdns" {
+  description = "Map of node name to FQDN under the configured subdomain (e.g., controlplane-1 → controlplane-1.kube.tibor.sh)."
+  value       = module.dns.node_fqdns
+}
+
+output "control_plane_machine_config" {
+  value     = module.talos.control_plane_machine_config
+  sensitive = true
 }

@@ -90,3 +90,35 @@ variable "talosconfig_path" {
   type        = string
   default     = null
 }
+
+variable "hcloud_token" {
+  description = "Hetzner Cloud API token passed to bootstrap (hcloud-ccm + hcloud-csi secrets)."
+  type        = string
+  sensitive   = true
+}
+
+variable "network_name" {
+  description = "Hetzner Cloud private network name. Added to the hcloud secret so CCM can route through it."
+  type        = string
+}
+
+variable "domain" {
+  description = "Apex domain. Used for Gateway hostnames and cert-manager ClusterIssuer."
+  type        = string
+}
+
+variable "location" {
+  description = "Hetzner Cloud location. Used for the LB location annotation on the Gateway."
+  type        = string
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token for cert-manager DNS-01 and external-dns."
+  type        = string
+  sensitive   = true
+}
+
+variable "floating_ip_address" {
+  description = "Public IPv4 of the ingress floating IP. Applied post-cluster as a CiliumLoadBalancerIPPool."
+  type        = string
+}

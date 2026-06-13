@@ -43,10 +43,11 @@ variable "control_plane_nodes" {
 }
 
 variable "worker_nodes" {
-  description = "Worker nodes keyed by short name."
+  description = "Worker nodes keyed by short name. volume_size_gb (optional) attaches a raw hcloud_volume of that size for storage workloads like Ceph."
   type = map(object({
-    server_type  = string
-    private_ipv4 = optional(string)
+    server_type    = string
+    private_ipv4   = optional(string)
+    volume_size_gb = optional(number)
   }))
   default = {}
 }
@@ -64,4 +65,21 @@ variable "kubeconfig_path" {
 variable "talosconfig_path" {
   description = "Path where the talosconfig should be written."
   type        = string
+}
+
+variable "domain" {
+  description = "Apex domain for cluster DNS records. Must match an existing Cloudflare zone."
+  type        = string
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token with Zone:Edit on the configured zone. Consumed by the cloudflare provider via CLOUDFLARE_API_TOKEN."
+  type        = string
+  sensitive   = true
+}
+
+variable "hcloud_token" {
+  description = "Hetzner Cloud API token. Consumed by the hcloud provider via HCLOUD_TOKEN."
+  type        = string
+  sensitive   = true
 }
