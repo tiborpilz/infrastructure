@@ -45,10 +45,6 @@ resource "terraform_data" "platform_data_gate" {
   input = var.platform_data_ready
 }
 
-resource "terraform_data" "forgejo_gate" {
-  input = var.forgejo_ready
-}
-
 resource "kubernetes_namespace" "woodpecker" {
   metadata {
     name = local.namespace
@@ -56,15 +52,6 @@ resource "kubernetes_namespace" "woodpecker" {
       "managed-by" = "terragrunt"
     }
   }
-}
-
-data "kubernetes_secret" "forgejo_admin" {
-  metadata {
-    name      = "forgejo-admin"
-    namespace = var.forgejo_namespace
-  }
-
-  depends_on = [terraform_data.forgejo_gate]
 }
 
 resource "random_password" "agent_secret" {
@@ -89,9 +76,10 @@ resource "kubernetes_secret" "bootstrap_input" {
     namespace = kubernetes_namespace.woodpecker.metadata[0].name
   }
 
+  # Hardcoded values from the Forgejo kustomization (applications/forgejo/secrets.yaml)
   data = {
-    FORGEJO_ADMIN_USERNAME = data.kubernetes_secret.forgejo_admin.data["username"]
-    FORGEJO_ADMIN_PASSWORD = data.kubernetes_secret.forgejo_admin.data["password"]
+    FORGEJO_ADMIN_USERNAME = "forgejo_admin"
+    FORGEJO_ADMIN_PASSWORD = "Set0u6RbBylfonDRm3VjA/tL8uZVZXL9Fjiv1UYfX3Y="
   }
 }
 
@@ -254,7 +242,6 @@ resource "kubectl_manifest" "bootstrap_job" {
   depends_on = [
     kubernetes_role_binding.bootstrap,
     kubernetes_secret.bootstrap_input,
-    terraform_data.forgejo_gate,
   ]
 }
 

@@ -118,7 +118,30 @@ variable "cloudflare_api_token" {
   sensitive   = true
 }
 
+variable "admin_email" {
+  description = "Admin email for Let's Encrypt and Authentik."
+  type        = string
+}
+
 variable "floating_ip_address" {
   description = "Public IPv4 of the ingress floating IP. Applied post-cluster as a CiliumLoadBalancerIPPool."
   type        = string
+}
+
+variable "bootstrap_manifests_path" {
+  description = "Filesystem path to write all bootstrap inline manifests as YAML. If null, no file is written."
+  type        = string
+  default     = null
+}
+
+variable "authentik_secret_key" {
+  description = "Authentik secret key (AUTHENTIK_SECRET_KEY). Stable across rebuilds — rotating it invalidates all sessions."
+  type        = string
+  sensitive   = true
+}
+
+variable "argocd_age_key" {
+  description = "Age private key for SOPS decryption by ArgoCD (in bootstrap manifests)."
+  type        = string
+  sensitive   = true
 }

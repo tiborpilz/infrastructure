@@ -68,31 +68,6 @@ variable "metrics_server_values" {
   type        = string
 }
 
-variable "kube_prometheus_stack_values" {
-  description = "Rendered Helm values for kube-prometheus-stack."
-  type        = string
-}
-
-variable "authentik_values_yaml" {
-  description = "Rendered base Helm values for authentik."
-  type        = string
-}
-
-variable "authentik_database_yaml" {
-  description = "Rendered CNPG Cluster YAML for authentik."
-  type        = string
-}
-
-variable "authentik_valkey_service_yaml" {
-  description = "Rendered Valkey Service YAML."
-  type        = string
-}
-
-variable "authentik_valkey_statefulset_yaml" {
-  description = "Rendered Valkey StatefulSet YAML."
-  type        = string
-}
-
 variable "worker_machine_config" {
   description = "Talos worker MachineConfig (YAML) injected as user-data on autoscaler-provisioned nodes."
   type        = string
@@ -102,4 +77,16 @@ variable "worker_machine_config" {
 variable "cluster_autoscaler_values" {
   description = "Rendered Helm values for cluster-autoscaler."
   type        = string
+}
+
+variable "argocd_oidc_client_secret" {
+  description = "ArgoCD OIDC client secret generated in the cluster bootstrap layer."
+  type        = string
+  sensitive   = true
+}
+
+variable "authentik_bootstrap_token" {
+  description = "Authentik API bootstrap token generated in the cluster bootstrap layer."
+  type        = string
+  sensitive   = true
 }

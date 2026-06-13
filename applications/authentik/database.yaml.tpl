@@ -12,8 +12,5 @@ spec:
     initdb:
       database: authentik
       owner: authentik
-  # No backup config yet — Velero/S3 lands in a later milestone. CNPG will
-  # still take WAL archives locally on the PG pod's PV; that survives pod
-  # restarts on the same node but not node loss.
   monitoring:
     enablePodMonitor: false

@@ -31,6 +31,8 @@
 
             talosctl
             kubectl
+            kustomize
+            kustomize-sops
             kubernetes-helm
 
             argocd
@@ -53,6 +55,9 @@
             REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
             export KUBECONFIG="$REPO_ROOT/.kube/hcloud-poc.kubeconfig"
             export TALOSCONFIG="$REPO_ROOT/.talos/hcloud-poc.talosconfig"
+
+            # Enable kustomize-sops plugin for SOPS decryption during kustomize build
+            export KUSTOMIZE_PLUGIN_HOME="${pkgs.kustomize-sops}/lib"
           '';
         };
       });
