@@ -93,37 +93,6 @@ variable "argocd_oidc_redirect_uri" {
   type        = string
 }
 
-variable "managed_users" {
-  description = "Declarative Authentik users keyed by username."
-  type = map(object({
-    name       = string
-    email      = string
-    admin      = optional(bool, false)
-    groups     = optional(list(string), [])
-    is_active  = optional(bool, true)
-    path       = optional(string, "users/managed")
-    attributes = optional(map(string), {})
-  }))
-  default = {}
-}
-
-variable "managed_user_passwords" {
-  description = "Optional plaintext passwords for managed users."
-  type        = map(string)
-  default     = {}
-  sensitive   = true
-}
-
-variable "platform_admin_groups" {
-  description = "Groups assigned to managed users with admin = true."
-  type        = list(string)
-}
-
-variable "authentik_superuser_groups" {
-  description = "Managed groups whose members should be authentik superusers."
-  type        = list(string)
-}
-
 variable "woodpecker_values_yaml" {
   description = "Rendered Helm values for Woodpecker."
   type        = string

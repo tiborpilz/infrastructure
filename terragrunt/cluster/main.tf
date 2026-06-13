@@ -49,6 +49,9 @@ module "talos" {
   bootstrap_manifests_path = var.bootstrap_manifests_path
   authentik_secret_key     = var.authentik_secret_key
   argocd_age_key           = var.argocd_age_key
+  hcloud_image_id          = tostring(module.hcloud_server.talos_image_id)
+  hcloud_network_id        = tostring(module.hcloud_network.network_id)
+  hcloud_firewall_id       = try(tostring(module.hcloud_network.firewall_ids[0]), "")
 }
 
 module "dns" {

@@ -16,6 +16,12 @@ variable "argocd_chart_version" {
   default     = "7.8.9"
 }
 
+variable "hcloud_csi_chart_version" {
+  description = "Initial hcloud-csi chart version."
+  type        = string
+  default     = "2.21.2"
+}
+
 variable "hcloud_ccm_version" {
   description = "Initial hcloud-cloud-controller-manager chart version."
   type        = string
@@ -59,12 +65,6 @@ variable "external_dns_chart_version" {
   description = "external-dns Helm chart version."
   type        = string
   default     = "1.21.1"
-}
-
-variable "hcloud_csi_chart_version" {
-  description = "Initial hcloud-csi chart version."
-  type        = string
-  default     = "2.21.2"
 }
 
 variable "admin_email" {
