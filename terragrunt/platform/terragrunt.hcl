@@ -35,7 +35,7 @@ dependency "cluster" {
   # break this layer's parse on stale state. Real outputs always win when
   # present; mocks fill in the gaps until `terragrunt --working-dir
   # terragrunt/cluster apply` refreshes them.
-  mock_outputs_merge_strategy_with_state = "shallow_merge"
+  mock_outputs_merge_strategy_with_state = "shallow"
 }
 
 inputs = {
