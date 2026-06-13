@@ -1,0 +1,55 @@
+version: 1
+metadata:
+  name: managed-users
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+  - model: authentik_core.user
+    state: created
+    identifiers:
+      username: tibor
+    attrs:
+      name: Tibor
+      email: tibor@pilz.berlin
+      password: !Env SEED_TIBOR_PASSWORD
+      is_active: true
+      type: internal
+      path: users/managed
+      attributes:
+        managed-by: blueprint
+
+  - model: authentik_core.group
+    state: present
+    identifiers:
+      name: platform-admins
+    attrs:
+      is_superuser: false
+      users_obj:
+        - !Find [authentik_core.user, [username, tibor]]
+
+  - model: authentik_core.group
+    state: present
+    identifiers:
+      name: kubernetes-admins
+    attrs:
+      is_superuser: false
+      users_obj:
+        - !Find [authentik_core.user, [username, tibor]]
+
+  - model: authentik_core.group
+    state: present
+    identifiers:
+      name: forgejo-admins
+    attrs:
+      is_superuser: false
+      users_obj:
+        - !Find [authentik_core.user, [username, tibor]]
+
+  - model: authentik_core.group
+    state: present
+    identifiers:
+      name: authentik-superusers
+    attrs:
+      is_superuser: true
+      users_obj:
+        - !Find [authentik_core.user, [username, tibor]]
