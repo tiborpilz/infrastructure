@@ -61,3 +61,21 @@ output "control_plane_machine_config" {
   value     = { for k, c in data.talos_machine_configuration.control_plane : k => c.machine_configuration }
   sensitive = true
 }
+
+output "bootstrap_manifests_yaml" {
+  description = "All bootstrap inline manifests as a multi-document YAML string."
+  value       = module.bootstrap.rendered_yaml
+  sensitive   = true
+}
+
+output "authentik_bootstrap_token" {
+  description = "Authentik API bootstrap token (AUTHENTIK_BOOTSTRAP_TOKEN). Used by the services layer to talk to the Authentik API."
+  value       = random_password.authentik_bootstrap_token.result
+  sensitive   = true
+}
+
+output "argocd_oidc_client_secret" {
+  description = "ArgoCD OIDC client secret. Stored in argocd/argocd-oidc K8s secret; Authentik provider must use the same value."
+  value       = random_password.argocd_oidc_client_secret.result
+  sensitive   = true
+}

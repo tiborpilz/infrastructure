@@ -20,16 +20,6 @@ locals {
       kind       = "Namespace"
       metadata   = { name = "gateway-system" }
     }
-    cnpg_system = {
-      apiVersion = "v1"
-      kind       = "Namespace"
-      metadata   = { name = "cnpg-system" }
-    }
-    authentik = {
-      apiVersion = "v1"
-      kind       = "Namespace"
-      metadata   = { name = "authentik" }
-    }
     hcloud_csi = {
       apiVersion = "v1"
       kind       = "Namespace"
@@ -82,7 +72,7 @@ locals {
     spec = {
       acme = {
         server = "https://acme-v02.api.letsencrypt.org/directory"
-        email  = var.acme_email
+        email  = var.admin_email
         privateKeySecretRef = { name = "letsencrypt-prod-account-key" }
         solvers = [{
           dns01 = {
@@ -97,6 +87,17 @@ locals {
 
   domain_slug = replace(var.domain, ".", "-")
 
+  wildcard_certificate = {
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Certificate"
+    metadata   = { name = "${local.domain_slug}-wildcard-tls", namespace = "gateway-system" }
+    spec = {
+      secretName = "${local.domain_slug}-wildcard-tls"
+      issuerRef  = { name = "letsencrypt-prod", kind = "ClusterIssuer" }
+      dnsNames   = ["*.${var.domain}"]
+    }
+  }
+
   gateway = {
     apiVersion = "gateway.networking.k8s.io/v1"
     kind       = "Gateway"
@@ -104,8 +105,6 @@ locals {
       name      = "public"
       namespace = "gateway-system"
       annotations = {
-        "cert-manager.io/cluster-issuer"                      = "letsencrypt-prod"
-        "external-dns.alpha.kubernetes.io/hostname"           = "*.${var.domain}"
         "load-balancer.hetzner.cloud/location"                = var.location
         "load-balancer.hetzner.cloud/disable-private-ingress" = "true"
       }
@@ -131,15 +130,6 @@ locals {
           }
           allowedRoutes = { namespaces = { from = "All" } }
         },
-        {
-          name     = "ssh"
-          protocol = "TCP"
-          port     = 22
-          allowedRoutes = {
-            namespaces = { from = "All" }
-            kinds      = [{ kind = "TCPRoute" }]
-          }
-        },
       ]
     }
   }
@@ -160,24 +150,72 @@ locals {
     }
   }
 
-  authentik_bootstrap_secret = {
-    apiVersion = "v1"
-    kind       = "Secret"
-    metadata = {
-      name      = "authentik-bootstrap"
-      namespace = "authentik"
-    }
-    data = {
-      AUTHENTIK_SECRET_KEY                = base64encode(random_password.authentik_secret_key.result)
-      AUTHENTIK_BOOTSTRAP_PASSWORD        = base64encode(random_password.authentik_admin_password.result)
-      AUTHENTIK_BOOTSTRAP_TOKEN__TOKEN    = base64encode(random_password.authentik_bootstrap_token.result)
+  argocd_httproute = {
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "HTTPRoute"
+    metadata   = { name = "argocd", namespace = "argocd" }
+    spec = {
+      parentRefs = [{ name = "public", namespace = "gateway-system", sectionName = "https" }]
+      hostnames  = ["argocd.${var.domain}"]
+      rules = [{
+        backendRefs = [{ name = "argocd-server", port = 80 }]
+      }]
     }
   }
+
+  argocd_age_keys_secret = {
+    apiVersion = "v1"
+    kind       = "Secret"
+    metadata   = { name = "age-keys", namespace = "argocd" }
+    data       = { "keys.txt" = base64encode(var.argocd_age_key) }
+  }
+
+  # ArgoCD uses the HOME env var to locate age keys. Mount the secret at /home/argocd/.age/keys.txt
+  # and set HOME=/home/argocd so SOPS can find it automatically.
+  argocd_repo_server_patch = {
+    apiVersion = "apps/v1"
+    kind       = "Deployment"
+    metadata   = { name = "argocd-repo-server", namespace = "argocd" }
+    spec = {
+      template = {
+        spec = {
+          containers = [
+            {
+              name = "argocd-repo-server"
+              env = [
+                { name = "HOME", value = "/home/argocd" }
+              ]
+              volumeMounts = [
+                {
+                  name      = "age-keys"
+                  mountPath = "/home/argocd/.age"
+                }
+              ]
+            }
+          ]
+          volumes = [
+            {
+              name = "age-keys"
+              secret = {
+                secretName = "age-keys"
+                items = [
+                  {
+                    key  = "keys.txt"
+                    path = "keys.txt"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+
 }
 
-output "inline_manifests" {
-  description = "Inline manifests for Talos bootstrap."
-  value = concat(
+locals {
+  all_manifests = concat(
     [
       for ns_name in sort(keys(local.extra_namespaces)) : {
         name     = "ns-${ns_name}"
@@ -185,22 +223,44 @@ output "inline_manifests" {
       }
     ],
     [
-      { name = "cilium",                        contents = data.helm_template.cilium.manifest },
-      { name = "hcloud-ccm-secret",             contents = yamlencode(local.hcloud_ccm_secret) },
-      { name = "hcloud-ccm",                    contents = data.helm_template.hcloud_ccm.manifest },
-      { name = "hcloud-csi-secret",             contents = yamlencode(local.hcloud_csi_secret) },
-      { name = "hcloud-csi",                    contents = data.helm_template.hcloud_csi.manifest },
-      { name = "argocd",                        contents = data.helm_template.argocd.manifest },
-      { name = "cert-manager-secret",           contents = yamlencode(local.cloudflare_cert_manager_secret) },
-      { name = "cert-manager",                  contents = data.helm_template.cert_manager.manifest },
-      { name = "cert-manager-cluster-issuer",   contents = yamlencode(local.cluster_issuer) },
-      { name = "external-dns-secret",           contents = yamlencode(local.cloudflare_external_dns_secret) },
-      { name = "external-dns",                  contents = data.helm_template.external_dns.manifest },
-      { name = "cnpg-operator",                 contents = data.helm_template.cnpg.manifest },
-      { name = "authentik-bootstrap-secret",    contents = yamlencode(local.authentik_bootstrap_secret) },
-      { name = "authentik",                     contents = data.helm_template.authentik.manifest },
-      { name = "gateway",                       contents = yamlencode(local.gateway) },
-      { name = "https-redirect",                contents = yamlencode(local.https_redirect) },
+      { name = "gateway-api-crds",            contents = data.http.gateway_api_crds.response_body },
+      { name = "cilium",                      contents = data.helm_template.cilium.manifest },
+      { name = "hcloud-ccm-secret",           contents = yamlencode(local.hcloud_ccm_secret) },
+      { name = "hcloud-ccm",                  contents = data.helm_template.hcloud_ccm.manifest },
+      { name = "hcloud-csi-secret",           contents = yamlencode(local.hcloud_csi_secret) },
+      { name = "hcloud-csi",                  contents = data.helm_template.hcloud_csi.manifest },
+      { name = "argocd",                      contents = data.helm_template.argocd.manifest },
+      { name = "argocd-age-keys-secret",      contents = yamlencode(local.argocd_age_keys_secret) },
+      { name = "argocd-repo-server-patch",    contents = yamlencode(local.argocd_repo_server_patch) },
+      { name = "argocd-httproute",            contents = yamlencode(local.argocd_httproute) },
+      { name = "cert-manager-secret",         contents = yamlencode(local.cloudflare_cert_manager_secret) },
+      { name = "cert-manager",                contents = data.helm_template.cert_manager.manifest },
+      { name = "cert-manager-cluster-issuer", contents = yamlencode(local.cluster_issuer) },
+      { name = "wildcard-certificate",        contents = yamlencode(local.wildcard_certificate) },
+      { name = "external-dns-secret",         contents = yamlencode(local.cloudflare_external_dns_secret) },
+      { name = "external-dns",                contents = data.helm_template.external_dns.manifest },
+      # GatewayClass is also inside the cilium manifest, but CRD registration
+      # isn't instant so it often fails when applied immediately after the CRD
+      # manifest. Repeating it here (after 10+ other manifests) ensures the CRD
+      # is registered. Idempotent if Cilium's manifest already applied it.
+      { name = "cilium-gateway-class",        contents = yamlencode({
+        apiVersion = "gateway.networking.k8s.io/v1"
+        kind       = "GatewayClass"
+        metadata   = { name = "cilium" }
+        spec       = { controllerName = "io.cilium/gateway-controller" }
+      })},
+      { name = "gateway",                     contents = yamlencode(local.gateway) },
+      { name = "https-redirect",              contents = yamlencode(local.https_redirect) },
     ],
   )
+}
+
+output "inline_manifests" {
+  description = "Inline manifests for Talos bootstrap."
+  value       = local.all_manifests
+}
+
+output "rendered_yaml" {
+  description = "All bootstrap manifests concatenated as a multi-document YAML string. Write to a file for inspection."
+  value       = join("\n---\n", [for m in local.all_manifests : "# ${m.name}\n${m.contents}"])
 }

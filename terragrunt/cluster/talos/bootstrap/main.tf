@@ -52,6 +52,10 @@ locals {
   })
 }
 
+data "http" "gateway_api_crds" {
+  url = "https://github.com/kubernetes-sigs/gateway-api/releases/download/${var.gateway_api_version}/experimental-install.yaml"
+}
+
 data "helm_template" "cilium" {
   name         = "cilium"
   namespace    = "kube-system"
@@ -70,6 +74,11 @@ data "helm_template" "argocd" {
   chart        = "argo-cd"
   version      = var.argocd_chart_version
   kube_version = var.kubernetes_version
+
+  set {
+    name  = "server.insecure"
+    value = "true"
+  }
 }
 
 data "helm_template" "hcloud_ccm" {
@@ -138,45 +147,15 @@ data "helm_template" "external_dns" {
     name  = "env[0].valueFrom.secretKeyRef.key"
     value = "token"
   }
+
+  set {
+    name  = "sources[0]"
+    value = "service"
+  }
+
+  set {
+    name  = "sources[1]"
+    value = "gateway-httproute"
+  }
 }
 
-data "helm_template" "cnpg" {
-  name         = "cloudnative-pg"
-  namespace    = "cnpg-system"
-  repository   = "https://cloudnative-pg.github.io/charts"
-  chart        = "cloudnative-pg"
-  version      = var.cnpg_chart_version
-  kube_version = var.kubernetes_version
-}
-
-resource "random_password" "authentik_secret_key" {
-  length  = 50
-  special = false
-}
-
-resource "random_password" "authentik_admin_password" {
-  length  = 32
-  special = true
-}
-
-resource "random_password" "authentik_bootstrap_token" {
-  length  = 32
-  special = false
-}
-
-data "helm_template" "authentik" {
-  name         = "authentik"
-  namespace    = "authentik"
-  repository   = "https://charts.goauthentik.io"
-  chart        = "authentik"
-  version      = var.authentik_chart_version
-  kube_version = var.kubernetes_version
-
-  values = [yamlencode({
-    authentik = {
-      email = {
-        from = var.admin_email
-      }
-    }
-  })]
-}

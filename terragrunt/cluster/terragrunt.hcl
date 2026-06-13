@@ -33,6 +33,8 @@ inputs = {
   admin_email          = include.env.locals.acme_email
   cloudflare_api_token = include.env.locals.secrets.cloudflare_api_token
   hcloud_token         = include.env.locals.secrets.hcloud_token
+  authentik_secret_key = include.env.locals.secrets.authentik_secret_key
+  argocd_age_key       = include.env.locals.argocd_age_key
 
   control_plane_nodes = {
     controlplane-1 = {
@@ -65,6 +67,7 @@ inputs = {
     }
   }
 
-  kubeconfig_path  = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}.kubeconfig"
-  talosconfig_path = "${get_repo_root()}/.talos/${include.env.locals.cluster_name}.talosconfig"
+  kubeconfig_path          = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}.kubeconfig"
+  talosconfig_path         = "${get_repo_root()}/.talos/${include.env.locals.cluster_name}.talosconfig"
+  bootstrap_manifests_path = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}-bootstrap-manifests.yaml"
 }

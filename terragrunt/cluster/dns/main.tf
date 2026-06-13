@@ -18,7 +18,7 @@ resource "cloudflare_record" "wildcard" {
   content = var.lb_ipv4
   ttl     = 60
   proxied = false
-  comment = "Wildcard → ingress floating IP."
+  comment = "Wildcard → ingress floating IP (Terraform-managed)."
 }
 
 resource "cloudflare_record" "node" {

@@ -10,3 +10,4 @@
 .direnv/
 .kube/
 .talos/
+.devenv

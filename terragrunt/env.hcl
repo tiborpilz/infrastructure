@@ -65,6 +65,8 @@ locals {
     tibor = local.secrets.authentik_tibor_password
   }
 
+  argocd_age_key = local.secrets.argocd_age_key
+
   # Tangled knot owner identity. The DID document is served at
   # https://<tangled_did_subdomain>.<domain>/.well-known/did.json and the
   # owner DID becomes did:web:<tangled_did_subdomain>.<domain>. Module stays
