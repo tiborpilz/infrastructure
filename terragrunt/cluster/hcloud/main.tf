@@ -4,18 +4,7 @@ locals {
     managed-by = "terragrunt"
   }
 
-  network_zone_for_location = {
-    fsn1 = "eu-central"
-    nbg1 = "eu-central"
-    hel1 = "eu-central"
-    ash  = "us-east"
-    hil  = "us-west"
-    sin  = "ap-southeast"
-  }
-
-  network_zone = local.network_zone_for_location[var.location]
-
-  # Hetzner uses x86/arm; Talos labels use amd64/arm64 :upside_down:.
+  # Hetzner uses x86/arm; Talos labels use amd64/arm64.
   hcloud_arch_for_talos_arch = {
     amd64 = "x86"
     arm64 = "arm"
@@ -37,7 +26,7 @@ resource "hcloud_network" "main" {
 resource "hcloud_network_subnet" "main" {
   network_id   = hcloud_network.main.id
   type         = "cloud"
-  network_zone = local.network_zone
+  network_zone = "eu-central"
   ip_range     = var.subnet_cidr
 }
 
