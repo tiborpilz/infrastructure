@@ -62,8 +62,17 @@ for f in "${FILES[@]}"; do
   rel="${f#${APPS_DIR}/}"
   svc="${rel%%/blueprints/*}"
   base="${rel##*/}"
-  key="${svc}__${base}"
+  # Strip .enc suffix if present
+  if [[ "${base}" == *.enc.yaml ]]; then
+    key="${svc}__${base%.enc.yaml}"
+  else
+    key="${svc}__${base}"
+  fi
   echo "      ${key}: |"
   # Indent by 8 spaces to nest under the block scalar header.
-  sed 's/^/        /' "${f}"
+  if [[ "${f}" == *.enc.yaml ]]; then
+    sops -d "${f}" | sed 's/^/        /'
+  else
+    sed 's/^/        /' "${f}"
+  fi
 done

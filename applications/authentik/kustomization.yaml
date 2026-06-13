@@ -10,3 +10,5 @@ generators:
 
 resources:
   - argo-app.yaml
+  - users.enc.yaml
+  - secrets.enc.yaml

@@ -34,47 +34,15 @@ locals {
   # to the existing local user with a matching email.
   bootstrap_admin_email = "admin@${local.domain}"
 
-  # Declarative Authentik users. Passwords can be supplied from SOPS
-  # later via managed_user_passwords; omitted users receive stable
-  # Terraform-generated random passwords.
-  platform_admin_groups = [
-    "platform-admins",
-    "kubernetes-admins",
-    "forgejo-admins",
-  ]
-
-  # Keep Authentik superuser separate from platform admin rights. Add
-  # "platform-admins" here if bootstrap admins should administer Authentik
-  # itself, not just downstream apps such as Argo CD and Kubernetes.
-  authentik_superuser_groups = [
-    "authentik-superusers",
-  ]
-
+  # Lightweight admin roster used only by downstream consumers that need
+  # initial-admin lists at bootstrap time (Woodpecker, Omni). Authentik
+  # users themselves are seeded via blueprints — see
+  # applications/authentik/{blueprints/users.yaml, users.enc.yaml}.
   managed_users = {
     tibor = {
-      name   = "Tibor"
-      email  = "tibor@pilz.berlin"
-      admin  = true
-      groups = ["platform-admins", "authentik-superusers"]
+      email = "tibor@pilz.berlin"
+      admin = true
     }
-
-    tine = {
-      name   = "Tine"
-      email  = "tine@olynet.de"
-      admin  = true
-      groups = []
-    }
-
-    # example = {
-    #   name   = "Example Admin"
-    #   email  = "admin@example.com"
-    #   admin  = true
-    #   groups = ["forgejo-users"]
-    # }
-  }
-
-  managed_user_passwords = {
-    tibor = local.secrets.authentik_tibor_password
   }
 
   argocd_age_key = local.secrets.argocd_age_key

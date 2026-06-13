@@ -22,6 +22,12 @@ spec:
           envFrom:
             - secretRef:
                 name: authentik-bootstrap
+            - secretRef:
+                name: authentik-seed-passwords
+                optional: true
+            - secretRef:
+                name: authentik-env-secrets
+                optional: true
           env:
             - name: AUTHENTIK_POSTGRESQL__PASSWORD
               valueFrom:
@@ -60,9 +66,16 @@ spec:
             - name: blueprints
               configMap:
                 name: authentik-blueprints
+            - name: users-blueprint
+              secret:
+                secretName: authentik-users-blueprint
+                optional: true
           extraVolumeMounts:
             - name: blueprints
               mountPath: /blueprints/custom
+            - name: users-blueprint
+              mountPath: /blueprints/managed
+              readOnly: true
 
         postgresql:
           enabled: false
@@ -214,3 +227,12 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /status/terminatingReplicas
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /status/terminatingReplicas
