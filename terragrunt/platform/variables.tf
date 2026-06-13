@@ -32,11 +32,6 @@ variable "hcloud_token" {
   sensitive   = true
 }
 
-variable "hcloud_network_id" {
-  description = "Hetzner Cloud private network ID."
-  type        = string
-}
-
 variable "hcloud_location" {
   description = "Hetzner Cloud location (e.g. fsn1)."
   type        = string
@@ -58,22 +53,6 @@ variable "cloudflare_api_token" {
   sensitive   = true
 }
 
-variable "sops_age_key" {
-  description = "Cluster age private key (whole keys.txt body). Mounted into Argo CD's repo-server so KSOPS can decrypt manifests pulled from Git."
-  type        = string
-  sensitive   = true
-}
-
-variable "cert_manager_values" {
-  description = "Rendered Helm values for cert-manager."
-  type        = string
-}
-
-variable "external_dns_values" {
-  description = "Rendered Helm values for external-dns."
-  type        = string
-}
-
 variable "hcloud_csi_values" {
   description = "Rendered Helm values for hcloud-csi."
   type        = string
@@ -91,11 +70,6 @@ variable "metrics_server_values" {
 
 variable "kube_prometheus_stack_values" {
   description = "Rendered Helm values for kube-prometheus-stack."
-  type        = string
-}
-
-variable "longhorn_values" {
-  description = "Rendered Helm values for Longhorn."
   type        = string
 }
 

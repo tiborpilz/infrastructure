@@ -1,3 +1,15 @@
+module "bootstrap" {
+  source = "./bootstrap"
+
+  # helm template needs a concrete version; Talos picks its own when null.
+  kubernetes_version   = coalesce(var.kubernetes_version, "1.30.0")
+  hcloud_token         = var.hcloud_token
+  domain               = var.domain
+  location             = var.location
+  cloudflare_api_token = var.cloudflare_api_token
+  network_name         = var.network_name
+}
+
 locals {
   control_plane_nodes      = var.nodes.control_plane
   worker_nodes             = var.nodes.workers
@@ -24,9 +36,18 @@ locals {
       }
     }
   })
+
+  bootstrap_patch = yamlencode({
+    cluster = {
+      inlineManifests = module.bootstrap.inline_manifests
+    }
+  })
+
+  # Hash of bootstrap manifests so Terraform detects when they change.
+  # Used in triggers_replace to re-apply machine config when manifests are updated.
+  bootstrap_manifests_hash = md5(jsonencode(module.bootstrap.inline_manifests))
 }
 
-# Hack to wait for Talos maintenance API (TCP 50000) on each control-plane to be up.
 resource "terraform_data" "wait_for_maintenance" {
   for_each = local.control_plane_nodes
 
@@ -35,19 +56,7 @@ resource "terraform_data" "wait_for_maintenance" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["bash", "-c"]
-    command     = <<-EOT
-      for i in $(seq 1 60); do
-        if (echo > /dev/tcp/${each.value.public_ipv4}/50000) 2>/dev/null; then
-          echo "Talos maintenance API reachable on ${each.value.public_ipv4} (${each.key})"
-          exit 0
-        fi
-        echo "waiting for Talos API on ${each.value.public_ipv4} (attempt $i/60)..."
-        sleep 5
-      done
-      echo "Talos API on ${each.value.public_ipv4} never came up after 5 minutes" >&2
-      exit 1
-    EOT
+    command = "${path.module}/../scripts/wait-for-maintenance.sh ${each.value.public_ipv4}"
   }
 }
 
@@ -67,6 +76,7 @@ data "talos_machine_configuration" "control_plane" {
 
   config_patches = [
     local.base_patch,
+    local.bootstrap_patch,
     yamlencode({
       machine = {
         install = { disk = each.value.install_disk }
@@ -78,6 +88,12 @@ data "talos_machine_configuration" "control_plane" {
   ]
 }
 
+resource "terraform_data" "bootstrap_manifests_trigger" {
+  triggers_replace = [
+    local.bootstrap_manifests_hash,
+  ]
+}
+
 resource "talos_machine_configuration_apply" "control_plane" {
   for_each = local.control_plane_nodes
 
@@ -85,9 +101,12 @@ resource "talos_machine_configuration_apply" "control_plane" {
   machine_configuration_input = data.talos_machine_configuration.control_plane[each.key].machine_configuration
   node                        = each.value.public_ipv4
 
-  depends_on = [terraform_data.wait_for_maintenance]
+  depends_on = [
+    terraform_data.wait_for_maintenance,
+    terraform_data.bootstrap_manifests_trigger,
+  ]
 }
-#
+
 resource "terraform_data" "wait_for_maintenance_worker" {
   for_each = local.worker_nodes
 
@@ -96,19 +115,7 @@ resource "terraform_data" "wait_for_maintenance_worker" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["bash", "-c"]
-    command     = <<-EOT
-      for i in $(seq 1 60); do
-        if (echo > /dev/tcp/${each.value.public_ipv4}/50000) 2>/dev/null; then
-          echo "Talos maintenance API reachable on ${each.value.public_ipv4} (${each.key})"
-          exit 0
-        fi
-        echo "waiting for Talos API on ${each.value.public_ipv4} (attempt $i/60)..."
-        sleep 5
-      done
-      echo "Talos API on ${each.value.public_ipv4} never came up after 5 minutes" >&2
-      exit 1
-    EOT
+    command = "${path.module}/../scripts/wait-for-maintenance.sh ${each.value.public_ipv4}"
   }
 }
 
@@ -122,11 +129,6 @@ data "talos_machine_configuration" "worker" {
   talos_version      = "v${var.talos_version}"
   kubernetes_version = var.kubernetes_version
 
-  # `storage.longhorn.io/eligible=true` opts this node into hosting Longhorn
-  # system components. Burst nodes provisioned by cluster-autoscaler use the
-  # `worker_template` config below, which omits this label — keeping Longhorn
-  # (manager + instance-manager) off them so their instance-manager PDB can't
-  # block scale-down.
   config_patches = [
     local.base_patch,
     yamlencode({
@@ -140,10 +142,6 @@ data "talos_machine_configuration" "worker" {
   ]
 }
 
-# Generic worker MachineConfig with no per-node specifics. Consumed by the
-# cluster-autoscaler in the platform layer as cloud-init user-data for
-# autoscaler-provisioned Hetzner servers. /dev/sda matches all Hetzner CPX
-# workers; if a new server type with different naming appears, parameterise.
 data "talos_machine_configuration" "worker_template" {
   cluster_name       = var.cluster_name
   cluster_endpoint   = local.effective_endpoint
@@ -171,6 +169,7 @@ resource "talos_machine_configuration_apply" "worker" {
 
   depends_on = [
     terraform_data.wait_for_maintenance_worker,
+    terraform_data.bootstrap_manifests_trigger,
     talos_machine_bootstrap.this,
   ]
 }
@@ -210,11 +209,6 @@ resource "local_sensitive_file" "talosconfig" {
   file_permission = "0600"
 }
 
-# Bootstrap returns once etcd is initialized, and config_apply returns once
-# Talos has accepted the machine config — neither waits for the apiserver to
-# be fully responsive or for the kubelet on each node to register. Platform
-# hits the API before that and stalls. Block here until /healthz is OK and
-# every expected node is visible (NotReady is fine — CNI is platform's job).
 resource "terraform_data" "wait_for_cluster" {
   triggers_replace = {
     nodes = join(",", concat(
@@ -224,50 +218,44 @@ resource "terraform_data" "wait_for_cluster" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["bash", "-c"]
+    environment = {
+      KUBECONFIG = local_sensitive_file.kubeconfig[0].filename
+    }
+    command = "${path.module}/../scripts/wait-for-cluster.sh ${join(" ", concat(
+      [for k, _ in local.control_plane_nodes : k],
+      [for k, _ in local.worker_nodes : k],
+    ))}"
+  }
+
+  depends_on = [
+    talos_cluster_kubeconfig.this,
+    talos_machine_configuration_apply.worker,
+    local_sensitive_file.kubeconfig,
+  ]
+}
+
+resource "terraform_data" "cilium_lb_pool" {
+  triggers_replace = {
+    floating_ip = var.floating_ip_address
+  }
+
+  provisioner "local-exec" {
     environment = {
       KUBECONFIG = local_sensitive_file.kubeconfig[0].filename
     }
     command = <<-EOT
-      set -euo pipefail
-
-      for i in $(seq 1 60); do
-        if kubectl get --raw /healthz >/dev/null 2>&1; then
-          echo "apiserver /healthz OK"
-          break
-        fi
-        echo "waiting for apiserver (attempt $i/60)..."
-        sleep 5
-      done
-      kubectl get --raw /healthz >/dev/null
-
-      expected="${join(" ", concat(
-    [for k, _ in local.control_plane_nodes : k],
-    [for k, _ in local.worker_nodes : k],
-))}"
-
-      for i in $(seq 1 60); do
-        missing=""
-        for node in $expected; do
-          if ! kubectl get node "$node" >/dev/null 2>&1; then
-            missing="$missing $node"
-          fi
-        done
-        if [ -z "$missing" ]; then
-          echo "all nodes registered: $expected"
-          exit 0
-        fi
-        echo "waiting for nodes to register, missing:$missing (attempt $i/60)..."
-        sleep 5
-      done
-      echo "nodes never registered within 5 minutes: $missing" >&2
-      exit 1
+      kubectl apply -f - <<YAML
+      apiVersion: cilium.io/v2alpha1
+      kind: CiliumLoadBalancerIPPool
+      metadata:
+        name: default
+      spec:
+        blocks:
+          - start: ${var.floating_ip_address}
+            stop: ${var.floating_ip_address}
+      YAML
     EOT
-}
+  }
 
-depends_on = [
-  talos_cluster_kubeconfig.this,
-  talos_machine_configuration_apply.worker,
-  local_sensitive_file.kubeconfig,
-]
+  depends_on = [terraform_data.wait_for_cluster]
 }

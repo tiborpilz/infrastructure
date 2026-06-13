@@ -46,27 +46,10 @@ inputs = {
 
   kubeconfig_path      = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}.kubeconfig"
   hcloud_token         = include.env.locals.secrets.hcloud_token
-  hcloud_network_id    = dependency.cluster.outputs.network_id
   hcloud_location      = include.env.locals.location
   domain               = include.env.locals.domain
   admin_email          = include.env.locals.acme_email
   cloudflare_api_token = include.env.locals.secrets.cloudflare_api_token
-  sops_age_key         = include.env.locals.secrets.sops_age_key
-
-  cert_manager_values = templatefile(
-    "${get_repo_root()}/applications/cert-manager/values.yaml.tpl",
-    {
-      domain = include.env.locals.domain
-      email  = include.env.locals.acme_email
-    }
-  )
-
-  external_dns_values = templatefile(
-    "${get_repo_root()}/applications/external-dns/values.yaml.tpl",
-    {
-      domain = include.env.locals.domain
-    }
-  )
 
   hcloud_csi_values = templatefile(
     "${get_repo_root()}/applications/hcloud-csi/values.yaml.tpl",
@@ -95,11 +78,6 @@ inputs = {
       # by Grafana when role_attribute_strict: true).
       role_attribute_path = "contains(groups[*], 'platform-admins') && 'Admin' || ''"
     }
-  )
-
-  longhorn_values = templatefile(
-    "${get_repo_root()}/applications/longhorn/values.yaml.tpl",
-    {}
   )
 
   authentik_values_yaml = templatefile(
