@@ -8,6 +8,11 @@ kind: Kustomization
 generators:
   - blueprints-generator.yaml
 
+configMapGenerator:
+  - name: authentik-users-blueprint
+    files:
+      - blueprints/users.yaml
+
 resources:
   - argo-app.yaml
   - users.enc.yaml

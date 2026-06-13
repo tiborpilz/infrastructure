@@ -51,11 +51,6 @@ service:
     type: ClusterIP
 
 gitea:
-  admin:
-    existingSecret: forgejo-admin
-    email: admin@tibor.sh
-    passwordMode: keepUpdated
-
   oauth:
     - name: authentik
       provider: openidConnect
@@ -65,7 +60,6 @@ gitea:
       adminGroup: forgejo-admins
 
   podAnnotations:
-    checksum/forgejo-admin-secret: "argocd-managed"
     checksum/forgejo-oidc-secret: "argocd-managed"
 
   config:

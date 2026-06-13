@@ -28,6 +28,9 @@ spec:
             - secretRef:
                 name: authentik-env-secrets
                 optional: true
+            - secretRef:
+                name: authentik-oidc-clients
+                optional: true
           env:
             - name: AUTHENTIK_POSTGRESQL__PASSWORD
               valueFrom:
@@ -62,19 +65,27 @@ spec:
               drop: ["ALL"]
             seccompProfile:
               type: RuntimeDefault
-          extraVolumes:
-            - name: blueprints
-              configMap:
-                name: authentik-blueprints
+          volumes:
             - name: users-blueprint
               secret:
                 secretName: authentik-users-blueprint
-                optional: true
-          extraVolumeMounts:
-            - name: blueprints
-              mountPath: /blueprints/custom
+            - name: tibor-password
+              secret:
+                secretName: tibor-password
+            - name: tine-password
+              secret:
+                secretName: tine-password
+          volumeMounts:
             - name: users-blueprint
               mountPath: /blueprints/managed
+              readOnly: true
+            - name: tibor-password
+              mountPath: /secrets/tibor-password.txt
+              subPath: password
+              readOnly: true
+            - name: tine-password
+              mountPath: /secrets/tine-password.txt
+              subPath: password
               readOnly: true
 
         postgresql:
