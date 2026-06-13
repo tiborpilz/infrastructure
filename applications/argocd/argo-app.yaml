@@ -15,12 +15,13 @@ spec:
           params:
             server.insecure: "true"
           cm:
+            url: https://argocd.tibor.sh
             kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
             oidc.config: |
               name: Authentik
               issuer: https://auth.tibor.sh/application/o/argocd/
               clientID: argocd
-              clientSecret: $argocd-oidc:oidc.clientSecret
+              clientSecret: $authentik-env-secrets:ARGOCD_OIDC_CLIENT_SECRET
               requestedScopes:
                 - openid
                 - profile

@@ -1,5 +1,5 @@
 locals {
-  authentik_config_ready = length(module.authentik_config.managed_groups) >= 0
+  authentik_config_ready = module.authentik_config.authentik_ready
 }
 
 module "authentik_config" {
@@ -8,11 +8,6 @@ module "authentik_config" {
   authentik_url   = var.authentik_url
   authentik_token = var.authentik_token
   authentik_ready = var.authentik_ready
-
-  managed_users              = var.managed_users
-  managed_user_passwords     = var.managed_user_passwords
-  platform_admin_groups      = var.platform_admin_groups
-  authentik_superuser_groups = var.authentik_superuser_groups
 }
 
 module "argocd_oidc" {

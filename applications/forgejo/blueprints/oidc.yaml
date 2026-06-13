@@ -16,7 +16,7 @@ entries:
       name: forgejo
     attrs:
       client_id: forgejo
-      client_secret: SHv4/nMUYcRlazA698GLFSEwP8Yx3Y5VKCxy2fPlAEXIINecJQPG0ixb2OQTUAU2
+      client_secret: !Env FORGEJO_OIDC_CLIENT_SECRET
       authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
       authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
       invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]

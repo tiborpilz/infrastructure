@@ -3,16 +3,9 @@ kind: Kustomization
 
 namespace: tekton-auth
 
-transformers:
-  - |-
-    apiVersion: viaduct.ai/v1
-    kind: Ksops
-    metadata:
-      name: ksops
-    files:
-      - 'secrets.enc.yaml'
-
 resources:
-  - secrets.enc.yaml
   - argo-app-oauth2-proxy.yaml
   - httproute.yaml
+
+generators:
+  - kustomization-ksops-generator.yaml

@@ -2,7 +2,6 @@ module "bootstrap" {
   source = "./bootstrap"
 
   admin_email          = var.admin_email
-  # helm template needs a concrete version; Talos picks its own when null.
   kubernetes_version   = coalesce(var.kubernetes_version, "1.30.0")
   hcloud_token         = var.hcloud_token
   domain               = var.domain
@@ -269,11 +268,11 @@ resource "terraform_data" "app_secrets" {
 
   provisioner "local-exec" {
     environment = {
-      KUBECONFIG                  = local_sensitive_file.kubeconfig[0].filename
-      AUTHENTIK_SECRET_KEY        = var.authentik_secret_key
-      VALKEY_PASSWORD             = random_password.authentik_valkey.result
-      AUTHENTIK_BOOTSTRAP_TOKEN   = random_password.authentik_bootstrap_token.result
-      ARGOCD_OIDC_CLIENT_SECRET   = random_password.argocd_oidc_client_secret.result
+      KUBECONFIG                = local_sensitive_file.kubeconfig[0].filename
+      AUTHENTIK_SECRET_KEY      = var.authentik_secret_key
+      VALKEY_PASSWORD           = random_password.authentik_valkey.result
+      AUTHENTIK_BOOTSTRAP_TOKEN = random_password.authentik_bootstrap_token.result
+      ARGOCD_OIDC_CLIENT_SECRET = random_password.argocd_oidc_client_secret.result
     }
     command = <<-BASH
       kubectl create namespace authentik --dry-run=client -o yaml | kubectl apply -f -
@@ -297,6 +296,43 @@ resource "terraform_data" "app_secrets" {
       kubectl create secret generic argocd-oidc \
         --namespace=argocd \
         --from-literal=oidc.clientSecret="$ARGOCD_OIDC_CLIENT_SECRET" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    BASH
+  }
+
+  depends_on = [terraform_data.wait_for_cluster]
+}
+
+resource "terraform_data" "cluster_autoscaler_bootstrap" {
+  triggers_replace = [
+    sha256(var.hcloud_token),
+    sha256(data.talos_machine_configuration.worker_template.machine_configuration),
+    var.hcloud_image_id,
+    var.hcloud_network_id,
+    var.hcloud_firewall_id,
+  ]
+
+  provisioner "local-exec" {
+    environment = {
+      KUBECONFIG        = local_sensitive_file.kubeconfig[0].filename
+      HCLOUD_TOKEN      = var.hcloud_token
+      HCLOUD_CLOUD_INIT = base64encode(data.talos_machine_configuration.worker_template.machine_configuration)
+      HCLOUD_IMAGE      = var.hcloud_image_id
+      HCLOUD_NETWORK    = var.hcloud_network_id
+      HCLOUD_FIREWALL   = var.hcloud_firewall_id
+    }
+    command = <<-BASH
+      kubectl create namespace cluster-autoscaler --dry-run=client -o yaml | kubectl apply -f -
+      kubectl create configmap cluster-autoscaler-config \
+        --namespace=cluster-autoscaler \
+        --from-literal=HCLOUD_IMAGE="$HCLOUD_IMAGE" \
+        --from-literal=HCLOUD_NETWORK="$HCLOUD_NETWORK" \
+        --from-literal=HCLOUD_FIREWALL="$HCLOUD_FIREWALL" \
+        --dry-run=client -o yaml | kubectl apply -f -
+      kubectl create secret generic cluster-autoscaler-hcloud \
+        --namespace=cluster-autoscaler \
+        --from-literal=HCLOUD_TOKEN="$HCLOUD_TOKEN" \
+        --from-literal=HCLOUD_CLOUD_INIT="$HCLOUD_CLOUD_INIT" \
         --dry-run=client -o yaml | kubectl apply -f -
     BASH
   }
