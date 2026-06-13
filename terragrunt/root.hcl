@@ -12,7 +12,3 @@ remote_state {
     path = "${local.repo_root}/.terragrunt-state/${path_relative_to_include()}/terraform.tfstate"
   }
 }
-
-# Provider configuration lives in each module (modules know which providers
-# they need, and configs differ — e.g., hcloud uses HCLOUD_TOKEN env, talos
-# auto-configures from machine_secrets, kubernetes/helm need cluster creds).
