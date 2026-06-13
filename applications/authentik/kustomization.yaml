@@ -8,6 +8,5 @@ kind: Kustomization
 generators:
   - blueprints-generator.yaml
 
-# `resources:` stays empty for now — the Helm-chart deployment of authentik
-# is still owned by terragrunt/platform/authentik. Once that migrates to
-# Argo, drop the chart Application + values here.
+resources:
+  - argo-app.yaml

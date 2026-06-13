@@ -19,16 +19,6 @@ output "argocd_application_slug" {
   value       = module.argocd_oidc.argocd_application_slug
 }
 
-output "forgejo_url" {
-  description = "Public Forgejo URL."
-  value       = module.forgejo.forgejo_url
-}
-
-output "forgejo_namespace" {
-  description = "Namespace where Forgejo is installed."
-  value       = module.forgejo.forgejo_namespace
-}
-
 output "woodpecker_url" {
   description = "Public Woodpecker URL."
   value       = module.woodpecker.woodpecker_url

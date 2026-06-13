@@ -1,8 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-# Grafana blueprints get picked up by applications/authentik's aggregator.
-# The Helm deployment lives inside kube-prometheus-stack today; this
-# kustomization is the seam for moving Grafana-specific config (datasources,
-# dashboards-as-code) out of platform/observability over time.
-resources: []

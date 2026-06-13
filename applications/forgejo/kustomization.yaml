@@ -1,7 +1,31 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Forgejo blueprints get picked up by applications/authentik's aggregator.
-# When the forgejo Helm chart deployment is migrated out of TF, list the
-# Argo Application (or rendered manifests) under `resources:`.
-resources: []
+namespace: forgejo
+
+configMapGenerator:
+  - name: forgejo-config
+    literals:
+      - domain=tibor.sh
+
+resources:
+  - namespace.yaml
+  - secrets.yaml
+  - database.yaml
+  - argo-app.yaml
+
+vars:
+  - name: DOMAIN
+    objref:
+      kind: ConfigMap
+      name: forgejo-config
+      apiVersion: v1
+    fieldref:
+      fieldpath: data.domain
+  - name: FORGEJO_HOSTNAME
+    objref:
+      kind: ConfigMap
+      name: forgejo-config
+      apiVersion: v1
+    fieldref:
+      fieldpath: data.domain

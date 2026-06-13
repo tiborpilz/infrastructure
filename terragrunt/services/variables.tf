@@ -124,16 +124,6 @@ variable "authentik_superuser_groups" {
   type        = list(string)
 }
 
-variable "forgejo_values_yaml" {
-  description = "Rendered Helm values for Forgejo."
-  type        = string
-}
-
-variable "forgejo_database_yaml" {
-  description = "Rendered CNPG Cluster YAML for Forgejo."
-  type        = string
-}
-
 variable "woodpecker_values_yaml" {
   description = "Rendered Helm values for Woodpecker."
   type        = string

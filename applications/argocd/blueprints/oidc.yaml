@@ -1,39 +1,41 @@
-# Authentik blueprint registering Grafana as an OIDC client. Mirror of the
-# TF in terragrunt/platform/observability (the kube-prometheus-stack module
-# still owns the Helm deployment).
-#
-# Same open items as forgejo/blueprints/oidc.yaml: client_secret via
-# External Secrets, redirect URI parameterisation.
 version: 1
 metadata:
-  name: grafana-oidc
+  name: argocd-oidc
   labels:
     blueprints.goauthentik.io/instantiate: "true"
 entries:
+  - model: authentik_providers_oauth2.scopemapping
+    state: present
+    identifiers:
+      name: argocd-groups
+    attrs:
+      scope_name: groups
+      expression: "return {\"groups\": [group.name for group in user.ak_groups.all()]}"
   - model: authentik_providers_oauth2.oauth2provider
     state: present
     identifiers:
-      name: grafana
+      name: argocd
     attrs:
-      client_id: grafana
-      client_secret: !Env GRAFANA_OIDC_CLIENT_SECRET
+      client_id: argocd
+      client_secret: !Env ARGOCD_OIDC_CLIENT_SECRET
       authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
       authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
       invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
       signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]
       redirect_uris:
         - matching_mode: strict
-          url: https://grafana.tibor.sh/login/generic_oauth
+          url: https://argocd.tibor.sh/auth/callback
       property_mappings:
         - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'openid'"]]
         - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'profile'"]]
         - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'email'"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [name, argocd-groups]]
       sub_mode: hashed_user_id
   - model: authentik_core.application
     state: present
     identifiers:
-      slug: grafana
+      slug: argocd
     attrs:
-      name: Grafana
-      provider: !Find [authentik_providers_oauth2.oauth2provider, [name, grafana]]
-      meta_launch_url: https://grafana.tibor.sh
+      name: ArgoCD
+      provider: !Find [authentik_providers_oauth2.oauth2provider, [name, argocd]]
+      meta_launch_url: https://argocd.tibor.sh

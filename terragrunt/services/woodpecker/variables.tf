@@ -68,11 +68,6 @@ variable "forgejo_namespace" {
   type        = string
 }
 
-variable "forgejo_ready" {
-  description = "Sentinel from services. Forces this layer to wait until Forgejo is healthy before creating the OAuth app."
-  type        = bool
-}
-
 variable "woodpecker_chart_version" {
   description = "Woodpecker Helm chart version."
   type        = string

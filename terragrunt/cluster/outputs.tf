@@ -99,3 +99,21 @@ output "control_plane_machine_config" {
   value     = module.talos.control_plane_machine_config
   sensitive = true
 }
+
+output "bootstrap_manifests_yaml" {
+  description = "All bootstrap inline manifests as a multi-document YAML string. Inspect with: terragrunt output -raw bootstrap_manifests_yaml"
+  value       = module.talos.bootstrap_manifests_yaml
+  sensitive   = true
+}
+
+output "authentik_bootstrap_token" {
+  description = "Authentik API bootstrap token for the services layer."
+  value       = module.talos.authentik_bootstrap_token
+  sensitive   = true
+}
+
+output "argocd_oidc_client_secret" {
+  description = "ArgoCD OIDC client secret for the services layer."
+  value       = module.talos.argocd_oidc_client_secret
+  sensitive   = true
+}
