@@ -145,3 +145,19 @@ variable "argocd_age_key" {
   type        = string
   sensitive   = true
 }
+
+variable "hcloud_image_id" {
+  description = "Hetzner Cloud Talos snapshot ID. Written to the cluster-autoscaler ConfigMap so the chart can launch new nodes from the right image."
+  type        = string
+}
+
+variable "hcloud_network_id" {
+  description = "Hetzner Cloud network ID. Written to the cluster-autoscaler ConfigMap."
+  type        = string
+}
+
+variable "hcloud_firewall_id" {
+  description = "Hetzner Cloud firewall ID. Empty string if no firewall."
+  type        = string
+  default     = ""
+}

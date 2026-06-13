@@ -60,7 +60,15 @@ for f in "${FILES[@]}"; do
   rel="${f#${APPS_DIR}/}"
   svc="${rel%%/blueprints/*}"
   base="${rel##*/}"
-  key="${svc}__${base}"
+  if [[ "${base}" == *.enc.yaml ]]; then
+    key="${svc}__${base%.enc.yaml}"
+  else
+    key="${svc}__${base}"
+  fi
   echo "      ${key}: |"
-  sed 's/^/        /' "${f}"
+  if [[ "${f}" == *.enc.yaml ]]; then
+    sops -d "${f}" | sed 's/^/        /'
+  else
+    sed 's/^/        /' "${f}"
+  fi
 done

@@ -100,11 +100,7 @@ inputs = {
   argocd_oidc_client_secret = dependency.platform.outputs.argocd_oidc_client_secret
   argocd_oidc_redirect_uri  = dependency.platform.outputs.argocd_oidc_redirect_uri
 
-  managed_users              = include.env.locals.managed_users
-  managed_user_passwords     = include.env.locals.managed_user_passwords
-  platform_admin_groups      = include.env.locals.platform_admin_groups
-  authentik_superuser_groups = include.env.locals.authentik_superuser_groups
-  woodpecker_admins          = local.woodpecker_admins
+  woodpecker_admins = local.woodpecker_admins
 
   woodpecker_values_yaml = templatefile(
     "${get_terragrunt_dir()}/woodpecker/templates/values.yaml.tpl",
