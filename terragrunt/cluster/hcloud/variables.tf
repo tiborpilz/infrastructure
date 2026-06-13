@@ -4,7 +4,7 @@ variable "env_name" {
 }
 
 variable "location" {
-  description = "Hetzner Cloud location (e.g., fsn1, nbg1, hel1, ash, hil, sin)."
+  description = "Hetzner Cloud location (e.g., fsn1, nbg1, atc.)."
   type        = string
   default     = "fsn1"
 }
@@ -37,9 +37,8 @@ variable "talos_image_labels" {
 variable "firewall_admin_ips" {
   description = <<-EOT
     CIDRs allowed to reach Talos API (50000) and k8s API (6443).
-    Empty list = no firewall is created and both APIs are reachable from
-    the public internet. Talos and k8s API are mTLS-protected, so this is
-    safe-but-noisy; tighten with a VPN/bastion when one's available.
+    An empty list means that no firewall is created and both APIs are reachable from
+    the public internet.
   EOT
   type        = list(string)
   default     = []
@@ -47,8 +46,7 @@ variable "firewall_admin_ips" {
 
 variable "control_plane_nodes" {
   description = <<-EOT
-    Map of control-plane nodes keyed by short name (e.g., "cp-1").
-    private_ipv4 is optional; Hetzner auto-allocates from the subnet if omitted.
+    Map of control-plane nodes' short name with their optional private ipv4.
   EOT
   type = map(object({
     server_type  = string
@@ -58,8 +56,8 @@ variable "control_plane_nodes" {
 
 variable "worker_nodes" {
   description = <<-EOT
-    Map of worker nodes keyed by short name (e.g., "worker-1"). Same shape
-    as control_plane_nodes. Empty map = no workers.
+    Map of worker nodes' short name with their optional private ipv4.
+    No worker nodes measn an empty map.
   EOT
   type = map(object({
     server_type  = string

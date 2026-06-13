@@ -9,12 +9,22 @@ output "knot_hostname" {
 }
 
 output "namespace" {
-  description = "Namespace the knot is installed in. Empty when the module is dormant (owner_did unset)."
+  description = "Namespace the knot is installed in. Empty when the module is dormant."
   value       = local.enabled ? kubernetes_namespace.tangled[0].metadata[0].name : ""
 }
 
+output "owner_did" {
+  description = "Computed did:web identifier for the knot owner."
+  value       = local.enabled ? local.owner_did : ""
+}
+
+output "did_document_url" {
+  description = "Public URL where the did:web document is served."
+  value       = local.enabled ? "https://${local.did_hostname}/.well-known/did.json" : ""
+}
+
 output "enabled" {
-  description = "Whether the tangled module deployed resources. False when owner_did is empty."
+  description = "Whether the tangled module deployed resources. False when owner_handle or owner_signing_key_multibase is unset."
   value       = local.enabled
 }
 

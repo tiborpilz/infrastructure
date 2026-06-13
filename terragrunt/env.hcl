@@ -1,6 +1,6 @@
 locals {
   secrets = yamldecode(sops_decrypt_file("${get_repo_root()}/terragrunt/secrets.enc.yaml"))
-  env_name     = "hetzernetes"
+  env_name     = "hcloud-poc"
   cluster_name = local.env_name
   location     = "fsn1"
   network_cidr = "10.0.0.0/16"
@@ -58,7 +58,7 @@ locals {
       groups = ["platform-admins", "authentik-superusers"]
     }
 
-    example = {
+    tine = {
       name   = "Tine"
       email  = "tine@olynet.de"
       admin  = true
@@ -76,6 +76,15 @@ locals {
   managed_user_passwords = {
     tibor = local.secrets.authentik_tibor_password
   }
+
+  # Tangled knot owner identity. The DID document is served at
+  # https://<tangled_did_subdomain>.<domain>/.well-known/did.json and the
+  # owner DID becomes did:web:<tangled_did_subdomain>.<domain>. Module stays
+  # dormant until both handle and signing key are set.
+  tangled_did_subdomain               = "id"
+  tangled_owner_handle                = ""
+  tangled_owner_signing_key_multibase = ""
+  tangled_owner_pds_endpoint          = "https://bsky.social"
 
   # Valid dummy PEM material for Terragrunt dependency mocks. Providers parse
   # Kubernetes TLS fields during plan, so plain strings like "mock-ca" fail

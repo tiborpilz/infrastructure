@@ -1,5 +1,50 @@
 # TODO
 
+## Migrate authentik OIDC config from Terraform to blueprints
+
+Scaffolding is in place (`applications/_generators/blueprints-aggregator.sh`, `applications/authentik/kustomization.yaml`, worked-example blueprints for forgejo and grafana under `applications/<svc>/blueprints/oidc.yaml`). `kustomize build applications/authentik --enable-alpha-plugins --enable-exec` produces the aggregated ConfigMap. Nothing is live yet.
+
+To flip it on, in order:
+
+1. Set `kustomize.buildOptions: --enable-alpha-plugins --enable-exec` on `argocd-cm` so Argo can run the exec generator at sync time. Lives in `terragrunt/platform/argocd` chart values.
+2. Mount the ConfigMap into authentik's worker. Add to `applications/authentik/values.yaml.tpl`:
+   ```yaml
+   worker:
+     volumes:
+       - name: blueprints-custom
+         configMap:
+           name: authentik-blueprints
+     volumeMounts:
+       - name: blueprints-custom
+         mountPath: /blueprints/custom
+         readOnly: true
+   ```
+3. Project `*_OIDC_CLIENT_SECRET` env vars into the worker. Blueprints reference them via `!Env`. Path-of-least-resistance: bake them into the existing `authentik-bootstrap` Secret. Proper answer: External Secrets Operator (separate TODO).
+4. Create an Argo Application that syncs `applications/authentik/` so the generator actually runs in-cluster.
+5. Per migrated service, delete the matching `authentik_provider_oauth2` / `authentik_application` resources from its TF module. Verify the blueprint reconciler claims ownership before deleting.
+
+Open question: blueprint redirect URIs are hardcoded (`https://git.tibor.sh/...`). Either accept that and live with one blueprint per environment, or render blueprints through the aggregator with env-substituted hostnames. Defer until a second environment exists.
+
+Related: ATProto PDS self-host (see memory). When `pds.tibor.sh` lands, tangled's `owner_did` (`applications/tangled/did.json`) should be the `did:plc` issued by the local PDS instead of the current did:web flow.
+
+## Migrate forgejo + grafana deployments to applications/
+
+Stubs at `applications/forgejo/kustomization.yaml` and `applications/grafana/kustomization.yaml` are empty (`resources: []`). The actual Helm-chart deployments still live in `terragrunt/services/forgejo` and `terragrunt/platform/observability` (kube-prometheus-stack). To finish:
+
+- Forgejo: replace the `kubectl_manifest.argo_app_forgejo` in `services/forgejo/main.tf` with a committed Argo Application that points at `applications/forgejo/`. Move the chart values template into `applications/forgejo/values.yaml.tpl` rendered at sync time via Argo's helm chart support. Keep the CNPG `Cluster` template adjacent. The woodpecker bootstrap Job (Forgejo OAuth-app registration via the admin API) needs to become an Argo PreSync hook in `applications/woodpecker/` since Forgejo has no declarative OAuth-app config.
+- Grafana: the chart's the kube-prometheus-stack monolith so a clean extraction is heavier. First step is just the OIDC config (handled by the blueprint). Datasources/dashboards-as-code can sit under `applications/grafana/` later via the sidecar pattern (already in the chart) without splitting the chart itself.
+
+## Forgejo SSH: adopt the public Gateway TCP-listener pattern
+
+`platform/networking` now exposes a TCP listener on port 22 of the public Gateway (added for the tangled knot). Cilium propagates the port to the Hetzner LB and TCPRoutes in app namespaces attach. The pattern is in `applications/tangled/` (`tcproute-ssh.yaml`: TCPRoute + ClusterIP Service for `:22`).
+
+Forgejo's SSH was deferred when there was no SSH path through the cluster. That blocker is gone:
+
+- Re-enable Forgejo's built-in sshd in `services/forgejo/templates/values.yaml.tpl` (`DISABLE_SSH: false`, `START_SSH_SERVER: true`, expose the SSH Service port).
+- Add a TCPRoute in `services/forgejo` attaching to the same Gateway `ssh` listener, but TCPRoutes can't match on hostname, so only one workload can own port 22 on the Gateway at a time. Either move tangled to a different port, give Forgejo its own LB Service, or expose Forgejo SSH via the existing Hetzner LB on a non-22 port (e.g. 2222) and document `Host git.<domain>` SSH config with `Port 2222`.
+
+Decision punted to whenever Forgejo SSH actually gets used.
+
 ## Talos upgrade: hostname can drift to `talos-<hash>` after image swap
 
 After running `talosctl upgrade --image factory.talos.dev/installer/<schematic>:vX.Y.Z` on a node, the rebooted node sometimes comes back registered as `talos-<random-hash>` instead of its configured name (`controlplane-1`, `worker-1`). Symptom: `kubectl get nodes` shows two entries: the old name `NotReady` (kubelet stopped posting), the new `talos-<hash>` Running. Root cause: the Hetzner platform-metadata-derived hostname (HostnameConfig with `auto: hcloud`) doesn't reliably apply across the A/B swap.
@@ -51,6 +96,30 @@ Recovery if it happens:
 - `rm -rf <unit>/.terragrunt-cache` then `terragrunt init` (nuclear, always works)
 
 Trigger to remember the rule: any time `required_providers` in `versions.tf` (root or any child module under it) gains a new entry.
+
+## Cluster-autoscaler: burst nodes need a taint, workloads need tolerations
+
+Burst-pool design assumed steady-state workloads stay on `worker-1` and only Woodpecker jobs land on burst nodes. Nothing enforces that. When the autoscaler spun up two burst nodes on 2026-05-14 for a single Woodpecker job, the scheduler spread steady-state pods across them: argocd, authentik, cert-manager, tekton, prometheus, alertmanager, several PVC-bound StatefulSets (authentik-db, forgejo-db, valkey, prometheus, alertmanager, tekton-results-postgres). The PVCs are zonal hcloud-volumes; once attached, they pinned the StatefulSet pods. The autoscaler's scale-down then ran forever logging `2 nodes unremovable`.
+
+Worse, Woodpecker workflow pods have no nodeSelector. A heavy nix build (`nix build .#checks.x86_64-linux.home-tibor`, ~10GB resident) landed on `controlplane-1` and OOMed the apiserver. Recovery required `talosctl` to bypass kubectl.
+
+### Fix
+
+1. Taint burst nodes on provision. The Hetzner cluster-autoscaler's `--nodes` flag accepts a `taints=` suffix: `min:max:type:location:name:taints=workload=burst:NoSchedule`. Update `applications/cluster-autoscaler/values.yaml.tpl` to append it per pool.
+2. Add a matching toleration + nodeSelector (or nodeAffinity) to the Woodpecker agent's workflow pod template. Likely in the Woodpecker chart values under `services/woodpecker`.
+
+After both ship, retest by triggering a job and verifying the workflow pod lands on a burst node and no steady-state pods follow.
+
+### Open questions
+
+- The `controlplane-1` taint. Workloads landed there during the incident, which shouldn't be possible if `node-role.kubernetes.io/control-plane:NoSchedule` is intact. Either Talos isn't applying it, or several platform components tolerate it. Audit tolerations across the platform layer.
+- The cluster-autoscaler pod itself. Its values include a control-plane toleration intended to pin it there, but tolerations only allow placement, they don't require it. Add `nodeSelector: node-role.kubernetes.io/control-plane: ""` so it can't run on burst nodes.
+- Why is the `home-tibor` Nix build ~10GB resident? Either misconfigured (evaluating something it shouldn't) or genuinely heavy. If genuine, `burst-large` (`cpx52`) is sized for it but the pool needs the taint first.
+- etcd was using ~12GB during the incident. Worth checking whether something is generating excessive write volume (CNPG WAL, Prometheus retention, Tekton Results history).
+
+### Workaround until fixed
+
+After any burst scale-up, verify only Woodpecker workflow pods landed on burst nodes. If anything else slipped through, evict it before its PVC binds. Practically: keep an eye on `kubectl get pod -A -o wide | grep burst` for a few minutes after a Woodpecker run.
 
 ## OpenCost
 

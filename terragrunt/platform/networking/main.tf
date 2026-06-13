@@ -343,6 +343,26 @@ resource "kubectl_manifest" "public_gateway" {
               from = "All"
             }
           }
+        },
+        # TCP listener for git-over-SSH. Attached to by TCPRoutes in app
+        # namespaces (currently: services/tangled). The Cilium gateway
+        # controller propagates port 22 to the Hetzner LB; no second LB
+        # needed. SSH has no hostname concept, so the route claims port 22
+        # for whichever workload attaches.
+        {
+          name     = "ssh"
+          protocol = "TCP"
+          port     = 22
+          allowedRoutes = {
+            namespaces = {
+              from = "All"
+            }
+            kinds = [
+              {
+                kind = "TCPRoute"
+              }
+            ]
+          }
         }
       ]
     }

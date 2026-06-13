@@ -170,11 +170,10 @@ variable "omni_siderolink_wireguard_endpoint" {
   default     = ""
 }
 
-variable "tangled_owner_did" {
-  description = "AT Protocol DID owning the tangled knot. Empty keeps the module dormant. Supplied via SOPS."
-  type        = string
-  sensitive   = true
-  default     = ""
+variable "pds_handles" {
+  description = "Handle labels routed to the self-hosted PDS, e.g. [\"tibor\"] for the handle tibor.<domain>."
+  type        = list(string)
+  default     = []
 }
 
 variable "tangled_knot_image" {
@@ -187,4 +186,28 @@ variable "tangled_knot_image_tag" {
   description = "Tag for the tangled knot container image."
   type        = string
   default     = "v1.14.0-alpha"
+}
+
+variable "tangled_did_subdomain" {
+  description = "Subdomain where the owner's did:web document is served. Owner DID becomes did:web:<tangled_did_subdomain>.<domain>."
+  type        = string
+  default     = "id"
+}
+
+variable "tangled_owner_handle" {
+  description = "AT Protocol handle of the knot owner. Empty keeps the module dormant."
+  type        = string
+  default     = ""
+}
+
+variable "tangled_owner_signing_key_multibase" {
+  description = "Owner's atproto signing public key in multibase format. Empty keeps the module dormant."
+  type        = string
+  default     = ""
+}
+
+variable "tangled_owner_pds_endpoint" {
+  description = "AT Protocol PDS endpoint hosting the owner's account."
+  type        = string
+  default     = "https://bsky.social"
 }

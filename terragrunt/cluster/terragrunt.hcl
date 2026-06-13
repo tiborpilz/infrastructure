@@ -11,10 +11,6 @@ include "env" {
 terraform {
   source = "."
 
-  # The hcloud provider has no explicit `token =` config in the cluster
-  # layer; it reads HCLOUD_TOKEN from the environment. Inject it from SOPS
-  # (decrypted once in env.hcl, exposed via include.env.locals.secrets) so
-  # the user/CI doesn't need to `export` anything before running.
   extra_arguments "secrets" {
     commands = get_terraform_commands_that_need_vars()
     env_vars = {
@@ -35,16 +31,19 @@ inputs = {
 
   control_plane_nodes = {
     controlplane-1 = {
-      server_type = "cpx32"
+      server_type = "cx23"
+    }
+    controlplane-2 = {
+      server_type = "cx23"
+    }
+    controlplane-3 = {
+      server_type = "cx23"
     }
   }
 
-  # Static baseline worker. Burst capacity comes from cluster-autoscaler
-  # (terragrunt/platform/cluster-autoscaler), which provisions cpx32 workers
-  # in fsn1 up to a configured max.
   worker_nodes = {
     worker-1 = {
-      server_type = "cpx22"
+      server_type = "cx33"
     }
   }
 

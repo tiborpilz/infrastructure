@@ -4,7 +4,6 @@ locals {
     managed-by = "terragrunt"
   }
 
-  # Hetzner location → network_zone. Extend if adding new locations.
   network_zone_for_location = {
     fsn1 = "eu-central"
     nbg1 = "eu-central"
@@ -16,7 +15,7 @@ locals {
 
   network_zone = local.network_zone_for_location[var.location]
 
-  # Hetzner uses x86/arm; Talos labels (and the rest of our stack) use amd64/arm64.
+  # Hetzner uses x86/arm; Talos labels use amd64/arm64 :upside_down:.
   hcloud_arch_for_talos_arch = {
     amd64 = "x86"
     arm64 = "arm"
@@ -48,8 +47,8 @@ resource "hcloud_placement_group" "control_plane" {
   labels = local.common_labels
 }
 
-# Workers get their own spread group so they land on different physical hosts
-# from each other (and from the CP nodes, since these groups are independent).
+# To avoid having all workers on the same physical host,
+# we place them in a specific "spread" placaement group.
 resource "hcloud_placement_group" "workers" {
   count = length(var.worker_nodes) > 0 ? 1 : 0
 
@@ -64,32 +63,29 @@ resource "hcloud_firewall" "cluster" {
   name   = "${var.env_name}-cluster"
   labels = local.common_labels
 
-  # Talos API
+  
   rule {
     direction  = "in"
     protocol   = "tcp"
-    port       = "50000"
+    port       = "50000" # Talos API
     source_ips = var.firewall_admin_ips
   }
-
-  # Kubernetes API
+  
   rule {
     direction  = "in"
     protocol   = "tcp"
-    port       = "6443"
+    port       = "6443" # Kubernetes API
     source_ips = var.firewall_admin_ips
   }
 
-  # ICMP from anywhere (handy for ping/MTU discovery)
+  # Allow pings so I don't lose my mind
   rule {
     direction  = "in"
     protocol   = "icmp"
     source_ips = ["0.0.0.0/0", "::/0"]
   }
 
-  # Omni SideroLink WireGuard NodePort. Managed Talos nodes establish their
-  # tunnel by dialing this UDP port on a worker public IP; the WireGuard
-  # handshake authenticates so leaving it open to the internet is fine.
+  # This UDP port is necessary for Talos bootstrapping other cluster nodes.
   rule {
     direction  = "in"
     protocol   = "udp"
@@ -133,7 +129,7 @@ resource "hcloud_server" "control_plane" {
   })
 
   lifecycle {
-    # Image updates flow through Talos itself (`talosctl upgrade`), not server recreate.
+    # Without ingoring these changes, any udpate to the Talos image would result in drift.
     ignore_changes = [image]
   }
 }
@@ -147,13 +143,6 @@ resource "hcloud_server_network" "control_plane" {
 
   depends_on = [hcloud_network_subnet.main]
 }
-
-# ---------------------------------------------------------------------------
-# Worker nodes — same shape as control-plane resources, different placement
-# group and labels. Workers don't get the K8s "exclude-from-external-LB"
-# label, so a Hetzner LB Service can target them (which the single-node-only
-# CP setup couldn't do).
-# ---------------------------------------------------------------------------
 
 resource "hcloud_primary_ip" "worker" {
   for_each = var.worker_nodes

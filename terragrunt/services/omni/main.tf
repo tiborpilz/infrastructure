@@ -2,7 +2,8 @@ locals {
   # Whole module is dormant until a GPG etcd encryption key is supplied via
   # SOPS. We gate each create-resource on this rather than the module call
   # because providers.tf forbids count/for_each on the calling module.
-  enabled = var.omni_etcd_gpg_key != ""
+  # enabled = var.omni_etcd_gpg_key != ""
+  enabled = true
 
   argocd_namespace = "argocd"
   namespace        = "omni"

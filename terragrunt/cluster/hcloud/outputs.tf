@@ -1,5 +1,5 @@
 output "nodes" {
-  description = "Generic node inventory consumed by the Talos cluster module."
+  description = "Cluster node inventory consumed by the Talos cluster module."
   value = {
     control_plane = {
       for k, s in hcloud_server.control_plane : k => {
@@ -34,16 +34,16 @@ output "subnet_id" {
   value       = hcloud_network_subnet.main.id
 }
 
-output "firewall_id" {
-  description = "Cluster firewall ID, or null if firewall is disabled (empty firewall_admin_ips)."
-  value       = length(hcloud_firewall.cluster) > 0 ? hcloud_firewall.cluster[0].id : null
-}
-
-output "placement_group_id" {
-  description = "Control-plane placement group ID."
-  value       = hcloud_placement_group.control_plane.id
-}
-
+# output "firewall_id" {
+#   description = "Cluster firewall ID, or null if firewall is disabled (empty firewall_admin_ips)."
+#   value       = length(hcloud_firewall.cluster) > 0 ? hcloud_firewall.cluster[0].id : null
+# }
+#
+# output "placement_group_id" {
+#   description = "Control-plane placement group ID."
+#   value       = hcloud_placement_group.control_plane.id
+# }
+#
 output "location" {
   description = "Hetzner Cloud location."
   value       = var.location
