@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://charts.longhorn.io
+    chart: longhorn
+    targetRevision: 1.7.2
+    helm:
+      valuesObject:
+        preUpgradeChecker:
+          jobEnabled: false
+          upgradeVersionCheck: false
+        defaultSettings:
+          defaultDataPath: /var/lib/longhorn
+          defaultReplicaCount: 1
+          replicaSoftAntiAffinity: true
+          storageOverProvisioningPercentage: 100
+          storageMinimalAvailablePercentage: 10
+          systemManagedComponentsNodeSelector: "storage.longhorn.io/eligible:true"
+        persistence:
+          defaultClass: false
+          defaultClassReplicaCount: 1
+          reclaimPolicy: Delete
+          defaultDataLocality: best-effort
+        ingress:
+          enabled: false
+        service:
+          ui:
+            type: ClusterIP
+        longhornManager:
+          priorityClass: system-cluster-critical
+          nodeSelector:
+            storage.longhorn.io/eligible: "true"
+        longhornDriver:
+          priorityClass: system-cluster-critical
+          nodeSelector:
+            storage.longhorn.io/eligible: "true"
+        longhornUI:
+          nodeSelector:
+            storage.longhorn.io/eligible: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: longhorn-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+      - RespectIgnoreDifferences=true
+  # Longhorn CRDs ship with deprecated preserveUnknownFields: false on apiextensions.k8s.io/v1;
+  # apiserver normalises it away, so Argo otherwise reports permanent OutOfSync on every CRD.
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jsonPointers:
+        - /spec/preserveUnknownFields

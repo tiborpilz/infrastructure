@@ -4,7 +4,6 @@ locals {
     managed-by = "terragrunt"
   }
 
-  # Hetzner uses x86/arm; Talos labels use amd64/arm64.
   hcloud_arch_for_talos_arch = {
     amd64 = "x86"
     arm64 = "arm"
@@ -17,70 +16,18 @@ data "hcloud_image" "talos" {
   most_recent       = true
 }
 
-resource "hcloud_network" "main" {
-  name     = "${var.env_name}-main"
-  ip_range = var.network_cidr
-  labels   = local.common_labels
-}
-
-resource "hcloud_network_subnet" "main" {
-  network_id   = hcloud_network.main.id
-  type         = "cloud"
-  network_zone = "eu-central"
-  ip_range     = var.subnet_cidr
-}
-
 resource "hcloud_placement_group" "control_plane" {
   name   = "${var.env_name}-control-plane"
   type   = "spread"
   labels = local.common_labels
 }
 
-# To avoid having all workers on the same physical host,
-# we place them in a specific "spread" placaement group.
 resource "hcloud_placement_group" "workers" {
   count = length(var.worker_nodes) > 0 ? 1 : 0
 
   name   = "${var.env_name}-workers"
   type   = "spread"
   labels = local.common_labels
-}
-
-resource "hcloud_firewall" "cluster" {
-  count = length(var.firewall_admin_ips) > 0 ? 1 : 0
-
-  name   = "${var.env_name}-cluster"
-  labels = local.common_labels
-
-  
-  rule {
-    direction  = "in"
-    protocol   = "tcp"
-    port       = "50000" # Talos API
-    source_ips = var.firewall_admin_ips
-  }
-  
-  rule {
-    direction  = "in"
-    protocol   = "tcp"
-    port       = "6443" # Kubernetes API
-    source_ips = var.firewall_admin_ips
-  }
-
-  # Allow pings so I don't lose my mind
-  rule {
-    direction  = "in"
-    protocol   = "icmp"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
-
-  # This UDP port is necessary for Talos bootstrapping other cluster nodes.
-  rule {
-    direction  = "in"
-    protocol   = "udp"
-    port       = "30180"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
 }
 
 resource "hcloud_primary_ip" "control_plane" {
@@ -102,7 +49,7 @@ resource "hcloud_server" "control_plane" {
   image              = data.hcloud_image.talos.id
   location           = var.location
   placement_group_id = hcloud_placement_group.control_plane.id
-  firewall_ids       = hcloud_firewall.cluster[*].id
+  firewall_ids       = var.firewall_ids
 
   public_net {
     ipv4_enabled = true
@@ -116,7 +63,6 @@ resource "hcloud_server" "control_plane" {
   })
 
   lifecycle {
-    # Without ingoring these changes, any udpate to the Talos image would result in drift.
     ignore_changes = [image]
   }
 }
@@ -125,10 +71,8 @@ resource "hcloud_server_network" "control_plane" {
   for_each = var.control_plane_nodes
 
   server_id = hcloud_server.control_plane[each.key].id
-  subnet_id = hcloud_network_subnet.main.id
+  subnet_id = var.subnet_id
   ip        = each.value.private_ipv4
-
-  depends_on = [hcloud_network_subnet.main]
 }
 
 resource "hcloud_primary_ip" "worker" {
@@ -150,7 +94,7 @@ resource "hcloud_server" "worker" {
   image              = data.hcloud_image.talos.id
   location           = var.location
   placement_group_id = hcloud_placement_group.workers[0].id
-  firewall_ids       = hcloud_firewall.cluster[*].id
+  firewall_ids       = var.firewall_ids
 
   public_net {
     ipv4_enabled = true
@@ -172,8 +116,16 @@ resource "hcloud_server_network" "worker" {
   for_each = var.worker_nodes
 
   server_id = hcloud_server.worker[each.key].id
-  subnet_id = hcloud_network_subnet.main.id
+  subnet_id = var.subnet_id
   ip        = each.value.private_ipv4
+}
 
-  depends_on = [hcloud_network_subnet.main]
+resource "hcloud_volume" "worker" {
+  for_each = { for k, v in var.worker_nodes : k => v if v.volume_size_gb != null }
+
+  name      = "${var.env_name}-${each.key}-data"
+  size      = each.value.volume_size_gb
+  server_id = hcloud_server.worker[each.key].id
+  automount = false
+  labels    = local.common_labels
 }

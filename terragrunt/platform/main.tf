@@ -1,23 +1,5 @@
 locals {
-  argocd_ready        = module.argocd.argocd_ready
   platform_data_ready = module.platform_data.ready
-}
-
-module "argocd" {
-  source = "./argocd"
-
-  kubernetes_host        = var.kubernetes_host
-  cluster_ca_certificate = var.cluster_ca_certificate
-  client_certificate     = var.client_certificate
-  client_key             = var.client_key
-
-  hcloud_token      = var.hcloud_token
-  hcloud_network_id = var.hcloud_network_id
-
-  sops_age_key    = var.sops_age_key
-  kubeconfig_path = var.kubeconfig_path
-
-  domain = var.domain
 }
 
 module "networking" {
@@ -28,26 +10,9 @@ module "networking" {
   client_certificate     = var.client_certificate
   client_key             = var.client_key
 
-  argocd_ready         = local.argocd_ready
-  domain               = var.domain
-  hcloud_location      = var.hcloud_location
-  kubeconfig_path      = var.kubeconfig_path
-  cloudflare_api_token = var.cloudflare_api_token
-  cert_manager_values  = var.cert_manager_values
-  external_dns_values  = var.external_dns_values
-}
-
-module "smoke_app" {
-  source = "./smoke-app"
-
-  kubernetes_host        = var.kubernetes_host
-  cluster_ca_certificate = var.cluster_ca_certificate
-  client_certificate     = var.client_certificate
-  client_key             = var.client_key
-
-  domain            = var.domain
-  gateway_namespace = module.networking.gateway_namespace
-  gateway_name      = module.networking.gateway_name
+  domain           = var.domain
+  hcloud_location  = var.hcloud_location
+  kubeconfig_path  = var.kubeconfig_path
 }
 
 module "platform_data" {
@@ -94,20 +59,6 @@ module "cluster_autoscaler" {
   hcloud_token              = var.hcloud_token
   worker_machine_config     = var.worker_machine_config
   cluster_autoscaler_values = var.cluster_autoscaler_values
-}
-
-module "longhorn" {
-  source = "./longhorn"
-
-  kubernetes_host        = var.kubernetes_host
-  cluster_ca_certificate = var.cluster_ca_certificate
-  client_certificate     = var.client_certificate
-  client_key             = var.client_key
-
-  argocd_ready    = local.argocd_ready
-  kubeconfig_path = var.kubeconfig_path
-
-  longhorn_values = var.longhorn_values
 }
 
 module "authentik" {

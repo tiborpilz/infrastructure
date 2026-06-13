@@ -22,50 +22,16 @@ variable "client_key" {
 }
 
 variable "domain" {
-  description = "Public domain hosted at Cloudflare. external-dns creates records under this zone; the Gateway uses *.<domain> as its wildcard hostname."
+  description = "Public domain hosted at Cloudflare. Gateway uses *.<domain> as wildcard hostname."
   type        = string
 }
 
 variable "hcloud_location" {
-  description = "Hetzner Cloud location (e.g. fsn1) for the Gateway's LoadBalancer. Hetzner CCM refuses to create the LB without this."
+  description = "Hetzner Cloud location (e.g. fsn1) for the Gateway's LoadBalancer."
   type        = string
 }
 
 variable "kubeconfig_path" {
-  description = "Path to the kubeconfig. Used by the local-exec poll that waits for the Gateway's LoadBalancer Service to receive its external IP."
+  description = "Path to kubeconfig. Used by the local-exec poll waiting for the Gateway's LoadBalancer external IP."
   type        = string
-}
-
-variable "cloudflare_api_token" {
-  description = "Cloudflare API token. Scoped to the zone with Zone:Read + Zone:DNS:Edit. Used by both cert-manager (DNS-01 challenge) and external-dns."
-  type        = string
-  sensitive   = true
-}
-
-variable "cert_manager_chart_version" {
-  description = "cert-manager Helm chart version."
-  type        = string
-  default     = "v1.20.2"
-}
-
-variable "external_dns_chart_version" {
-  description = "external-dns Helm chart version."
-  type        = string
-  default     = "1.21.1"
-}
-
-variable "cert_manager_values" {
-  description = "Rendered Helm values for the cert-manager Application."
-  type        = string
-}
-
-variable "external_dns_values" {
-  description = "Rendered Helm values for the external-dns Application."
-  type        = string
-}
-
-variable "argocd_ready" {
-  description = "Sentinel proving Argo CD and its Application/AppProject CRDs are served by the apiserver before this module applies Application resources. Carries the upstream wait's resource ID."
-  type        = string
-  default     = ""
 }

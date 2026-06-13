@@ -24,26 +24,11 @@ output "nodes" {
   }
 }
 
-output "network_id" {
-  description = "Hetzner Cloud network ID."
-  value       = hcloud_network.main.id
+output "worker_server_ids" {
+  description = "Map of worker name to Hetzner server ID."
+  value       = { for k, s in hcloud_server.worker : k => s.id }
 }
 
-output "subnet_id" {
-  description = "Hetzner Cloud subnet ID."
-  value       = hcloud_network_subnet.main.id
-}
-
-# output "firewall_id" {
-#   description = "Cluster firewall ID, or null if firewall is disabled (empty firewall_admin_ips)."
-#   value       = length(hcloud_firewall.cluster) > 0 ? hcloud_firewall.cluster[0].id : null
-# }
-#
-# output "placement_group_id" {
-#   description = "Control-plane placement group ID."
-#   value       = hcloud_placement_group.control_plane.id
-# }
-#
 output "location" {
   description = "Hetzner Cloud location."
   value       = var.location
