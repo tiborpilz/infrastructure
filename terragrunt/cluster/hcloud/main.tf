@@ -101,7 +101,7 @@ resource "hcloud_primary_ip" "control_plane" {
   type              = "ipv4"
   location          = var.location
   auto_delete       = false
-  delete_protection = true
+  delete_protection = false
   labels            = local.common_labels
 }
 
@@ -120,8 +120,6 @@ resource "hcloud_server" "control_plane" {
     ipv4         = hcloud_primary_ip.control_plane[each.key].id
     ipv6_enabled = false
   }
-
-  # No user_data: Talos boots into maintenance mode; the cluster module pushes config via talosctl.
 
   labels = merge(local.common_labels, {
     role          = "control-plane"
@@ -151,7 +149,7 @@ resource "hcloud_primary_ip" "worker" {
   type              = "ipv4"
   location          = var.location
   auto_delete       = false
-  delete_protection = true
+  delete_protection = false
   labels            = local.common_labels
 }
 
