@@ -10,7 +10,6 @@ configMapGenerator:
 
 resources:
   - namespace.yaml
-  - secrets.yaml
   - database.yaml
   - argo-app.yaml
 

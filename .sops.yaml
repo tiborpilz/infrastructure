@@ -4,6 +4,10 @@ keys:
   - &cluster age1eagn023gem8ekv6q8gx7rc37x2rsxfscpyt2znd4j5l8ryehksdqzjek59
 creation_rules:
   - path_regex: \.enc\.yaml$
+    # Keep apiVersion/kind/metadata/spec scaffolding plaintext so the
+    # SopsSecret operator and kubectl can parse the manifest; encrypt only
+    # the actual secret values.
+    encrypted_regex: ^(data|stringData)$
     key_groups:
       - age:
           - *argocd

@@ -286,17 +286,26 @@ resource "terraform_data" "app_secrets" {
         --from-literal=AUTHENTIK_POSTGRESQL__USER=authentik \
         --from-literal=AUTHENTIK_POSTGRESQL__NAME=authentik \
         --from-literal=AUTHENTIK_POSTGRESQL__PORT=5432 \
-        --from-literal=ARGOCD_OIDC_CLIENT_SECRET="$ARGOCD_OIDC_CLIENT_SECRET" \
         --dry-run=client -o yaml | kubectl apply -f -
       kubectl create secret generic authentik-valkey \
         --namespace=authentik \
         --from-literal=password="$VALKEY_PASSWORD" \
         --dry-run=client -o yaml | kubectl apply -f -
-      kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
-      kubectl create secret generic argocd-oidc \
-        --namespace=argocd \
-        --from-literal=oidc.clientSecret="$ARGOCD_OIDC_CLIENT_SECRET" \
-        --dry-run=client -o yaml | kubectl apply -f -
+      kubectl apply -f - <<EOF
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: authentik-oidc-clients
+        namespace: authentik
+        annotations:
+          reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+          reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "argocd"
+          reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+          reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "argocd"
+      type: Opaque
+      stringData:
+        ARGOCD_OIDC_CLIENT_SECRET: "$ARGOCD_OIDC_CLIENT_SECRET"
+      EOF
     BASH
   }
 
