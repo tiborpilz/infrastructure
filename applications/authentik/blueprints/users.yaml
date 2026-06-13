@@ -5,13 +5,27 @@ metadata:
     blueprints.goauthentik.io/instantiate: "true"
 entries:
   - model: authentik_core.user
-    state: created
+    state: present
     identifiers:
       username: tibor
     attrs:
       name: Tibor
       email: tibor@pilz.berlin
-      password: !Env SEED_TIBOR_PASSWORD
+      password: !File /secrets/tibor-password.txt
+      is_active: true
+      type: internal
+      path: users/managed
+      attributes:
+        managed-by: blueprint
+
+  - model: authentik_core.user
+    state: present
+    identifiers:
+      username: tine
+    attrs:
+      name: Tine
+      email: tine@olynet.de
+      password: !File /secrets/tine-password.txt
       is_active: true
       type: internal
       path: users/managed

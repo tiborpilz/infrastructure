@@ -1,0 +1,91 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: woodpecker
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: ghcr.io/woodpecker-ci/helm
+    chart: woodpecker
+    targetRevision: 3.2.0
+    helm:
+      releaseName: woodpecker
+      valuesObject:
+        agent:
+          enabled: true
+          replicaCount: 1
+          extraSecretNamesForEnvFrom:
+            - woodpecker-secrets
+            - woodpecker-oauth
+          env:
+            WOODPECKER_SERVER: woodpecker-server:9000
+            WOODPECKER_BACKEND: kubernetes
+            WOODPECKER_BACKEND_K8S_NAMESPACE: woodpecker
+            WOODPECKER_BACKEND_K8S_STORAGE_CLASS: hcloud-volumes
+            WOODPECKER_BACKEND_K8S_VOLUME_SIZE: 10G
+            WOODPECKER_BACKEND_K8S_STORAGE_RWX: false
+            WOODPECKER_CONNECT_RETRY_COUNT: "5"
+          persistence:
+            enabled: true
+            size: 1Gi
+            storageClass: hcloud-volumes
+          podSecurityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+
+        server:
+          enabled: true
+          createAgentSecret: true
+          extraSecretNamesForEnvFrom:
+            - woodpecker-secrets
+            - woodpecker-oauth
+          env:
+            WOODPECKER_HOST: https://ci.tibor.sh
+            WOODPECKER_ADMIN: tibor,tine
+            WOODPECKER_OPEN: false
+            WOODPECKER_FORGEJO: true
+            WOODPECKER_FORGEJO_URL: https://git.tibor.sh
+          persistentVolume:
+            enabled: true
+            size: 5Gi
+            storageClass: hcloud-volumes
+          service:
+            type: ClusterIP
+            port: 80
+          ingress:
+            enabled: false
+          podSecurityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: woodpecker
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /status/terminatingReplicas
