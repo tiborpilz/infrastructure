@@ -16,6 +16,7 @@ dependency "cluster" {
   config_path = "../cluster"
 
   mock_outputs = {
+    cluster_output                 = "mock-cluster-output"
     kubernetes_host                = "https://203.0.113.1:6443"
     cluster_ca_certificate         = include.env.locals.mock_kubernetes_certificate_pem
     client_certificate             = include.env.locals.mock_kubernetes_certificate_pem
@@ -25,13 +26,16 @@ dependency "cluster" {
     talos_image_id                 = "0"
     worker_machine_config_template = "version: v1alpha1\n# mock-machine-config\n"
   }
-  mock_outputs_allowed_terraform_commands = ["validate", "init", "plan"]
+  # destroy/state are allowed so the layer can be torn down or state-edited
+  # after the cluster layer is already gone (everything in-cluster is dead at
+  # that point anyway; only external resources like DNS records remain real).
+  mock_outputs_allowed_terraform_commands = ["validate", "init", "plan", "destroy", "state"]
 
   # Shallow-merge mocks over live state so adding a new cluster output doesn't
   # break this layer's parse on stale state. Real outputs always win when
   # present; mocks fill in the gaps until `terragrunt --working-dir
   # terragrunt/cluster apply` refreshes them.
-  mock_outputs_merge_strategy_with_state = "shallow"
+  mock_outputs_merge_strategy_with_state = "shallow_merge"
 }
 
 inputs = {

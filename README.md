@@ -6,12 +6,10 @@ Scaffoldable Kubernetes platform on Hetzner. See [`PLAN.md`](./PLAN.md) for the 
 
 The `terragrunt/` directory contains the staged Terragrunt stack. Each stage keeps its `terragrunt.hcl`, Terraform entrypoint, and owned component modules together. Apply order is enforced by `dependency` blocks; `terragrunt run --all apply` walks the graph correctly.
 
-| Layer | Purpose |
-| --- | --- |
-| `cluster` | Hetzner network + VMs, Talos config/bootstrap. Outputs kubeconfig material and cloud IDs. |
-| `platform` | Cluster-wide infra: Cilium (CNI + Gateway), Argo CD, networking (cert-manager, external-dns), hcloud-csi, CNPG operator, metrics-server, longhorn (opt-in storage), kube-prometheus-stack (observability), authentik. |
-| `services` | Layer that talks to live application APIs: authentik users/groups + invitation flow, Argo CD OIDC, Forgejo, Woodpecker, Tekton (operator + dashboard via oauth2-proxy), Omni (gated on `omni_etcd_gpg_key` in SOPS), Hubble UI via oauth2-proxy. |
-| `modules/` | Reusable cross-unit modules. Currently: `hcloud-nixos-server` — provisions a Hetzner VM + first-boot `nixos-anywhere` install. Used by future `vms/<workload>/` units for NixOS workloads adjacent to the cluster (Hydra, etc.). |
+- `cluster`: Hetzner network + VMs, Talos config/bootstrap. Outputs kubeconfig material and cloud IDs.
+- `platform`: cluster-wide infra. Cilium (CNI + Gateway), Argo CD, networking (cert-manager, external-dns), hcloud-csi, CNPG operator, metrics-server, longhorn (opt-in storage), kube-prometheus-stack (observability), authentik.
+- `services`: talks to live application APIs. authentik users/groups + invitation flow, Argo CD OIDC, Forgejo, Woodpecker, Tekton (operator + dashboard via oauth2-proxy), Tangled knot (federated git on AT Protocol, gated on `tangled_owner_did` in SOPS), Omni (gated on `omni_etcd_gpg_key` in SOPS), Hubble UI via oauth2-proxy.
+- `modules/`: reusable cross-unit modules. Currently `hcloud-nixos-server`, which provisions a Hetzner VM + first-boot `nixos-anywhere` install. Used by future `vms/<workload>/` units for NixOS workloads adjacent to the cluster (Hydra, etc.).
 
 ### Storage classes
 
@@ -31,6 +29,11 @@ The `terragrunt/` directory contains the staged Terragrunt stack. Each stage kee
 - Woodpecker: general-purpose CI (`npm`, web builds, etc.), in-cluster k8s runner.
 - Tekton: Kubernetes-native pipelines, Triggers (webhook-driven), Chains (SLSA provenance). Dashboard at `tekton.<domain>` behind oauth2-proxy.
 - NixOS / Hydra: runs on the homeserver, not in cluster. If a second Nix workload appears, use the `hcloud-nixos-server` module to provision an adjacent VM.
+
+### Git forges
+
+- Forgejo at `git.<domain>`: primary, OIDC-gated via authentik. SSH deferred.
+- Tangled at `knot.<domain>`: federated, AT Protocol. DID-native identity (the appview pushes SSH keys, no OIDC integration). Dormant until `tangled_owner_did` is set in SOPS. Reuses the public Gateway's Hetzner LB via a TCP listener on port 22.
 
 ### Known scoping decisions
 

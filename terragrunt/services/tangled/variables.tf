@@ -37,6 +37,12 @@ variable "subdomain" {
   default     = "knot"
 }
 
+variable "did_subdomain" {
+  description = "Subdomain at which the owner's did:web document is served. The owner DID becomes did:web:<did_subdomain>.<domain>."
+  type        = string
+  default     = "id"
+}
+
 variable "gateway_namespace" {
   description = "Namespace of the public Gateway."
   type        = string
@@ -58,11 +64,22 @@ variable "platform_data_ready" {
   type        = bool
 }
 
-variable "owner_did" {
-  description = "AT Protocol DID of the knot owner. Empty string keeps the module dormant. Provide via SOPS once you have a tangled.org account."
+variable "owner_handle" {
+  description = "AT Protocol handle of the knot owner (e.g. tibor.bsky.social). Empty keeps the module dormant."
   type        = string
   default     = ""
-  sensitive   = true
+}
+
+variable "owner_signing_key_multibase" {
+  description = "Owner's atproto signing public key in multibase format (starts with 'z'). Empty keeps the module dormant. Public material; not sensitive."
+  type        = string
+  default     = ""
+}
+
+variable "owner_pds_endpoint" {
+  description = "AT Protocol PDS endpoint hosting the owner's account."
+  type        = string
+  default     = "https://bsky.social"
 }
 
 variable "appview_endpoint" {
@@ -99,4 +116,16 @@ variable "sshkeys_storage_size" {
   description = "PVC size for /etc/ssh/keys (sshd host keys)."
   type        = string
   default     = "1Gi"
+}
+
+variable "did_web_image" {
+  description = "Container image for the did:web static file sidecar."
+  type        = string
+  default     = "nginx"
+}
+
+variable "did_web_image_tag" {
+  description = "Tag for the did:web sidecar image."
+  type        = string
+  default     = "1.27-alpine"
 }
