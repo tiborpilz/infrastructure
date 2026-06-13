@@ -1,16 +1,37 @@
 locals {
-  # Boolean only — owner_did itself is sensitive, but its presence isn't,
-  # so we have to strip the propagated sensitivity for use in count/for_each
-  # and module outputs. Mirrors the services/omni pattern.
-  enabled = nonsensitive(var.owner_did != "")
+  enabled = var.owner_handle != "" && var.owner_signing_key_multibase != ""
 
-  namespace = "tangled"
-  hostname  = "${var.subdomain}.${var.domain}"
-  knot_url  = "https://${local.hostname}"
+  namespace    = "tangled"
+  hostname     = "${var.subdomain}.${var.domain}"
+  knot_url     = "https://${local.hostname}"
+  did_hostname = "${var.did_subdomain}.${var.domain}"
+  owner_did    = "did:web:${local.did_hostname}"
+
+  did_document = jsonencode({
+    "@context" = [
+      "https://www.w3.org/ns/did/v1",
+      "https://w3id.org/security/multikey/v1",
+    ]
+    id          = local.owner_did
+    alsoKnownAs = ["at://${var.owner_handle}"]
+    verificationMethod = [{
+      id                 = "${local.owner_did}#atproto"
+      type               = "Multikey"
+      controller         = local.owner_did
+      publicKeyMultibase = var.owner_signing_key_multibase
+    }]
+    service = [{
+      id              = "#atproto_pds"
+      type            = "AtprotoPersonalDataServer"
+      serviceEndpoint = var.owner_pds_endpoint
+    }]
+  })
 
   manifests_yaml = templatefile("${path.module}/templates/manifests.yaml.tpl", {
     namespace            = local.namespace
     hostname             = local.hostname
+    did_hostname         = local.did_hostname
+    owner_did            = local.owner_did
     storage_class        = var.storage_class
     repo_storage_size    = var.repo_storage_size
     app_storage_size     = var.app_storage_size
@@ -20,6 +41,8 @@ locals {
     appview_endpoint     = var.appview_endpoint
     gateway_name         = var.gateway_name
     gateway_namespace    = var.gateway_namespace
+    did_web_image        = var.did_web_image
+    did_web_image_tag    = var.did_web_image_tag
   })
 
   # Template uses `---` separators between YAML docs (including a leading one).
@@ -47,16 +70,16 @@ resource "kubernetes_namespace" "tangled" {
   }
 }
 
-resource "kubernetes_secret" "owner" {
+resource "kubernetes_config_map" "did_web" {
   count = local.enabled ? 1 : 0
 
   metadata {
-    name      = "tangled-owner"
+    name      = "tangled-did-web"
     namespace = kubernetes_namespace.tangled[0].metadata[0].name
   }
 
   data = {
-    did = var.owner_did
+    "did.json" = local.did_document
   }
 }
 
@@ -67,7 +90,7 @@ resource "kubectl_manifest" "tangled" {
 
   depends_on = [
     kubernetes_namespace.tangled,
-    kubernetes_secret.owner,
+    kubernetes_config_map.did_web,
     terraform_data.platform_data_gate,
   ]
 }

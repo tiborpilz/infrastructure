@@ -138,6 +138,24 @@ module "tekton" {
   platform_data_ready = var.platform_data_ready
 }
 
+module "pds" {
+  source = "./pds"
+
+  kubernetes_host        = var.kubernetes_host
+  cluster_ca_certificate = var.cluster_ca_certificate
+  client_certificate     = var.client_certificate
+  client_key             = var.client_key
+
+  kubeconfig_path     = var.kubeconfig_path
+  domain              = var.domain
+  gateway_namespace   = var.gateway_namespace
+  gateway_name        = var.gateway_name
+  storage_class       = var.storage_class
+  platform_data_ready = var.platform_data_ready
+
+  handles = var.pds_handles
+}
+
 module "tangled" {
   source = "./tangled"
 
@@ -153,9 +171,12 @@ module "tangled" {
   storage_class       = var.storage_class
   platform_data_ready = var.platform_data_ready
 
-  owner_did      = var.tangled_owner_did
-  knot_image     = var.tangled_knot_image
-  knot_image_tag = var.tangled_knot_image_tag
+  knot_image                  = var.tangled_knot_image
+  knot_image_tag              = var.tangled_knot_image_tag
+  did_subdomain               = var.tangled_did_subdomain
+  owner_handle                = var.tangled_owner_handle
+  owner_signing_key_multibase = var.tangled_owner_signing_key_multibase
+  owner_pds_endpoint          = var.tangled_owner_pds_endpoint
 }
 
 module "tekton_dashboard_proxy" {

@@ -25,10 +25,7 @@ resource "terraform_data" "authentik_gate" {
   input = var.authentik_ready
 }
 
-# Hosts Prometheus, Alertmanager, Grafana, kube-state-metrics. node-exporter
-# is a DaemonSet that lands in this namespace but uses hostNetwork — that's
-# why this namespace runs at the `privileged` PSA level. Scoped tightly here;
-# no other workload lives in `observability`.
+# Shared namespace for Prometheud, Alertmanager, Garafana & kube-state-metrics.
 resource "kubernetes_namespace" "observability" {
   metadata {
     name = local.namespace

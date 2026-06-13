@@ -70,10 +70,7 @@ spec:
             - name: KNOT_SERVER_HOSTNAME
               value: ${hostname}
             - name: KNOT_SERVER_OWNER
-              valueFrom:
-                secretKeyRef:
-                  name: tangled-owner
-                  key: did
+              value: ${owner_did}
             - name: APPVIEW_ENDPOINT
               value: ${appview_endpoint}
             - name: KNOT_REPO_SCAN_PATH
@@ -101,6 +98,23 @@ spec:
               port: 5555
             initialDelaySeconds: 30
             periodSeconds: 30
+        - name: did-web
+          image: ${did_web_image}:${did_web_image_tag}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: did-http
+              containerPort: 80
+          volumeMounts:
+            - name: did-doc
+              mountPath: /usr/share/nginx/html/.well-known/did.json
+              subPath: did.json
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /.well-known/did.json
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
       volumes:
         - name: sshkeys
           persistentVolumeClaim:
@@ -111,6 +125,9 @@ spec:
         - name: app
           persistentVolumeClaim:
             claimName: tangled-app
+        - name: did-doc
+          configMap:
+            name: tangled-did-web
 ---
 apiVersion: v1
 kind: Service
@@ -140,6 +157,20 @@ spec:
       port: 22
       targetPort: 22
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tangled-did
+  namespace: ${namespace}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tangled-knot
+  ports:
+    - name: did-http
+      port: 80
+      targetPort: 80
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -160,6 +191,27 @@ spec:
       backendRefs:
         - name: tangled-http
           port: 5555
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: tangled-did
+  namespace: ${namespace}
+spec:
+  parentRefs:
+    - name: ${gateway_name}
+      namespace: ${gateway_namespace}
+      sectionName: https
+  hostnames:
+    - ${did_hostname}
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /.well-known/did.json
+      backendRefs:
+        - name: tangled-did
+          port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: TCPRoute

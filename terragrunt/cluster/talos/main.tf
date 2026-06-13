@@ -10,30 +10,24 @@ locals {
   )
 
   # Cluster-wide config patch.
-  # - cni: none — Cilium will be installed by platform
-  # - proxy: disabled — Cilium replaces kube-proxy
-  # - externalCloudProvider: enabled — kubelet uses cloud-provider=external;
-  #   Hetzner CCM will be installed by platform
   base_patch = yamlencode({
     cluster = {
       allowSchedulingOnControlPlanes = var.allow_scheduling_on_control_planes
       network = {
-        cni            = { name = "none" }
+        cni            = { name = "none" } # We're gonna use Cilium
         podSubnets     = [var.pod_cidr]
         serviceSubnets = [var.service_cidr]
         dnsDomain      = var.dns_domain
       }
-      proxy = { disabled = true }
+      proxy = { disabled = true } # Cilium is going to replace kube-proxy.
       externalCloudProvider = {
-        enabled = true
+        enabled = true # Enabled to Hetzner cloud manager thing works correctly.
       }
     }
   })
 }
 
-# Wait for Talos maintenance API (TCP 50000) on each control-plane public IP
-# before attempting to apply config. Uses bash's built-in /dev/tcp so no
-# external tool is required.
+# Hack to wait for Talos maintenance API (TCP 50000) on each control-plane to be up.
 resource "terraform_data" "wait_for_maintenance" {
   for_each = local.control_plane_nodes
 
@@ -58,12 +52,12 @@ resource "terraform_data" "wait_for_maintenance" {
   }
 }
 
-# Cluster-wide secrets: cluster CA, etcd CA, machine CA, k8s CA, etc.
+# Cluster-wide secrets: cluster CA, etcd CA, etc.
 resource "talos_machine_secrets" "this" {
   talos_version = "v${var.talos_version}"
 }
 
-# Per-CP-node machine config (control-plane role).
+# Control-plane nodes configuration.
 data "talos_machine_configuration" "control_plane" {
   for_each = local.control_plane_nodes
 
@@ -74,26 +68,20 @@ data "talos_machine_configuration" "control_plane" {
   talos_version      = "v${var.talos_version}"
   kubernetes_version = var.kubernetes_version
 
-  # `storage.longhorn.io/eligible=true` opts this node into hosting Longhorn
-  # system components. Set on control planes too because
-  # `allowSchedulingOnControlPlanes` is on — workloads (and their volumes)
-  # can land here. Burst nodes (worker_template, below) deliberately lack the
-  # label so their instance-manager PDB can't block CAS scale-down.
   config_patches = [
     local.base_patch,
     yamlencode({
       machine = {
         install = { disk = each.value.install_disk }
         nodeLabels = {
-          "storage.longhorn.io/eligible" = "true"
+          "storage.longhorn.io/eligible" = "true" # Enables Longhorn to run.
         }
       }
     }),
   ]
 }
 
-# Apply the config to each CP node. The provider uses --insecure mode
-# automatically when the node has no client cert (i.e., maintenance mode).
+# Apply the config to each control plane node.
 resource "talos_machine_configuration_apply" "control_plane" {
   for_each = local.control_plane_nodes
 

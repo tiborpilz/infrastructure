@@ -13,11 +13,11 @@ output "subnet_id" {
   value       = module.hcloud.subnet_id
 }
 
-output "firewall_id" {
-  description = "Cluster firewall ID, or null if disabled."
-  value       = module.hcloud.firewall_id
-}
-
+# output "firewall_id" {
+#   description = "Cluster firewall ID, or null if disabled."
+#   value       = module.hcloud.firewall_id
+# }
+#
 output "location" {
   description = "Hetzner Cloud location."
   value       = module.hcloud.location
