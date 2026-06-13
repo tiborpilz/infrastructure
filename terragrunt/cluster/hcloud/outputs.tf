@@ -49,11 +49,6 @@ output "location" {
   value       = var.location
 }
 
-output "network_zone" {
-  description = "Hetzner Cloud network zone (derived from location)."
-  value       = local.network_zone
-}
-
 output "talos_image_id" {
   description = "Numeric Hetzner Cloud snapshot ID for the Talos image currently in use. Consumed by cluster-autoscaler to bootstrap new workers from the same image as Terraform-provisioned nodes."
   value       = data.hcloud_image.talos.id
