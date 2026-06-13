@@ -62,3 +62,8 @@ output "worker_machine_config_template" {
   value       = data.talos_machine_configuration.worker_template.machine_configuration
   sensitive   = true
 }
+
+output "control_plane_machine_config" {
+  value     = { for k, c in data.talos_machine_configuration.control_plane : k => c.machine_configuration }
+  sensitive = true
+}
