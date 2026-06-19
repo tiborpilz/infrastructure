@@ -9,7 +9,7 @@ terraform {
   required_providers {
     gitlab = {
       source  = "gitlabhq/gitlab"
-      version = "17.11.0"
+      version = "19.1.0"
     }
     kustomization = {
       source  = "kbst/kustomization"
