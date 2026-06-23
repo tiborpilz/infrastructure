@@ -12,4 +12,10 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - rook-ceph-operator.yaml
+  - rook-ceph-csi-drivers.yaml
   - rook-ceph-cluster.yaml
+  # Dashboard exposed at ceph.tibor.sh with Ceph's own local login. SSO is parked:
+  # native SAML needs end-to-end HTTPS behind the gateway (Ceph wontfix on
+  # X-Forwarded-Proto). The SAML blueprint + setup Job live in _parked/ — see
+  # _parked/README.md to resume.
+  - httproute.yaml
