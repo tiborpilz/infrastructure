@@ -4,12 +4,13 @@ metadata:
   name: rook-ceph
   labels:
     managed-by: argo
-  # Rook's operator, OSD prepare jobs, mon/osd/mgr pods run privileged
-  # (raw block device access, hostPath /var/lib/rook). Scope is tight; only
-  # Rook-Ceph lives here.
-  annotations:
-    # Create the namespace before the child Applications that target it.
-    argocd.argoproj.io/sync-wave: "-1"
+    # Pod Security Admission reads these as LABELS, not annotations. Rook's
+    # mon/osd/mgr pods mount hostPath and run privileged; without these the
+    # namespace falls back to the cluster default (baseline) and mon pods are
+    # rejected ("violates PodSecurity baseline: hostPath volumes").
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged
     pod-security.kubernetes.io/warn: privileged
+  annotations:
+    # Create the namespace before the child Applications that target it.
+    argocd.argoproj.io/sync-wave: "-1"

@@ -17,11 +17,11 @@ spec:
       valuesObject:
         crds:
           enabled: true
-        # CSI plugin DaemonSets stay on every node so any node can mount Ceph
-        # PVCs. Do not pin CSI to the storage nodes.
-        csi:
-          enableRbdDriver: true
-          enableCephfsDriver: true
+        # CSI driver deployment moved to the ceph-csi-operator in Rook v1.20: this
+        # chart installs that operator (csi.installCsiOperator defaults true) but the
+        # Driver/OperatorConfig CRs that spawn the plugin pods live in
+        # rook-ceph-csi-drivers.yaml. The old csi.enableRbdDriver/enableCephfsDriver
+        # values no longer exist in the chart.
         # kube-prometheus-stack is present but keep Rook decoupled for now.
         monitoring:
           enabled: false
