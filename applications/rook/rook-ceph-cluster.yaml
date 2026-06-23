@@ -30,9 +30,6 @@ spec:
           dashboard:
             enabled: true
             ssl: false
-          # Pin every Ceph daemon (mon/mgr/osd) to the three storage nodes by
-          # their built-in hostname label. No new node label is added, so no
-          # Talos machine-config change and no cluster re-deploy.
           placement:
             all:
               nodeAffinity:
@@ -45,9 +42,6 @@ spec:
                             - worker-2
                             - worker-3
                             - worker-4
-          # cx23 storage nodes are 2 vCPU / ~3.3Gi. Chart defaults (osd 4Gi)
-          # don't fit; trimmed so daemons schedule. Rook derives osd_memory_target
-          # from the osd memory limit, so the limit also caps real usage.
           resources:
             mon:
               limits:
@@ -70,8 +64,6 @@ spec:
           storage:
             useAllNodes: false
             useAllDevices: false
-            # Each node's 50Gi raw hcloud volume is the unformatted /dev/sdb
-            # (boot disk is /dev/sda, automount=false on the data volume).
             nodes:
               - name: "worker-2"
                 devices:
@@ -156,8 +148,6 @@ spec:
                 failureDomain: host
                 replicated:
                   size: 3
-              # Replicated (not erasure-coded) data pool: with only 3 hosts an
-              # EC 2+1 pool leaves no spare host to recover on a node failure.
               dataPool:
                 failureDomain: host
                 replicated:
@@ -187,10 +177,6 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    # The CephCluster/CephBlockPool/etc. CRs here depend on CRDs installed by
-    # the operator Application. SkipDryRunOnMissingResource + retry let this app
-    # converge once those CRDs exist (the two are independent Applications, so
-    # sync waves can't order them).
     retry:
       limit: 5
       backoff:
