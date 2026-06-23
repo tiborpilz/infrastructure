@@ -47,15 +47,6 @@ locals {
 
   argocd_age_key = local.secrets.argocd_age_key
 
-  # Tangled knot owner identity. The DID document is served at
-  # https://<tangled_did_subdomain>.<domain>/.well-known/did.json and the
-  # owner DID becomes did:web:<tangled_did_subdomain>.<domain>. Module stays
-  # dormant until both handle and signing key are set.
-  tangled_did_subdomain               = "id"
-  tangled_owner_handle                = ""
-  tangled_owner_signing_key_multibase = ""
-  tangled_owner_pds_endpoint          = "https://bsky.social"
-
   # Valid dummy PEM material for Terragrunt dependency mocks. Providers parse
   # Kubernetes TLS fields during plan, so plain strings like "mock-ca" fail
   # before the upstream cluster layer has been applied.
