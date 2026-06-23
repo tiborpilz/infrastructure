@@ -57,7 +57,7 @@ gitea:
       existingSecret: forgejo-oidc
       autoDiscoverUrl: https://auth.$(DOMAIN)/application/o/forgejo/.well-known/openid-configuration
       groupClaimName: groups
-      adminGroup: forgejo-admins
+      adminGroup: forgejo-oidc
 
   podAnnotations:
     checksum/forgejo-oidc-secret: "argocd-managed"
