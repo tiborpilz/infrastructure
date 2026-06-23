@@ -21,7 +21,7 @@ spec:
               name: Authentik
               issuer: https://auth.tibor.sh/application/o/argocd/
               clientID: argocd
-              clientSecret: $authentik-oidc-clients:ARGOCD_OIDC_CLIENT_SECRET
+              clientSecret: $argocd-oidc:oidc.clientSecret
               requestedScopes:
                 - openid
                 - profile
