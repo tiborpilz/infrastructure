@@ -75,10 +75,22 @@ spec:
     spec:
       restartPolicy: OnFailure
       serviceAccountName: woodpecker-oauth-bootstrap
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: bootstrap
           image: alpine/k8s:1.30.4
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           env:
+            - name: HOME
+              value: /tmp
             - name: FORGEJO_URL
               value: https://git.tibor.sh
             - name: REDIRECT_URI
