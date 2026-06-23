@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tangled-http
+  namespace: tangled
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tangled-knot
+  ports:
+    - name: http
+      port: 5555
+      targetPort: 5555
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tangled-ssh
+  namespace: tangled
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tangled-knot
+  ports:
+    - name: ssh
+      port: 22
+      targetPort: 22
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tangled-did
+  namespace: tangled
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tangled-knot
+  ports:
+    - name: did-http
+      port: 80
+      targetPort: 80
