@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rook-ceph-operator
+  namespace: argocd
+  annotations:
+    # Operator (and its CRDs) before the cluster CRs that depend on them.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform
+  source:
+    repoURL: https://charts.rook.io/release
+    chart: rook-ceph
+    targetRevision: v1.20.1
+    helm:
+      releaseName: rook-ceph
+      valuesObject:
+        crds:
+          enabled: true
+        # CSI plugin DaemonSets stay on every node so any node can mount Ceph
+        # PVCs. Do not pin CSI to the storage nodes.
+        csi:
+          enableRbdDriver: true
+          enableCephfsDriver: true
+        # kube-prometheus-stack is present but keep Rook decoupled for now.
+        monitoring:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rook-ceph
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+      - RespectIgnoreDifferences=true
+  # Rook CRDs ship deprecated preserveUnknownFields: false on apiextensions.k8s.io/v1;
+  # the apiserver normalises it away, so Argo otherwise reports permanent OutOfSync.
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jsonPointers:
+        - /spec/preserveUnknownFields
