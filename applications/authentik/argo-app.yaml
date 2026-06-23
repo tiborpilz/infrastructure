@@ -26,9 +26,6 @@ spec:
                 name: authentik-seed-passwords
                 optional: true
             - secretRef:
-                name: authentik-env-secrets
-                optional: true
-            - secretRef:
                 name: authentik-oidc-clients
                 optional: true
           env:
@@ -37,6 +34,16 @@ spec:
                 secretKeyRef:
                   name: authentik-db-app
                   key: password
+            # Surfaced as the blueprint `!Env FORGEJO_OIDC_CLIENT_SECRET` lookup
+            # in applications/forgejo/blueprints/oidc.yaml. Same `forgejo-oidc`
+            # Secret is reflected to the forgejo namespace and consumed by the
+            # forgejo helm chart — single source of truth.
+            - name: FORGEJO_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo-oidc
+                  key: secret
+                  optional: true
 
         authentik:
           existingSecret:
@@ -66,6 +73,9 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           volumes:
+            - name: blueprints
+              configMap:
+                name: authentik-blueprints
             - name: users-blueprint
               secret:
                 secretName: authentik-users-blueprint
@@ -76,6 +86,9 @@ spec:
               secret:
                 secretName: tine-password
           volumeMounts:
+            - name: blueprints
+              mountPath: /blueprints/custom
+              readOnly: true
             - name: users-blueprint
               mountPath: /blueprints/managed
               readOnly: true
