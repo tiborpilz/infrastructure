@@ -119,10 +119,6 @@ inputs = {
 
   pds_handles = try(include.env.locals.pds_handles, [])
 
-  tangled_owner_handle                = try(include.env.locals.tangled_owner_handle, "")
-  tangled_owner_signing_key_multibase = try(include.env.locals.tangled_owner_signing_key_multibase, "")
-  tangled_owner_pds_endpoint          = try(include.env.locals.tangled_owner_pds_endpoint, "https://bsky.social")
-  tangled_did_subdomain               = try(include.env.locals.tangled_did_subdomain, "id")
   omni_admin_emails = local.omni_admin_emails
   # SideroLink WireGuard advertisedEndpoint must be IP:PORT (hostnames are not
   # supported by the WireGuard config). 30180 is the chart's default NodePort.
