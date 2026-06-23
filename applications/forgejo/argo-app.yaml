@@ -37,7 +37,7 @@ spec:
               namespace: gateway-system
               sectionName: https
           hostnames:
-            - git.$(DOMAIN)
+            - git.tibor.sh
           matches:
             path:
               type: PathPrefix
@@ -62,7 +62,7 @@ spec:
             - name: authentik
               provider: openidConnect
               existingSecret: forgejo-oidc
-              autoDiscoverUrl: https://auth.$(DOMAIN)/application/o/forgejo/.well-known/openid-configuration
+              autoDiscoverUrl: https://auth.tibor.sh/application/o/forgejo/.well-known/openid-configuration
               groupClaimName: groups
               adminGroup: forgejo-admins
           podAnnotations:
@@ -71,11 +71,11 @@ spec:
           config:
             APP_NAME: Forgejo
             server:
-              DOMAIN: git.$(DOMAIN)
-              ROOT_URL: https://git.$(DOMAIN)/
+              DOMAIN: git.tibor.sh
+              ROOT_URL: https://git.tibor.sh/
               PROTOCOL: http
               HTTP_PORT: 3000
-              SSH_DOMAIN: git.$(DOMAIN)
+              SSH_DOMAIN: git.tibor.sh
               DISABLE_SSH: true
               START_SSH_SERVER: false
             database:
