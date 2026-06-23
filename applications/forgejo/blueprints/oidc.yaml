@@ -1,9 +1,9 @@
 # Authentik blueprint registering Forgejo as an OIDC client.
 # Deployed via ArgoCD alongside the Forgejo application.
 #
-# TODO: hostname/redirect URI should be parameterized per environment
-# (currently hardcoded to git.$(DOMAIN)). Consider rendering through
-# aggregator or using context lookups.
+# URLs are hardcoded to git.tibor.sh. The aggregator copies blueprint files
+# verbatim, so kustomize variable substitution never reaches them. authentik
+# validates meta_launch_url as a real URL and rejects an unsubstituted var.
 version: 1
 metadata:
   name: forgejo-oidc
@@ -23,7 +23,7 @@ entries:
       signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]
       redirect_uris:
         - matching_mode: strict
-          url: https://git.$(DOMAIN)/user/oauth2/authentik/callback
+          url: https://git.tibor.sh/user/oauth2/authentik/callback
       property_mappings:
         - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'openid'"]]
         - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'profile'"]]
@@ -36,4 +36,4 @@ entries:
     attrs:
       name: Forgejo
       provider: !Find [authentik_providers_oauth2.oauth2provider, [name, forgejo]]
-      meta_launch_url: https://git.$(DOMAIN)
+      meta_launch_url: https://git.tibor.sh
