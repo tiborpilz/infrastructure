@@ -1,10 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# App-of-apps parent. argo-app.yaml (the parent Application) points its source at
+# this path, so it is deliberately NOT listed here. No `namespace:` transformer:
+# it would relocate the child Application CRs out of argocd. The children pin
+# themselves to argocd; namespace.yaml declares the tangled namespace for the
+# knot + spindle workloads. Same convention as applications/rook.
+
 resources:
   - namespace.yaml
-  - pvcs.yaml
-  - deployment.yaml
-  - services.yaml
-  - httproute-knot.yaml
-  - tcproute-ssh.yaml
+  - knot/argo-app.yaml
+  - spindle/argo-app.yaml

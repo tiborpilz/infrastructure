@@ -4,3 +4,10 @@ metadata:
   name: tangled
   labels:
     managed-by: argocd
+    # spindle runs rootless dockerd in a privileged container
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+  annotations:
+    # Create the namespace before the knot/spindle child Applications target it.
+    argocd.argoproj.io/sync-wave: "-1"
