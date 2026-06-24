@@ -15,6 +15,7 @@ locals {
   external_dns_manifests = [
     { name = "ns-external-dns", contents = yamlencode(local.external_dns_namespace) },
     { name = "external-dns-secret", contents = yamlencode(local.cloudflare_external_dns_secret) },
+    { name = "external-dns-crd", contents = file("${path.module}/files/dnsendpoints.externaldns.k8s.io.yaml") },
     { name = "external-dns", contents = data.helm_template.external_dns.manifest },
   ]
 }
@@ -55,5 +56,40 @@ data "helm_template" "external_dns" {
   set {
     name  = "sources[1]"
     value = "gateway-httproute"
+  }
+
+  set {
+    name  = "sources[2]"
+    value = "crd"
+  }
+
+  set {
+    name  = "extraArgs[0]"
+    value = "--crd-source-apiversion=externaldns.k8s.io/v1alpha1"
+  }
+
+  set {
+    name  = "extraArgs[1]"
+    value = "--crd-source-kind=DNSEndpoint"
+  }
+
+  set {
+    name  = "extraArgs[2]"
+    value = "--managed-record-types=A"
+  }
+
+  set {
+    name  = "extraArgs[3]"
+    value = "--managed-record-types=AAAA"
+  }
+
+  set {
+    name  = "extraArgs[4]"
+    value = "--managed-record-types=CNAME"
+  }
+
+  set {
+    name  = "extraArgs[5]"
+    value = "--managed-record-types=TXT"
   }
 }
