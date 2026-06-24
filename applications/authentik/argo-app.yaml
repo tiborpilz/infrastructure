@@ -34,28 +34,29 @@ spec:
                 secretKeyRef:
                   name: authentik-db-app
                   key: password
-            # Surfaced as the blueprint `!Env FORGEJO_OIDC_CLIENT_SECRET` lookup
-            # in applications/forgejo/blueprints/oidc.yaml. Same `forgejo-oidc`
-            # Secret is reflected to the forgejo namespace and consumed by the
-            # forgejo helm chart — single source of truth.
+            # Per-app OIDC client secrets: each app's <app>-oidc Secret (a
+            # SopsSecret reflected into this namespace) is surfaced as
+            # <APP>_OIDC_CLIENT_SECRET for the blueprint's !Env lookup. Add one
+            # entry per new OIDC app.
             - name: FORGEJO_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: forgejo-oidc
                   key: secret
                   optional: true
-            # Surfaced as the blueprint `!Env ROOK_OIDC_CLIENT_SECRET` lookup in
-            # applications/rook/blueprints/oidc.yaml. Same rook-oidc Secret is
-            # reflected to rook-ceph and consumed by oauth2-proxy — single source
-            # of truth.
-            - name: ROOK_OIDC_CLIENT_SECRET
+            # Reflected from applications/hubble (oauth2-proxy-secrets in
+            # hubble-auth) into this namespace; surfaced as the blueprint
+            # `!Env HUBBLE_OIDC_CLIENT_SECRET` lookup in
+            # applications/hubble/blueprints/oidc.yaml.
+            - name: HUBBLE_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: rook-oidc
+                  name: oauth2-proxy-secrets
                   key: client-secret
                   optional: true
 
         authentik:
+          log_level: debug
           existingSecret:
             secretName: authentik-bootstrap
 
