@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pds
+  namespace: pds
+  labels:
+    app.kubernetes.io/name: pds
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pds
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pds
+    spec:
+      containers:
+        - name: pds
+          image: ghcr.io/bluesky-social/pds:0.4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: pds-env
+          env:
+            - name: PDS_HOSTNAME
+              value: pds.tibor.sh
+            - name: PDS_PORT
+              value: "3000"
+            - name: PDS_DATA_DIRECTORY
+              value: /pds
+            - name: PDS_BLOBSTORE_DISK_LOCATION
+              value: /pds/blocks
+            - name: PDS_BLOB_UPLOAD_LIMIT
+              value: "104857600"
+            - name: PDS_SERVICE_HANDLE_DOMAINS
+              value: .tibor.sh
+            - name: PDS_DID_PLC_URL
+              value: https://plc.directory
+            - name: PDS_BSKY_APP_VIEW_URL
+              value: https://api.bsky.app
+            - name: PDS_BSKY_APP_VIEW_DID
+              value: did:web:api.bsky.app
+            - name: PDS_REPORT_SERVICE_URL
+              value: https://mod.bsky.app
+            - name: PDS_REPORT_SERVICE_DID
+              value: did:plc:ar7c4by46qjdydhdevvrndac
+            - name: PDS_CRAWLERS
+              value: https://bsky.network
+            - name: PDS_RATE_LIMITS_ENABLED
+              value: "true"
+            - name: PDS_INVITE_REQUIRED
+              value: "true"
+            - name: LOG_ENABLED
+              value: "true"
+          volumeMounts:
+            - name: data
+              mountPath: /pds
+          readinessProbe:
+            httpGet:
+              path: /xrpc/_health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /xrpc/_health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pds-data
