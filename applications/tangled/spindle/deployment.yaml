@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spindle
+  namespace: tangled
+  labels:
+    app.kubernetes.io/name: tangled-spindle
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tangled-spindle
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tangled-spindle
+    spec:
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: spindle
+          # Community image: builds spindle from upstream tangled core and runs
+          # rootless dockerd + spindle under supervisord. Bump via Docker Hub tags.
+          image: docker.io/heywoodlh/spindle:c38881b4
+          imagePullPolicy: IfNotPresent
+          # rootless dockerd needs full privileges; the tangled namespace is
+          # labelled pod-security privileged to allow this.
+          securityContext:
+            privileged: true
+          ports:
+            - name: http
+              containerPort: 6555
+          env:
+            - name: SPINDLE_SERVER_HOSTNAME
+              value: spindle.tibor.sh
+            - name: SPINDLE_SERVER_OWNER
+              value: did:plc:uxci5w626xlqmmbkzis5ksww
+            - name: SPINDLE_SERVER_DEV
+              value: "false"
+            # socket exposed to workflow containers, matches the rootless DOCKER_HOST
+            - name: SPINDLE_SERVER_DOCKER_SOCKET
+              value: /run/user/1000/docker.sock
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: logs
+              mountPath: /var/log/spindle
+          startupProbe:
+            tcpSocket:
+              port: 6555
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            tcpSocket:
+              port: 6555
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 6555
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: spindle-data
+        - name: logs
+          emptyDir: {}
