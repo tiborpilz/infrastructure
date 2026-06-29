@@ -19,6 +19,15 @@ locals {
     arch    = local.arch
   }
 
+  # Proxmox host: a Hetzner dedicated server running Proxmox. Provides extra
+  # worker capacity that joins hcloud-poc over KubeSpan. Endpoint + API token
+  # reach the host publicly; VMs sit on its NAT'd internal bridge.
+  proxmox_endpoint = "https://proxmox.tibor.app:8006"
+  proxmox_node     = "proxmox"
+  # Image Factory schematic with the qemu-guest-agent extension. Used for both
+  # the boot ISO and machine.install.image so the install carries the agent.
+  proxmox_talos_schematic_id = "ce4c980550dd2ab1b17bbf2b08801c7eb59418eafe8f279833297925d67c7515"
+
   # Empty list = no firewall created; Talos API (50000) and k8s API (6443)
   # are exposed publicly. Both are mTLS-protected so this is safe-but-noisy.
   # Tighten via VPN/bastion later, then list the gateway CIDR(s) here.

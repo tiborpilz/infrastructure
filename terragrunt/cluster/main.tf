@@ -1,5 +1,15 @@
 provider "helm" {}
 
+provider "proxmox" {
+  insecure = var.proxmox_insecure
+
+  ssh {
+    agent    = false
+    username = var.proxmox_ssh_username
+    password = var.proxmox_ssh_password
+  }
+}
+
 module "hcloud_network" {
   source = "./hcloud/network"
 
@@ -53,6 +63,50 @@ module "talos" {
   hcloud_image_id          = tostring(module.hcloud_server.talos_image_id)
   hcloud_network_id        = tostring(module.hcloud_network.network_id)
   hcloud_firewall_id       = try(tostring(module.hcloud_network.firewall_ids[0]), "")
+
+  # Proxmox workers are rendered (not applied) here; they self-join via cloud-init.
+  proxmox_workers = {
+    for name, w in var.proxmox_workers : name => {
+      ip           = w.ip
+      install_disk = w.install_disk
+    }
+  }
+  proxmox_network_gateway    = var.proxmox_network_gateway
+  proxmox_network_cidr       = var.proxmox_network_cidr
+  proxmox_nameservers        = var.proxmox_nameservers
+  proxmox_talos_schematic_id = var.proxmox_talos_schematic_id
+}
+
+# Provisions the Proxmox worker VMs and injects each node's Talos config (from
+# the talos module) as nocloud user-data. The nodes self-join over KubeSpan, so
+# they are not part of module.talos's node inventory or interactive apply.
+module "proxmox_server" {
+  source = "./proxmox/server"
+  count  = length(var.proxmox_workers) > 0 ? 1 : 0
+
+  proxmox_node       = var.proxmox_node
+  image_datastore    = var.proxmox_image_datastore
+  vm_datastore       = var.proxmox_vm_datastore
+  snippets_datastore = var.proxmox_snippets_datastore
+  network_bridge     = var.proxmox_network_bridge
+  network_gateway    = var.proxmox_network_gateway
+  network_cidr       = var.proxmox_network_cidr
+  nameservers        = var.proxmox_nameservers
+  talos_version      = var.talos_version
+  talos_schematic_id = var.proxmox_talos_schematic_id
+  kubeconfig_path    = var.kubeconfig_path
+
+  workers = {
+    for name, w in var.proxmox_workers : name => {
+      vm_id          = w.vm_id
+      ip             = w.ip
+      cores          = w.cores
+      memory         = w.memory
+      disk_size      = w.disk_size
+      data_disk_size = w.data_disk_size
+    }
+  }
+  worker_machine_configs = module.talos.proxmox_worker_machine_configs
 }
 
 module "dns" {
