@@ -9,3 +9,7 @@ spec:
       recordType: TXT
       targets:
         - "did=did:plc:uxci5w626xlqmmbkzis5ksww"
+    - dnsName: _atproto.tibor.sh
+      recordType: TXT
+      targets:
+        - "did=did:plc:uxci5w626xlqmmbkzis5ksww"
