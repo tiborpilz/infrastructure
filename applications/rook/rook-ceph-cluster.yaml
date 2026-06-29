@@ -36,12 +36,10 @@ spec:
                 requiredDuringSchedulingIgnoredDuringExecution:
                   nodeSelectorTerms:
                     - matchExpressions:
-                        - key: kubernetes.io/hostname
+                        - key: node.tibor.sh/tier
                           operator: In
                           values:
-                            - worker-2
-                            - worker-3
-                            - worker-4
+                            - proxmox
           resources:
             mon:
               limits:
@@ -65,15 +63,15 @@ spec:
             useAllNodes: false
             useAllDevices: false
             nodes:
-              - name: "worker-2"
+              - name: "proxmox-1"
                 devices:
-                  - name: "/dev/sdb"
-              - name: "worker-3"
+                  - name: "/dev/vdb"
+              - name: "proxmox-2"
                 devices:
-                  - name: "/dev/sdb"
-              - name: "worker-4"
+                  - name: "/dev/vdb"
+              - name: "proxmox-3"
                 devices:
-                  - name: "/dev/sdb"
+                  - name: "/dev/vdb"
         # Block (RBD) — opt-in StorageClass, hcloud-volumes stays the default.
         cephBlockPools:
           - name: ceph-blockpool
