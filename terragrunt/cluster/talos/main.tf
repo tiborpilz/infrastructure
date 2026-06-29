@@ -23,6 +23,17 @@ locals {
   )
 
   base_patch = yamlencode({
+    machine = {
+      sysctls = {
+        "user.max_user_namespaces" = "63359"
+      }
+      network = {
+        kubespan = {
+          enabled                     = true
+          advertiseKubernetesNetworks = false
+        }
+      }
+    }
     cluster = {
       allowSchedulingOnControlPlanes = var.allow_scheduling_on_control_planes
       network = {
@@ -35,8 +46,13 @@ locals {
       externalCloudProvider = {
         enabled = true
       }
+      discovery = {
+        enabled = true
+      }
     }
   })
+
+  proxmox_subnet = var.proxmox_network_gateway != null ? "${cidrhost("${var.proxmox_network_gateway}/${var.proxmox_network_cidr}", 0)}/${var.proxmox_network_cidr}" : null
 
   bootstrap_patch = yamlencode({
     cluster = {
@@ -44,8 +60,6 @@ locals {
     }
   })
 
-  # Hash of bootstrap manifests so Terraform detects when they change.
-  # Used in triggers_replace to re-apply machine config when manifests are updated.
   bootstrap_manifests_hash = md5(jsonencode(module.bootstrap.inline_manifests))
 }
 
@@ -157,6 +171,57 @@ data "talos_machine_configuration" "worker_template" {
       machine = {
         install = { disk = "/dev/sda" }
       }
+    }),
+  ]
+}
+
+data "talos_machine_configuration" "proxmox_worker" {
+  for_each = var.proxmox_workers
+
+  cluster_name       = var.cluster_name
+  cluster_endpoint   = local.effective_endpoint
+  machine_type       = "worker"
+  machine_secrets    = talos_machine_secrets.this.machine_secrets
+  talos_version      = "v${var.talos_version}"
+  kubernetes_version = var.kubernetes_version
+
+  config_patches = [
+    local.base_patch,
+    yamlencode({
+      machine = {
+        install = {
+          disk  = each.value.install_disk
+          image = "factory.talos.dev/installer/${var.proxmox_talos_schematic_id}:v${var.talos_version}"
+        }
+        network = {
+          hostname = each.key
+          interfaces = [{
+            deviceSelector = { physical = true }
+            dhcp           = false
+            addresses      = ["${each.value.ip}/${var.proxmox_network_cidr}"]
+            routes = [{
+              network = "0.0.0.0/0"
+              gateway = var.proxmox_network_gateway
+            }]
+          }]
+          nameservers = var.proxmox_nameservers
+        }
+        kubelet = {
+          nodeIP    = { validSubnets = [local.proxmox_subnet] }
+          extraArgs = { "provider-id" = "proxmox://${each.key}" } # non-hcloud provider-id makes the hcloud CCM error rather than delete these nodes
+        }
+        nodeLabels = {
+          "node.tibor.sh/tier" = "proxmox"
+        }
+      }
+      cluster = {
+        externalCloudProvider = { enabled = false }
+      }
+    }),
+    yamlencode({
+      apiVersion = "v1alpha1"
+      kind       = "HostnameConfig"
+      "$patch"   = "delete"
     }),
   ]
 }
