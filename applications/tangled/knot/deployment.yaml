@@ -17,6 +17,8 @@ spec:
       labels:
         app.kubernetes.io/name: tangled-knot
     spec:
+      imagePullSecrets:
+        - name: atcr-pull
       initContainers:
         - name: fix-perms
           image: busybox:1.37
@@ -30,7 +32,7 @@ spec:
               mountPath: /etc/ssh/keys
       containers:
         - name: knot
-          image: docker.io/itszero/tangled-knot:v1.14
+          image: atcr.io/tangled.org/knot:v1.15.0-alpha
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
