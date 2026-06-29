@@ -6,4 +6,5 @@ resources:
   - secrets.enc.yaml
   - oauth-bootstrap.yaml
   - httproute.yaml
+  - database.yaml
   - argo-app.yaml
