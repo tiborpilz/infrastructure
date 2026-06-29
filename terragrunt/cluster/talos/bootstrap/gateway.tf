@@ -44,16 +44,6 @@ locals {
           }
           allowedRoutes = { namespaces = { from = "All" } }
         },
-        # git-over-SSH for forgejo / tangled.
-        {
-          name     = "ssh"
-          protocol = "TCP"
-          port     = 22
-          allowedRoutes = {
-            namespaces = { from = "All" }
-            kinds      = [{ kind = "TCPRoute" }]
-          }
-        },
       ]
     }
   }
