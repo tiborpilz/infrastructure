@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: headlamp-ui
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://kubernetes-sigs.github.io/headlamp/
+    chart: headlamp
+    targetRevision: 0.43.0
+    helm:
+      releaseName: headlamp
+      valuesObject:
+        replicaCount: 1
+        # unsafeUseServiceAccountToken: auth every request as the cluster-admin
+        # SA, no per-user token prompt. Safe because oauth2-proxy gates access.
+        config:
+          inCluster: true
+          unsafeUseServiceAccountToken: true
+          serviceAccountTokenPath: /var/run/secrets/kubernetes.io/serviceaccount/token
+        serviceAccount:
+          create: true
+        clusterRoleBinding:
+          create: true
+          clusterRoleName: cluster-admin
+        service:
+          type: ClusterIP
+          port: 80
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: headlamp
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
