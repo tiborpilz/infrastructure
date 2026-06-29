@@ -47,6 +47,7 @@ spec:
           cephfs:
             name: rook-ceph.cephfs.csi.ceph.com
             enabled: true
+            fsGroupPolicy: File # else non-root pods can't write CephFS
           nvmeof:
             enabled: false
           nfs:
