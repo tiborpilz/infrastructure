@@ -13,6 +13,8 @@ locals {
       enabled = true
     }
 
+    defaultLBServiceIPAM = "none"
+
     hubble = {
       relay = { enabled = true }
       ui    = { enabled = true }
