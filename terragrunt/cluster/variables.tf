@@ -106,3 +106,107 @@ variable "argocd_age_key" {
   type        = string
   sensitive   = true
 }
+
+# --- Proxmox workers -------------------------------------------------------
+# Optional. When proxmox_workers is non-empty, the proxmox/server module
+# provisions Talos worker VMs on the Proxmox host and they self-join hcloud-poc
+# over KubeSpan. Endpoint + API token are passed via the PROXMOX_VE_ENDPOINT /
+# PROXMOX_VE_API_TOKEN env vars (see terragrunt.hcl).
+
+variable "proxmox_workers" {
+  description = "Proxmox-hosted worker VMs keyed by node name (the name becomes the Kubernetes node name)."
+  type = map(object({
+    vm_id = number
+    ip    = string
+    cores = optional(number, 4)
+    # These are the Rook-Ceph OSD nodes, so default to 16 GiB: a full Ceph stack
+    # (mon+mgr+osd+mds+rgw) tops out around 4.8 GiB of limits on one node.
+    memory    = optional(number, 16384)
+    disk_size = optional(number, 60)
+    # Raw block device for the Ceph OSD, attached as virtio1 (/dev/vdb). Empty
+    # disk; Rook wipes and consumes it.
+    data_disk_size = optional(number, 100)
+    install_disk   = optional(string, "/dev/vda")
+  }))
+  default = {}
+}
+
+variable "proxmox_insecure" {
+  description = "Skip TLS verification against the Proxmox API (self-signed certs)."
+  type        = bool
+  default     = true
+}
+
+variable "proxmox_ssh_username" {
+  description = "SSH user bpg uses to upload Talos user-data snippets to the Proxmox host."
+  type        = string
+  default     = "root"
+}
+
+variable "proxmox_ssh_private_key" {
+  description = "Private key contents for the Proxmox SSH user. Consumed by the proxmox provider for snippet upload."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "proxmox_ssh_password" {
+  description = "Password for the Proxmox SSH user. Consumed by the proxmox provider for snippet upload. bpg falls back to this when no usable key is offered."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "proxmox_node" {
+  description = "Proxmox node (host) name that runs the worker VMs."
+  type        = string
+  default     = "proxmox"
+}
+
+variable "proxmox_image_datastore" {
+  description = "Datastore for the Talos ISO."
+  type        = string
+  default     = "local"
+}
+
+variable "proxmox_vm_datastore" {
+  description = "Datastore for VM disks and cloud-init."
+  type        = string
+  default     = "local-lvm"
+}
+
+variable "proxmox_snippets_datastore" {
+  description = "Datastore with Snippets content enabled, for per-node Talos user-data."
+  type        = string
+  default     = "local"
+}
+
+variable "proxmox_network_bridge" {
+  description = "Proxmox bridge the worker VMs attach to."
+  type        = string
+  default     = "vmbr0"
+}
+
+variable "proxmox_network_gateway" {
+  description = "Default gateway for the Proxmox worker subnet."
+  type        = string
+  default     = "10.0.10.1"
+}
+
+variable "proxmox_network_cidr" {
+  description = "Prefix length for the Proxmox worker subnet."
+  type        = number
+  default     = 24
+}
+
+variable "proxmox_nameservers" {
+  description = "DNS servers for the Proxmox worker VMs."
+  type        = list(string)
+  default     = ["1.1.1.1", "8.8.8.8"]
+}
+
+variable "proxmox_talos_schematic_id" {
+  description = "Talos Image Factory schematic ID for the Proxmox nocloud ISO. Must include qemu-guest-agent."
+  type        = string
+  default     = ""
+}

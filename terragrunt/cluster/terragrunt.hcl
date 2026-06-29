@@ -16,6 +16,8 @@ terraform {
     env_vars = {
       HCLOUD_TOKEN         = include.env.locals.secrets.hcloud_token
       CLOUDFLARE_API_TOKEN = include.env.locals.secrets.cloudflare_api_token
+      PROXMOX_VE_ENDPOINT  = include.env.locals.proxmox_endpoint
+      PROXMOX_VE_API_TOKEN = include.env.locals.secrets.proxmox_api_token
     }
   }
 }
@@ -52,22 +54,37 @@ inputs = {
     worker-1 = {
       server_type = "cx33"
     }
-    # worker-2/3/4: Ceph OSD nodes. 50 GB raw volume each backs Rook-Ceph OSDs.
     worker-2 = {
-      server_type    = "cx23"
-      volume_size_gb = 50
+      server_type = "cx23"
     }
     worker-3 = {
-      server_type    = "cx23"
-      volume_size_gb = 50
+      server_type = "cx23"
     }
     worker-4 = {
-      server_type    = "cx23"
-      volume_size_gb = 50
+      server_type = "cx23"
     }
   }
 
   kubeconfig_path          = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}.kubeconfig"
   talosconfig_path         = "${get_repo_root()}/.talos/${include.env.locals.cluster_name}.talosconfig"
   bootstrap_manifests_path = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}-bootstrap-manifests.yaml"
+
+  # Proxmox worker tier. VM IDs 9001+ and IPs .31+ avoid colliding with the
+  # standalone proxmox-terraform cluster on the same host (8001+ / .11-.22).
+  proxmox_node               = include.env.locals.proxmox_node
+  proxmox_talos_schematic_id = include.env.locals.proxmox_talos_schematic_id
+  proxmox_ssh_private_key    = include.env.locals.secrets.proxmox_ssh_private_key
+  proxmox_ssh_password       = include.env.locals.secrets.proxmox_ssh_password
+
+  # VM disks on "first" (LVM, vg0); ISO + snippets on talos-store (a dir store on
+  # an LV in vg0, since LVM can't hold iso/snippets and local is off-limits).
+  proxmox_vm_datastore       = "first"
+  proxmox_image_datastore    = "talos-store"
+  proxmox_snippets_datastore = "talos-store"
+
+  proxmox_workers = {
+    proxmox-1 = { vm_id = 9001, ip = "10.0.10.31" }
+    proxmox-2 = { vm_id = 9002, ip = "10.0.10.32" }
+    proxmox-3 = { vm_id = 9003, ip = "10.0.10.33" }
+  }
 }

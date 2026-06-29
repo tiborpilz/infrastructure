@@ -40,6 +40,45 @@ variable "nodes" {
   }
 }
 
+variable "proxmox_workers" {
+  description = <<-EOT
+    Proxmox-hosted worker nodes keyed by name. These sit behind the Proxmox
+    host's NAT with no inbound reachability, so they are intentionally NOT part
+    of var.nodes: they self-join via nocloud cloud-init (the proxmox/server
+    module injects their MachineConfig as user-data) and connect over KubeSpan.
+    We only render their per-node config here and hand it to that module.
+  EOT
+  type = map(object({
+    ip           = string
+    install_disk = optional(string, "/dev/vda")
+  }))
+  default = {}
+}
+
+variable "proxmox_network_gateway" {
+  description = "Default gateway for the Proxmox node subnet. Used in the static-network patch for Proxmox workers. Required when proxmox_workers is non-empty."
+  type        = string
+  default     = null
+}
+
+variable "proxmox_network_cidr" {
+  description = "Prefix length for the Proxmox node subnet, e.g. 24."
+  type        = number
+  default     = 24
+}
+
+variable "proxmox_nameservers" {
+  description = "Nameservers configured on Proxmox workers."
+  type        = list(string)
+  default     = ["1.1.1.1", "8.8.8.8"]
+}
+
+variable "proxmox_talos_schematic_id" {
+  description = "Talos Image Factory schematic ID for Proxmox workers. Used to build machine.install.image so the installed system carries the schematic's extensions (e.g. qemu-guest-agent)."
+  type        = string
+  default     = ""
+}
+
 variable "talos_version" {
   description = "Talos version (without leading v), e.g., 1.13.0."
   type        = string

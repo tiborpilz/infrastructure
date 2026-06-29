@@ -37,6 +37,24 @@ locals {
         reclaimPolicy = "Delete"
       }
     ]
+    # CSI node plugin can't run on the Proxmox VMs (no hcloud instance). Extend
+    # the chart's default affinity to also skip the proxmox tier; overriding
+    # node.affinity replaces the default, so its two built-in terms are repeated.
+    node = {
+      affinity = {
+        nodeAffinity = {
+          requiredDuringSchedulingIgnoredDuringExecution = {
+            nodeSelectorTerms = [{
+              matchExpressions = [
+                { key = "instance.hetzner.cloud/is-root-server", operator = "NotIn", values = ["true"] },
+                { key = "instance.hetzner.cloud/provided-by", operator = "NotIn", values = ["robot"] },
+                { key = "node.tibor.sh/tier", operator = "NotIn", values = ["proxmox"] },
+              ]
+            }]
+          }
+        }
+      }
+    }
   })
 
   hcloud_manifests = [
@@ -71,5 +89,6 @@ data "helm_template" "hcloud_ccm" {
     name  = "networking.enabled"
     value = "true"
   }
+
 }
 

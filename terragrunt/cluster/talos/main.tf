@@ -25,6 +25,21 @@ locals {
 
   # Cluster-wide config patch.
   base_patch = yamlencode({
+    machine = {
+      sysctls = {
+        "user.max_user_namespaces" = "63359"
+      }
+      network = {
+        # KubeSpan builds a WireGuard mesh so nodes on different networks (e.g.
+        # NAT'd Proxmox VMs) reach each other and the control plane across NAT.
+        # advertiseKubernetesNetworks=false because Cilium owns pod routing;
+        # KubeSpan only needs to mesh node-to-node traffic, not the pod CIDRs.
+        kubespan = {
+          enabled                     = true
+          advertiseKubernetesNetworks = false
+        }
+      }
+    }
     cluster = {
       allowSchedulingOnControlPlanes = var.allow_scheduling_on_control_planes
       network = {
@@ -37,8 +52,15 @@ locals {
       externalCloudProvider = {
         enabled = true
       }
+      discovery = {
+        enabled = true
+      }
     }
   })
+
+  # Network subnet (CIDR) the Proxmox workers live on, derived from the gateway.
+  # Used to pin the kubelet node IP since no CCM manages these nodes.
+  proxmox_subnet = var.proxmox_network_gateway != null ? "${cidrhost("${var.proxmox_network_gateway}/${var.proxmox_network_cidr}", 0)}/${var.proxmox_network_cidr}" : null
 
   # Only control-plane configs get this; workers ignore inlineManifests.
   bootstrap_patch = yamlencode({
@@ -47,8 +69,6 @@ locals {
     }
   })
 
-  # Hash of bootstrap manifests so Terraform detects when they change.
-  # Used in triggers_replace to re-apply machine config when manifests are updated.
   bootstrap_manifests_hash = md5(jsonencode(module.bootstrap.inline_manifests))
 }
 
@@ -163,6 +183,73 @@ data "talos_machine_configuration" "worker_template" {
       machine = {
         install = { disk = "/dev/sda" }
       }
+    }),
+  ]
+}
+
+# Per-node worker MachineConfig for the Proxmox VMs. Unlike the hcloud workers
+# there is no talos_machine_configuration_apply here: these nodes are NAT'd, so
+# the proxmox/server module injects this config as nocloud user-data and the
+# node self-applies on first boot, then meshes in over KubeSpan.
+data "talos_machine_configuration" "proxmox_worker" {
+  for_each = var.proxmox_workers
+
+  cluster_name       = var.cluster_name
+  cluster_endpoint   = local.effective_endpoint
+  machine_type       = "worker"
+  machine_secrets    = talos_machine_secrets.this.machine_secrets
+  talos_version      = "v${var.talos_version}"
+  kubernetes_version = var.kubernetes_version
+
+  config_patches = [
+    local.base_patch,
+    yamlencode({
+      machine = {
+        # Factory installer for the schematic, so the installed system carries
+        # its extensions (qemu-guest-agent); the bare installer would drop them.
+        install = {
+          disk  = each.value.install_disk
+          image = "factory.talos.dev/installer/${var.proxmox_talos_schematic_id}:v${var.talos_version}"
+        }
+        network = {
+          hostname = each.key
+          interfaces = [{
+            deviceSelector = { physical = true }
+            dhcp           = false
+            addresses      = ["${each.value.ip}/${var.proxmox_network_cidr}"]
+            routes = [{
+              network = "0.0.0.0/0"
+              gateway = var.proxmox_network_gateway
+            }]
+          }]
+          nameservers = var.proxmox_nameservers
+        }
+        # No CCM manages these nodes (externalCloudProvider is disabled below),
+        # so pin the kubelet node IP to the Proxmox subnet instead of relying on
+        # a cloud provider to set node addresses.
+        kubelet = {
+          nodeIP = { validSubnets = [local.proxmox_subnet] }
+          # Non-hcloud providerID makes the CCM's lookup error rather than return
+          # "not found", so its lifecycle controller stops deleting these nodes.
+          extraArgs = { "provider-id" = "proxmox://${each.key}" }
+        }
+        nodeLabels = {
+          "node.tibor.sh/tier" = "proxmox"
+        }
+      }
+      # Not Hetzner servers, so the hcloud CCM can't init them (taint never
+      # clears). Disable it here (overrides base_patch) so they register Ready.
+      cluster = {
+        externalCloudProvider = { enabled = false }
+      }
+    }),
+    # Talos emits a HostnameConfig document (auto: stable) that conflicts with
+    # the static machine.network.hostname above. Drop it so the per-node
+    # hostname is the single source of truth.
+    yamlencode({
+      apiVersion = "v1alpha1"
+      kind       = "HostnameConfig"
+      "$patch"   = "delete"
     }),
   ]
 }
