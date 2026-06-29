@@ -37,6 +37,21 @@ locals {
         reclaimPolicy = "Delete"
       }
     ]
+    node = {
+      affinity = {
+        nodeAffinity = {
+          requiredDuringSchedulingIgnoredDuringExecution = {
+            nodeSelectorTerms = [{
+              matchExpressions = [
+                { key = "instance.hetzner.cloud/is-root-server", operator = "NotIn", values = ["true"] },
+                { key = "instance.hetzner.cloud/provided-by", operator = "NotIn", values = ["robot"] },
+                { key = "node.tibor.sh/tier", operator = "NotIn", values = ["proxmox"] },
+              ]
+            }]
+          }
+        }
+      }
+    }
   })
 
   hcloud_manifests = [
@@ -71,5 +86,6 @@ data "helm_template" "hcloud_ccm" {
     name  = "networking.enabled"
     value = "true"
   }
+
 }
 
