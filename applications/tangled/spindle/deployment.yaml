@@ -19,6 +19,10 @@ spec:
     spec:
       securityContext:
         fsGroup: 1000
+        # spindle-data holds the rootless-docker store (100k+ files); without
+        # this, every reschedule recursively chowns the whole volume and the
+        # pod is stuck in ContainerCreating for minutes.
+        fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
       containers:
