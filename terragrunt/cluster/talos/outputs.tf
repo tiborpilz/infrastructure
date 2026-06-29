@@ -62,6 +62,12 @@ output "control_plane_machine_config" {
   sensitive = true
 }
 
+output "proxmox_worker_machine_configs" {
+  description = "Per-node Talos worker MachineConfig for the Proxmox VMs, keyed by node name. The proxmox/server module injects each as nocloud user-data so the NAT'd nodes self-join. Sensitive — contains cluster bootstrap material."
+  value       = { for k, c in data.talos_machine_configuration.proxmox_worker : k => c.machine_configuration }
+  sensitive   = true
+}
+
 output "bootstrap_manifests_yaml" {
   description = "All bootstrap inline manifests as a multi-document YAML string."
   value       = module.bootstrap.rendered_yaml
