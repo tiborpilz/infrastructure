@@ -1,7 +1,10 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
+# Named harbor-pg (not harbor-db): the original cluster was created on
+# hcloud-volumes and CNPG storage is immutable, so the rename lets argocd
+# prune the stuck cluster and create this one fresh.
 metadata:
-  name: harbor-db
+  name: harbor-pg
   namespace: harbor
 spec:
   instances: 1
