@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tangled
+  namespace: tangled
+  labels:
+    app.kubernetes.io/name: tangled-knot
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tangled-knot
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tangled-knot
+    spec:
+      imagePullSecrets:
+        - name: atcr-pull
+      initContainers:
+        - name: fix-perms
+          image: busybox:1.37
+          command: ["sh", "-c", "chown -R 1000:1000 /home/git /etc/ssh/keys"]
+          volumeMounts:
+            - name: app
+              mountPath: /home/git
+            - name: repos
+              mountPath: /home/git/repositories
+            - name: sshkeys
+              mountPath: /etc/ssh/keys
+      containers:
+        - name: knot
+          image: atcr.io/tangled.org/knot:v1.15.0-alpha
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5555
+            - name: ssh
+              containerPort: 22
+          env:
+            - name: KNOT_SERVER_HOSTNAME
+              value: knot.tibor.sh
+            - name: KNOT_SERVER_OWNER
+              value: did:plc:uxci5w626xlqmmbkzis5ksww
+            - name: APPVIEW_ENDPOINT
+              value: https://tangled.org
+            - name: KNOT_REPO_SCAN_PATH
+              value: /home/git/repositories
+            - name: KNOT_SERVER_DB_PATH
+              value: /home/git/knotserver.db
+            - name: KNOT_SERVER_LISTEN_ADDR
+              value: :5555
+            - name: KNOT_SERVER_INTERNAL_LISTEN_ADDR
+              value: localhost:5444
+          volumeMounts:
+            - name: sshkeys
+              mountPath: /etc/ssh/keys
+            - name: repos
+              mountPath: /home/git/repositories
+            - name: app
+              mountPath: /home/git
+          readinessProbe:
+            tcpSocket:
+              port: 5555
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 5555
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: sshkeys
+          persistentVolumeClaim:
+            claimName: tangled-sshkeys
+        - name: repos
+          persistentVolumeClaim:
+            claimName: tangled-repos
+        - name: app
+          persistentVolumeClaim:
+            claimName: tangled-app

@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-cd
+    targetRevision: 8.6.4
+    helm:
+      valuesObject:
+        redisSecretInit:
+          enabled: false
+        configs:
+          params:
+            server.insecure: "true"
+            controller.diff.server.side: "true"
+          cm:
+            url: https://argocd.tibor.sh
+            kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
+            oidc.config: |
+              name: Authentik
+              issuer: https://auth.tibor.sh/application/o/argocd/
+              clientID: argocd
+              clientSecret: $argocd-oidc:oidc.clientSecret
+              requestedScopes:
+                - openid
+                - profile
+                - email
+                - groups
+          rbac:
+            policy.csv: |
+              g, platform-admins, role:admin
+            policy.default: role:readonly
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /status/terminatingReplicas

@@ -1,0 +1,271 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: authentik
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://charts.goauthentik.io
+    chart: authentik
+    targetRevision: 2025.12.1
+    helm:
+      valuesObject:
+        global:
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          envFrom:
+            - secretRef:
+                name: authentik-bootstrap
+            - secretRef:
+                name: authentik-seed-passwords
+                optional: true
+            - secretRef:
+                name: authentik-oidc-clients
+                optional: true
+          env:
+            - name: AUTHENTIK_POSTGRESQL__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-db-app
+                  key: password
+            - name: FORGEJO_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo-oidc
+                  key: secret
+                  optional: true
+            - name: HUBBLE_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oauth2-proxy-secrets
+                  key: client-secret
+                  optional: true
+            - name: HEADLAMP_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: headlamp-oauth2-proxy-secrets
+                  key: client-secret
+                  optional: true
+
+        authentik:
+          log_level: debug
+          existingSecret:
+            secretName: authentik-bootstrap
+
+        server:
+          replicas: 1
+          ingress:
+            enabled: false
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+
+        worker:
+          replicas: 1
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumes:
+            - name: blueprints
+              configMap:
+                name: authentik-blueprints
+            - name: users-blueprint
+              secret:
+                secretName: authentik-users-blueprint
+            - name: tibor-password
+              secret:
+                secretName: tibor-password
+            - name: tine-password
+              secret:
+                secretName: tine-password
+          volumeMounts:
+            - name: blueprints
+              mountPath: /blueprints/custom
+              readOnly: true
+            - name: users-blueprint
+              mountPath: /blueprints/managed
+              readOnly: true
+            - name: tibor-password
+              mountPath: /secrets/tibor-password.txt
+              subPath: password
+              readOnly: true
+            - name: tine-password
+              mountPath: /secrets/tine-password.txt
+              subPath: password
+              readOnly: true
+
+        postgresql:
+          enabled: false
+
+        redis:
+          enabled: false
+
+        additionalObjects:
+          - apiVersion: postgresql.cnpg.io/v1
+            kind: Cluster
+            metadata:
+              name: authentik-db
+            spec:
+              instances: 1
+              imageName: ghcr.io/cloudnative-pg/postgresql:17.2
+              storage:
+                size: 5Gi
+                storageClass: hcloud-volumes
+              bootstrap:
+                initdb:
+                  database: authentik
+                  owner: authentik
+              monitoring:
+                enablePodMonitor: false
+
+          - apiVersion: apps/v1
+            kind: StatefulSet
+            metadata:
+              name: authentik-valkey
+              labels:
+                app.kubernetes.io/name: valkey
+                app.kubernetes.io/instance: authentik
+            spec:
+              replicas: 1
+              serviceName: authentik-valkey
+              selector:
+                matchLabels:
+                  app.kubernetes.io/name: valkey
+                  app.kubernetes.io/instance: authentik
+              template:
+                metadata:
+                  labels:
+                    app.kubernetes.io/name: valkey
+                    app.kubernetes.io/instance: authentik
+                spec:
+                  securityContext:
+                    fsGroup: 1000
+                    runAsUser: 1000
+                    runAsGroup: 1000
+                    runAsNonRoot: true
+                    seccompProfile:
+                      type: RuntimeDefault
+                  containers:
+                    - name: valkey
+                      image: valkey/valkey:8-alpine
+                      imagePullPolicy: IfNotPresent
+                      securityContext:
+                        allowPrivilegeEscalation: false
+                        readOnlyRootFilesystem: true
+                        runAsNonRoot: true
+                        capabilities:
+                          drop: ["ALL"]
+                        seccompProfile:
+                          type: RuntimeDefault
+                      args:
+                        - --requirepass
+                        - $(VALKEY_PASSWORD)
+                        - --save
+                        - ""
+                        - --appendonly
+                        - "no"
+                      env:
+                        - name: VALKEY_PASSWORD
+                          valueFrom:
+                            secretKeyRef:
+                              name: authentik-valkey
+                              key: password
+                      ports:
+                        - name: valkey
+                          containerPort: 6379
+                      readinessProbe:
+                        exec:
+                          command:
+                            - sh
+                            - -c
+                            - valkey-cli -a "$VALKEY_PASSWORD" PING
+                        initialDelaySeconds: 5
+                        periodSeconds: 10
+                      livenessProbe:
+                        tcpSocket:
+                          port: valkey
+                        initialDelaySeconds: 15
+                        periodSeconds: 20
+                      resources:
+                        requests:
+                          cpu: 50m
+                          memory: 64Mi
+                        limits:
+                          memory: 256Mi
+                      volumeMounts:
+                        - name: data
+                          mountPath: /data
+                  volumes:
+                    - name: data
+                      emptyDir: {}
+
+          - apiVersion: v1
+            kind: Service
+            metadata:
+              name: authentik-valkey
+              labels:
+                app.kubernetes.io/name: valkey
+                app.kubernetes.io/instance: authentik
+            spec:
+              type: ClusterIP
+              selector:
+                app.kubernetes.io/name: valkey
+                app.kubernetes.io/instance: authentik
+              ports:
+                - name: valkey
+                  port: 6379
+                  targetPort: valkey
+
+          - apiVersion: gateway.networking.k8s.io/v1
+            kind: HTTPRoute
+            metadata:
+              name: authentik
+            spec:
+              parentRefs:
+                - group: gateway.networking.k8s.io
+                  kind: Gateway
+                  name: public
+                  namespace: gateway-system
+                  sectionName: https
+              hostnames:
+                - auth.tibor.sh
+              rules:
+                - backendRefs:
+                    - name: authentik-server
+                      port: 80
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /status/terminatingReplicas
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /status/terminatingReplicas
