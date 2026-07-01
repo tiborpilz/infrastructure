@@ -7,7 +7,7 @@
 # each file becomes one data key on the ConfigMap, named
 # "<service>__<filename>" to keep keys unique across services.
 #
-# Invoked via a generator config in applications/authentik/kustomization.yaml:
+# Invoked via a generator config in applications/identity/authentik/kustomization.yaml:
 #
 #   apiVersion: tibor.sh/v1
 #   kind: BlueprintsAggregator
@@ -31,7 +31,7 @@ if [ ! -t 0 ]; then cat >/dev/null; fi
 
 # Stable sort order so the rendered ConfigMap is byte-identical across runs.
 mapfile -t FILES < <(
-  find "${APPS_DIR}" -mindepth 3 -maxdepth 3 -type f \
+  find "${APPS_DIR}" -mindepth 3 -type f \
     -path '*/blueprints/*.yaml' | sort
 )
 
@@ -60,7 +60,9 @@ fi
 echo "    data:"
 for f in "${FILES[@]}"; do
   rel="${f#${APPS_DIR}/}"
-  svc="${rel%%/blueprints/*}"
+  # Leaf app dir name (basename strips the tier prefix, e.g. services/forgejo
+  # -> forgejo), keeping ConfigMap keys flat and slash-free.
+  svc="$(basename "${rel%%/blueprints/*}")"
   base="${rel##*/}"
   # Strip .enc suffix if present
   if [[ "${base}" == *.enc.yaml ]]; then

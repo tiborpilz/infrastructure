@@ -46,7 +46,7 @@ locals {
   # Lightweight admin roster used only by downstream consumers that need
   # initial-admin lists at bootstrap time (Woodpecker, Omni). Authentik
   # users themselves are seeded via blueprints — see
-  # applications/authentik/{blueprints/users.yaml, users.enc.yaml}.
+  # applications/identity/authentik/{blueprints/users.yaml, users.enc.yaml}.
   managed_users = {
     tibor = {
       email = "tibor@pilz.berlin"

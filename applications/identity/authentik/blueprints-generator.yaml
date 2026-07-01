@@ -5,4 +5,4 @@ metadata:
   annotations:
     config.kubernetes.io/function: |
       exec:
-        path: ../_generators/blueprints-aggregator.sh
+        path: ../../_generators/blueprints-aggregator.sh

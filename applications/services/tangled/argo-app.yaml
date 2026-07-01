@@ -1,17 +1,21 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: headlamp
+  name: tangled
   namespace: argocd
 spec:
   project: platform
+  # App-of-apps: this parent renders applications/tangled (the tangled namespace
+  # plus the tangled-knot and tangled-spindle child Applications). Apply this file
+  # once to bootstrap; everything below it then flows from git. Matches the
+  # git-path convention used by applications/rook.
   source:
-    path: applications/headlamp
+    path: applications/services/tangled
     repoURL: https://github.com/tiborpilz/infrastructure
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
-    namespace: headlamp
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true

@@ -20,7 +20,7 @@ generators:
 # oauth2-proxy reads oauth2-proxy-secrets locally in hubble-auth; the authentik
 # worker needs the same client-secret to validate the OIDC client. Reflect the
 # Secret into the authentik namespace (consumed via HUBBLE_OIDC_CLIENT_SECRET in
-# applications/authentik/argo-app.yaml). Annotations are patched on rather than
+# applications/identity/authentik/argo-app.yaml). Annotations are patched on rather than
 # baked into the ciphertext so the SopsSecret stays decryptable as-is.
 patches:
   - patch: |-

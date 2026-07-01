@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: platform
+  # Single bootstrap entrypoint. Apply once (kubectl apply -f) after argocd is
+  # self-managing; everything else then flows from git. Renders the four tier
+  # Applications (operators/storage/identity/services), which render the per-app
+  # leaf Applications. argocd stays self-managed outside this tree.
+  source:
+    path: applications
+    repoURL: https://github.com/tiborpilz/infrastructure
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

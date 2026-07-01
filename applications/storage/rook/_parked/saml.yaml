@@ -1,5 +1,5 @@
 # Authentik blueprint registering the Ceph dashboard as a SAML 2.0 Service
-# Provider. Picked up by the authentik blueprint aggregator (applications/authentik
+# Provider. Picked up by the authentik blueprint aggregator (applications/identity/authentik
 # globs */blueprints/*.yaml), not by rook's own kustomization.
 #
 # The dashboard does native SAML SSO (no oauth2-proxy). Authentik is the IdP;

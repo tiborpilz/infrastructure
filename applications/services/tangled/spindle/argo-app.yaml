@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tangled-knot
+  name: tangled-spindle
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
   project: platform
   source:
-    path: applications/tangled/knot
+    path: applications/services/tangled/spindle
     repoURL: https://github.com/tiborpilz/infrastructure
     targetRevision: HEAD
   destination:
