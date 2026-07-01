@@ -31,17 +31,18 @@ spec:
         updateStrategy:
           type: Recreate
 
+        # Claims live in pvcs.yaml under fresh names: the chart's original
+        # PVCs were created on hcloud-volumes and PVC specs are immutable,
+        # so retargeting storage means new claims and pruning the old ones.
         persistence:
           enabled: true
           resourcePolicy: keep
           persistentVolumeClaim:
             registry:
-              storageClass: ceph-block
-              size: 30Gi
+              existingClaim: harbor-registry-data
             jobservice:
               jobLog:
-                storageClass: ceph-block
-                size: 5Gi
+                existingClaim: harbor-joblog
 
         # All component secrets pinned via existingSecret so ArgoCD renders
         # are deterministic; the chart would otherwise regenerate them on
@@ -64,11 +65,11 @@ spec:
         database:
           type: external
           external:
-            host: harbor-db-rw
+            host: harbor-pg-rw
             port: "5432"
             username: harbor
             coreDatabase: registry
-            existingSecret: harbor-db-app
+            existingSecret: harbor-pg-app
 
         # Ephemeral valkey (valkey.yaml) instead of the chart's PVC-backed
         # redis; harbor only caches sessions and job queues here.
