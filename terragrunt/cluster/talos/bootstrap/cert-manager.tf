@@ -62,8 +62,5 @@ data "helm_template" "cert_manager" {
   version      = var.cert_manager_chart_version
   kube_version = var.kubernetes_version
 
-  set {
-    name  = "crds.enabled"
-    value = "true"
-  }
+  values = [file("${path.module}/files/cert-manager-values.yaml")]
 }
