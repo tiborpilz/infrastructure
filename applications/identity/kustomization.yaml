@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Tier: identity (sync-wave 2). Authentik, the IdP the services tier's OIDC
+# clients authenticate against. Its kustomization runs the blueprints exec
+# generator, so renders need --enable-alpha-plugins --enable-exec.
+resources:
+  - authentik

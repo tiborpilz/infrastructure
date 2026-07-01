@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: pds
+  name: tekton
   namespace: argocd
 spec:
   project: platform
   source:
-    path: applications/pds
+    path: applications/services/tekton
     repoURL: https://github.com/tiborpilz/infrastructure
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
-    namespace: pds
+    namespace: tekton-auth
   syncPolicy:
     automated:
       prune: true

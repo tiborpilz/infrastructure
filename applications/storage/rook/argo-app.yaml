@@ -10,7 +10,7 @@ spec:
   # once to bootstrap; everything below it then flows from git. Matches the
   # git-path convention used by applications/tekton and applications/hubble.
   source:
-    path: applications/rook
+    path: applications/storage/rook
     repoURL: https://github.com/tiborpilz/infrastructure
     targetRevision: HEAD
   destination:

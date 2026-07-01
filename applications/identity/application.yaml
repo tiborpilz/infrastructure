@@ -1,17 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tekton
+  name: identity
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: platform
   source:
-    path: applications/tekton
+    path: applications/identity
     repoURL: https://github.com/tiborpilz/infrastructure
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
-    namespace: tekton-auth
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true

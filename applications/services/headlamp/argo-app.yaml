@@ -1,19 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tangled-spindle
+  name: headlamp
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: platform
   source:
-    path: applications/tangled/spindle
+    path: applications/services/headlamp
     repoURL: https://github.com/tiborpilz/infrastructure
     targetRevision: HEAD
   destination:
     server: https://kubernetes.default.svc
-    namespace: tangled
+    namespace: headlamp
   syncPolicy:
     automated:
       prune: true
