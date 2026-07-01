@@ -1,0 +1,83 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: harbor-oidc-config
+  namespace: harbor
+spec:
+  backoffLimit: 20
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: configure
+          image: alpine/k8s:1.30.4
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: HARBOR_URL
+              value: http://harbor
+            - name: EXTERNAL_URL
+              value: https://harbor.tibor.sh
+            - name: OIDC_ENDPOINT
+              value: https://auth.tibor.sh/application/o/harbor/
+            - name: HARBOR_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-admin
+                  key: HARBOR_ADMIN_PASSWORD
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-oidc
+                  key: secret
+          command: ["/bin/sh", "-eu", "-c"]
+          args:
+            - |
+              echo "Waiting for Harbor API at $HARBOR_URL ..."
+              for i in $(seq 1 60); do
+                code=$(curl -s -o /dev/null -w '%{http_code}' "$HARBOR_URL/api/v2.0/systeminfo" || true)
+                [ "$code" = "200" ] && break
+                sleep 10
+              done
+              if [ "$code" != "200" ]; then
+                echo "Harbor API not ready (last status: $code)" >&2
+                exit 1
+              fi
+
+              BODY=$(jq -n '{
+                auth_mode: "oidc_auth",
+                oidc_name: "authentik",
+                oidc_endpoint: env.OIDC_ENDPOINT,
+                oidc_client_id: "harbor",
+                oidc_client_secret: env.OIDC_CLIENT_SECRET,
+                oidc_scope: "openid,profile,email",
+                oidc_groups_claim: "groups",
+                oidc_admin_group: "harbor-admins",
+                oidc_auto_onboard: true,
+                oidc_user_claim: "preferred_username",
+                oidc_verify_cert: true
+              }')
+
+              RAW=$(curl -s -u "admin:$HARBOR_ADMIN_PASSWORD" \
+                -X PUT -H 'Content-Type: application/json' \
+                -w '\n%{http_code}' -d "$BODY" \
+                "$HARBOR_URL/api/v2.0/configurations")
+              HTTP=$(printf '%s' "$RAW" | tail -n1)
+              RESP=$(printf '%s' "$RAW" | sed '$d')
+              if [ "$HTTP" != "200" ]; then
+                echo "Failed to apply OIDC configuration (HTTP $HTTP): $RESP" >&2
+                exit 1
+              fi
+
+              MODE=$(curl -s -u "admin:$HARBOR_ADMIN_PASSWORD" \
+                "$HARBOR_URL/api/v2.0/configurations" | jq -r '.auth_mode.value')
+              echo "OIDC configuration applied; auth_mode=$MODE"
