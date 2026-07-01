@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tangled-http
+  namespace: tangled
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tangled-knot
+  ports:
+    - name: http
+      port: 5555
+      targetPort: 5555
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tangled-ssh
+  namespace: tangled
+  annotations:
+    load-balancer.hetzner.cloud/name: tangled-ssh
+    load-balancer.hetzner.cloud/location: fsn1
+    load-balancer.hetzner.cloud/disable-private-ingress: "true"
+    external-dns.alpha.kubernetes.io/hostname: ssh.knot.tibor.sh
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: tangled-knot
+  ports:
+    - name: ssh
+      port: 22
+      targetPort: 22

@@ -1,0 +1,33 @@
+version: 1
+metadata:
+  name: hubble-oidc
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+  - model: authentik_providers_oauth2.oauth2provider
+    state: present
+    identifiers:
+      name: hubble
+    attrs:
+      client_id: hubble
+      client_secret: !Env HUBBLE_OIDC_CLIENT_SECRET
+      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]
+      redirect_uris:
+        - matching_mode: strict
+          url: https://hubble.tibor.sh/oauth2/callback
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'openid'"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'profile'"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'email'"]]
+      sub_mode: hashed_user_id
+  - model: authentik_core.application
+    state: present
+    identifiers:
+      slug: hubble
+    attrs:
+      name: Hubble
+      provider: !Find [authentik_providers_oauth2.oauth2provider, [name, hubble]]
+      meta_launch_url: https://hubble.tibor.sh

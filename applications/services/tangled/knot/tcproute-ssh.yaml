@@ -1,0 +1,14 @@
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: tangled-ssh
+  namespace: tangled
+spec:
+  parentRefs:
+    - name: public
+      namespace: gateway-system
+      sectionName: ssh
+  rules:
+    - backendRefs:
+        - name: tangled-ssh
+          port: 22
