@@ -1,0 +1,43 @@
+apiVersion: isindir.github.com/v1alpha3
+kind: SopsSecret
+metadata:
+    name: authentik-oidc-clients
+    namespace: authentik
+spec:
+    secretTemplates:
+        - name: authentik-oidc-clients
+          stringData:
+            HARBOR_OIDC_CLIENT_SECRET: ENC[AES256_GCM,data:jkq9wo5B/IIk8XBL869DXwNZhnkOlr42FIPbdXOY7AWq77+bL7WRWra1nea3NH7L,iv:S1Bikx52hFMxeS0CbBFuaO0LXjNzW7pQQW5zwLLtCrY=,tag:ieeHyp7MJErhCzZ2rctDRA==,type:str]
+sops:
+    age:
+        - recipient: age1nhsx40cf26syk9jt8hkd0grdrc9qc45sk52cl5vy0d78fxl2f4hs4h7laa
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBocFRFeGRRQkpwV05uYlAv
+            Y1ZBM1hjdzREZWhrTUV1YTRCWG90R2MrT0dFCk8xeU1ra2NJK1BTRVNjTG9pWGJU
+            eDM3dGk2cWdEQnJSVElRWFh1ekpoalkKLS0tIGpjUGFQMHBFbmdQMlFlRHpIdTJY
+            NER3Uzc2Rm5wUDJ2dnNpaFJiSkJwVEEKIuVtxnD+HJpjm1XBqZgfVQx1tV6PyWvB
+            j70e1RSzza7KF3FMMFocbDSKKwIfFsi+WD5Hs9bJfOtHUVEmroGSKg==
+            -----END AGE ENCRYPTED FILE-----
+        - recipient: age1gzf883y8p0wfy5yjn5l3l2axnqxdgtw2zdcp8jqsrk65m7gf6y6qzgkf63
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBlcHE0MEdTM3dUUGJGclho
+            NEJFNGY0SFRDVDJwY3l5dURBYmNUVUxQT0dRCllCV0JFekFRVHpHZUk0em1lSWtZ
+            YmVUU1pBaVFMUjlVMjB0TVFkZnlZUEUKLS0tIDkxZVluWWRjOTcrMVJ0ZnAxS3Rj
+            Z3RwSzZpNEtDc3VtVE54V1lYendkY1UK1N7a+yG6o3t5lF7mOdQyMj4XfZHcmNK8
+            QtVy1URmEWQXOKWBN2BqtaPXNzCsMFrDz5JfexggQt31wah2XF3UlA==
+            -----END AGE ENCRYPTED FILE-----
+        - recipient: age1eagn023gem8ekv6q8gx7rc37x2rsxfscpyt2znd4j5l8ryehksdqzjek59
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB4Vk1jRktYVEpuQmVzQnY5
+            L3BLcWZ5aFhKaDcvY1o4Q1ZaekRXRnFVZ0JNCmJpcjVMdHlRMDZFUjNDdEw5VkNY
+            cWZxTVBBWk1lcHFDdkc2ZVpuNGlCRWcKLS0tIEJWak03M2Y2dDZQSmZiY0NhQ0VC
+            ZDdLRnl4RXdaVjJ2dmV6VEE3c3pobHcKooDJoJPXrUqnMET7ZUk3Ld9Vwc2JIKpR
+            Vd95/8bwx2sqOfPQa9x7t55NgmoeIXwg3lOKSr0J4qQnlAIgu8UJmQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-07-01T22:54:48Z"
+    mac: ENC[AES256_GCM,data:+olYSG20TuFKakNI+k/rIOziuw3GJY/cjdHMatBxdAfbHQcRZfoN4YyVVnEBvyzuy8oT6BBpt/wbskeW6Lwg/k+lT99d1YxcYdrC5RP6z87N7INA5uRPDRlIoNHPmSZewhX0npdbHvwveW/PR6uS9rAYM6MQyBlcC9sM7sxa9tM=,iv:lT9m2LuLbpJ1Y9q3FCsxWef/+RmsnLZ/7llzKa9spKA=,tag:JRCanGX06pLxjp5VczJOTA==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.12.2
