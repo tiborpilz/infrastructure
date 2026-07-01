@@ -20,12 +20,6 @@ output "cluster_name" {
   value       = var.cluster_name
 }
 
-# Parsed kubeconfig fields — convenient for downstream Terraform providers
-# (kubernetes, helm) that take host + ca + client cert/key directly.
-#
-# Talos returns these base64-encoded (matching kubeconfig YAML format);
-# we decode here so consumers get raw PEM and don't each need a base64decode().
-
 output "kubernetes_host" {
   description = "Kubernetes API server host URL (from kubeconfig)."
   value       = talos_cluster_kubeconfig.this.kubernetes_client_configuration.host

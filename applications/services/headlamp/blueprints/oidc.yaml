@@ -1,5 +1,3 @@
-# Authentik OIDC client for Headlamp's oauth2-proxy. URLs hardcoded: the
-# aggregator copies blueprints verbatim, so kustomize vars never substitute.
 version: 1
 metadata:
   name: headlamp-oidc

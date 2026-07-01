@@ -1,11 +1,3 @@
-# Configures the Ceph dashboard's SAML SSO against Authentik. The dashboard SSO
-# config is imperative (stored in the mon config-key store), so a Job execs the
-# rook-ceph-tools pod to run the `ceph dashboard sso ...` commands and pre-create
-# the admin dashboard user (SAML is auth-only; Ceph does not auto-provision).
-#
-# Modeled on applications/woodpecker/oauth-bootstrap.yaml. The Job runs as a
-# PostSync hook so the dashboard service exists first, and re-runs on each sync
-# (sso setup is idempotent; the admin user is created only if missing).
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -63,19 +55,14 @@ spec:
               value: https://ceph.tibor.sh
             - name: IDP_METADATA
               value: https://auth.tibor.sh/application/saml/ceph/metadata/
-            # Ceph reads the dashboard username from this SAML attribute; it's
-            # the Name of authentik's default Email mapping (NameID is also email).
             - name: USERNAME_ATTR
               value: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress
-            # The dashboard admin user is created with exactly this value, which
-            # must equal the email Authentik sends for the operator.
             - name: ADMIN_EMAIL
               value: tibor@pilz.berlin
           command: ["/bin/sh", "-eu", "-c"]
           args:
             - |
-              # Wait for the authentik SAML app to publish its metadata before
-              # configuring Ceph; decouples this Job from the blueprint sync timing.
+              # Wait for the SAML metadata so this Job is decoupled from blueprint sync timing.
               echo "Waiting for IdP metadata at $IDP_METADATA ..."
               i=0
               until curl -fsS -o /dev/null --max-time 10 "$IDP_METADATA"; do
@@ -103,8 +90,7 @@ spec:
               else
                 echo "dashboard user $ADMIN_EMAIL already exists"
               fi
-              # Enable only after the admin user exists, so a failed user-create
-              # never leaves the dashboard locked behind SSO with no valid login.
+              # Enable only after the admin user exists, else SSO locks out with no valid login.
               ceph dashboard sso enable saml2
               ceph dashboard sso status
               EOF

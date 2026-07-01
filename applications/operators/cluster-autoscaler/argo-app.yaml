@@ -13,8 +13,6 @@ spec:
       valuesObject:
         cloudProvider: hetzner
 
-        # clusterName is only needed to satisfy the chart's templating gate;
-        # Hetzner CAS does not use it for discovery.
         autoDiscovery:
           clusterName: hcloud-poc
 

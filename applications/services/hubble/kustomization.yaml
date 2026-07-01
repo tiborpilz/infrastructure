@@ -1,14 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Rendered by the parent `hubble` Application (app-of-apps). argo-app.yaml (the
-# parent) is deliberately NOT listed here: it points its source at this path, so
-# including it would be self-referential. Same convention as applications/tekton.
-#
-# No `namespace:` transformer on purpose: it would relocate the oauth2-proxy
-# child Application out of argocd. The child pins itself to argocd; namespace.yaml
-# declares hubble-auth for the workload + secret.
-
 resources:
   - namespace.yaml
   - argo-app-oauth2-proxy.yaml
@@ -17,11 +9,6 @@ resources:
 generators:
   - kustomization-ksops-generator.yaml
 
-# oauth2-proxy reads oauth2-proxy-secrets locally in hubble-auth; the authentik
-# worker needs the same client-secret to validate the OIDC client. Reflect the
-# Secret into the authentik namespace (consumed via HUBBLE_OIDC_CLIENT_SECRET in
-# applications/identity/authentik/argo-app.yaml). Annotations are patched on rather than
-# baked into the ciphertext so the SopsSecret stays decryptable as-is.
 patches:
   - patch: |-
       apiVersion: v1

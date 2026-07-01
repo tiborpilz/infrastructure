@@ -19,20 +19,13 @@ spec:
     spec:
       securityContext:
         fsGroup: 1000
-        # spindle-data holds the rootless-docker store (100k+ files); without
-        # this, every reschedule recursively chowns the whole volume and the
-        # pod is stuck in ContainerCreating for minutes.
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: spindle
-          # Community image: builds spindle from upstream tangled core and runs
-          # rootless dockerd + spindle under supervisord. Bump via Docker Hub tags.
           image: docker.io/heywoodlh/spindle:c38881b4
           imagePullPolicy: IfNotPresent
-          # rootless dockerd needs full privileges; the tangled namespace is
-          # labelled pod-security privileged to allow this.
           securityContext:
             privileged: true
           ports:
@@ -45,7 +38,6 @@ spec:
               value: did:plc:uxci5w626xlqmmbkzis5ksww
             - name: SPINDLE_SERVER_DEV
               value: "false"
-            # socket exposed to workflow containers, matches the rootless DOCKER_HOST
             - name: SPINDLE_SERVER_DOCKER_SOCKET
               value: /run/user/1000/docker.sock
           volumeMounts:

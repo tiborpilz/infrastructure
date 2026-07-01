@@ -13,8 +13,6 @@ spec:
       releaseName: headlamp
       valuesObject:
         replicaCount: 1
-        # unsafeUseServiceAccountToken: auth every request as the cluster-admin
-        # SA, no per-user token prompt. Safe because oauth2-proxy gates access.
         config:
           inCluster: true
           unsafeUseServiceAccountToken: true

@@ -5,10 +5,6 @@ metadata:
   namespace: argocd
 spec:
   project: platform
-  # App-of-apps: this parent renders applications/tangled (the tangled namespace
-  # plus the tangled-knot and tangled-spindle child Applications). Apply this file
-  # once to bootstrap; everything below it then flows from git. Matches the
-  # git-path convention used by applications/rook.
   source:
     path: applications/services/tangled
     repoURL: https://github.com/tiborpilz/infrastructure

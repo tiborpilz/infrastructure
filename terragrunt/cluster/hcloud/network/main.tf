@@ -34,25 +34,23 @@ resource "hcloud_firewall" "cluster" {
   rule {
     direction  = "in"
     protocol   = "tcp"
-    port       = "50000" # Talos API
+    port       = "50000"
     source_ips = var.firewall_admin_ips
   }
 
   rule {
     direction  = "in"
     protocol   = "tcp"
-    port       = "6443" # Kubernetes API
+    port       = "6443"
     source_ips = var.firewall_admin_ips
   }
 
-  # Allow pings so I don't lose my mind
   rule {
     direction  = "in"
     protocol   = "icmp"
     source_ips = ["0.0.0.0/0", "::/0"]
   }
 
-  # Required for Talos to bootstrap other cluster nodes.
   rule {
     direction  = "in"
     protocol   = "udp"

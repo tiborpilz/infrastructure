@@ -1,10 +1,4 @@
 #!/usr/bin/env bash
-# Wait for the given Proxmox-hosted Talos nodes to register, then remove the
-# external-cloud-provider "uninitialized" taint. These nodes have no CCM to
-# clear it (hcloud-ccm only manages hcloud nodes), so they would stay
-# unschedulable otherwise.
-# Prerequisites: kubectl configured via KUBECONFIG env var.
-# Usage: wait-and-untaint.sh <node1> [node2 ...]
 
 set -euo pipefail
 
@@ -35,7 +29,7 @@ for node in "${NODES[@]}"; do
     exit 1
   fi
 
-  # kubelet adds the taint at registration; remove it and confirm it stays gone.
+  # kubelet re-adds the taint at registration, so confirm it stays gone.
   for attempt in 1 2 3; do
     kubectl taint node "$node" "${TAINT}:NoSchedule-" 2>/dev/null || true
     if ! kubectl get node "$node" -o jsonpath='{.spec.taints[*].key}' 2>/dev/null | grep -q "$TAINT"; then

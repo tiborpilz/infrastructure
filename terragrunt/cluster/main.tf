@@ -33,7 +33,6 @@ module "hcloud_server" {
 }
 
 locals {
-  # First worker alphabetically gets the floating IP for ingress.
   ingress_worker = sort(keys(var.worker_nodes))[0]
 }
 
@@ -64,7 +63,6 @@ module "talos" {
   hcloud_network_id        = tostring(module.hcloud_network.network_id)
   hcloud_firewall_id       = try(tostring(module.hcloud_network.firewall_ids[0]), "")
 
-  # Proxmox workers are rendered (not applied) here; they self-join via cloud-init.
   proxmox_workers = {
     for name, w in var.proxmox_workers : name => {
       ip           = w.ip
@@ -77,9 +75,6 @@ module "talos" {
   proxmox_talos_schematic_id = var.proxmox_talos_schematic_id
 }
 
-# Provisions the Proxmox worker VMs and injects each node's Talos config (from
-# the talos module) as nocloud user-data. The nodes self-join over KubeSpan, so
-# they are not part of module.talos's node inventory or interactive apply.
 module "proxmox_server" {
   source = "./proxmox/server"
   count  = length(var.proxmox_workers) > 0 ? 1 : 0

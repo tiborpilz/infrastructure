@@ -64,17 +64,11 @@ locals {
     }
   }
 
-  # Pre-manifests run BEFORE chart renders so Cilium, cert-manager, etc. can
-  # reference Gateway CRDs and the gateway-system namespace.
   gateway_pre_manifests = [
     { name = "ns-gateway-system", contents = yamlencode(local.gateway_system_namespace) },
     { name = "gateway-api-crds", contents = data.http.gateway_api_crds.response_body },
   ]
 
-  # Post-manifests run LAST. cilium-gateway-class is repeated here (also inside
-  # the Cilium chart manifest) because CRD registration isn't instant, so the
-  # first apply often races. By this point in the manifest stream the CRD is
-  # guaranteed registered. Idempotent if Cilium already applied it.
   gateway_post_manifests = [
     { name = "cilium-gateway-class", contents = yamlencode(local.cilium_gateway_class) },
     { name = "gateway", contents = yamlencode(local.gateway) },

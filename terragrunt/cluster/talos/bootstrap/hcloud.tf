@@ -37,9 +37,6 @@ locals {
         reclaimPolicy = "Delete"
       }
     ]
-    # CSI node plugin can't run on the Proxmox VMs (no hcloud instance). Extend
-    # the chart's default affinity to also skip the proxmox tier; overriding
-    # node.affinity replaces the default, so its two built-in terms are repeated.
     node = {
       affinity = {
         nodeAffinity = {

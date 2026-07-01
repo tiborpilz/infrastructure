@@ -4,7 +4,6 @@ metadata:
   name: rook-ceph-cluster
   namespace: argocd
   annotations:
-    # After the operator so the CephCluster/pool CRDs exist.
     argocd.argoproj.io/sync-wave: "1"
 spec:
   project: platform
@@ -72,7 +71,6 @@ spec:
               - name: "proxmox-3"
                 devices:
                   - name: "/dev/vdb"
-        # Block (RBD) — opt-in StorageClass, hcloud-volumes stays the default.
         cephBlockPools:
           - name: ceph-blockpool
             spec:
@@ -98,7 +96,6 @@ spec:
                 csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
                 csi.storage.k8s.io/node-stage-secret-namespace: "{{ .Release.Namespace }}"
                 csi.storage.k8s.io/fstype: ext4
-        # Shared filesystem (CephFS) — opt-in RWX StorageClass.
         cephFileSystems:
           - name: ceph-filesystem
             spec:
@@ -138,7 +135,6 @@ spec:
                 csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
                 csi.storage.k8s.io/node-stage-secret-namespace: "{{ .Release.Namespace }}"
                 csi.storage.k8s.io/fstype: ext4
-        # Object store (S3 / RGW) — opt-in bucket StorageClass.
         cephObjectStores:
           - name: ceph-objectstore
             spec:

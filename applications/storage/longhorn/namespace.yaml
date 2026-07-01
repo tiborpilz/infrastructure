@@ -4,8 +4,6 @@ metadata:
   name: longhorn-system
   labels:
     managed-by: argo
-  # Longhorn's manager DaemonSet runs privileged (hostPath-mounts node filesystem,
-  # uses hostNetwork, iscsiadm). Scope is tight; only Longhorn lives here.
   annotations:
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: privileged

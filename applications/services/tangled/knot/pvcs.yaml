@@ -4,9 +4,6 @@ metadata:
   name: tangled-sshkeys
   namespace: tangled
   annotations:
-    # Never prune: these hold live data and hcloud-volumes reclaims Delete, so an
-    # accidental prune (e.g. while re-parenting between Argo apps) destroys the
-    # backing volume. Resize/delete deliberately.
     argocd.argoproj.io/sync-options: Prune=false
 spec:
   accessModes:
