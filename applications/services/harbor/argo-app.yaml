@@ -42,9 +42,6 @@ spec:
               jobLog:
                 storageClass: hcloud-volumes
                 size: 10Gi
-            redis:
-              storageClass: hcloud-volumes
-              size: 10Gi
 
         # All component secrets pinned via existingSecret so ArgoCD renders
         # are deterministic; the chart would otherwise regenerate them on
@@ -73,8 +70,12 @@ spec:
             coreDatabase: registry
             existingSecret: harbor-db-app
 
+        # Ephemeral valkey (valkey.yaml) instead of the chart's PVC-backed
+        # redis; harbor only caches sessions and job queues here.
         redis:
-          type: internal
+          type: external
+          external:
+            addr: harbor-valkey:6379
 
         trivy:
           enabled: false
