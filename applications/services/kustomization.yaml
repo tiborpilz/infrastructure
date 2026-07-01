@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - gitops-canary.yaml
   - forgejo
+  - harbor
   - woodpecker
   - tangled/argo-app.yaml
   - pds/argo-app.yaml
