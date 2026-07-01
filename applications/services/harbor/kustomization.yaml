@@ -5,6 +5,7 @@ resources:
   - namespace.yaml
   - secrets.enc.yaml
   - database.yaml
+  - pvcs.yaml
   - valkey.yaml
   - httproute.yaml
   - oidc-config.yaml
