@@ -1,0 +1,1 @@
+{"inputs":{"nixpkgs":{"url":"github:NixOS/nixpkgs/nixos-25.11"},"nixpkgs-unstable":{"url":"github:NixOS/nixpkgs/nixos-unstable"},"robinovitch61":{"url":"github:robinovitch61/nur-packages"}}}

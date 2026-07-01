@@ -1,0 +1,142 @@
+version: 1
+metadata:
+  name: enrollment-flow
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+  - model: authentik_stages_prompt.prompt
+    state: present
+    id: enroll-username
+    identifiers:
+      name: enroll-username
+    attrs:
+      field_key: username
+      label: Username
+      type: username
+      required: true
+      placeholder: username
+      order: 100
+  - model: authentik_stages_prompt.prompt
+    state: present
+    id: enroll-name
+    identifiers:
+      name: enroll-name
+    attrs:
+      field_key: name
+      label: Display name
+      type: text
+      required: true
+      placeholder: Your name
+      order: 200
+  - model: authentik_stages_prompt.prompt
+    state: present
+    id: enroll-email
+    identifiers:
+      name: enroll-email
+    attrs:
+      field_key: email
+      label: Email
+      type: email
+      required: true
+      placeholder: you@example.com
+      order: 300
+  - model: authentik_stages_prompt.prompt
+    state: present
+    id: enroll-password
+    identifiers:
+      name: enroll-password
+    attrs:
+      field_key: password
+      label: Password
+      type: password
+      required: true
+      order: 400
+  - model: authentik_stages_prompt.prompt
+    state: present
+    id: enroll-password-repeat
+    identifiers:
+      name: enroll-password-repeat
+    attrs:
+      field_key: password_repeat
+      label: Repeat password
+      type: password
+      required: true
+      order: 500
+
+  - model: authentik_stages_invitation.invitationstage
+    state: present
+    id: enrollment-invitation
+    identifiers:
+      name: enrollment-invitation
+    attrs:
+      continue_flow_without_invitation: false
+
+  - model: authentik_stages_prompt.promptstage
+    state: present
+    id: enrollment-prompt
+    identifiers:
+      name: enrollment-prompt
+    attrs:
+      fields:
+        - !KeyOf enroll-username
+        - !KeyOf enroll-name
+        - !KeyOf enroll-email
+        - !KeyOf enroll-password
+        - !KeyOf enroll-password-repeat
+
+  - model: authentik_stages_user_write.userwritestage
+    state: present
+    id: enrollment-user-write
+    identifiers:
+      name: enrollment-user-write
+    attrs:
+      create_users_as_inactive: false
+      user_creation_mode: always_create
+      user_type: internal # else default external users hit "can only be accessed by internal users" on first login
+      user_path_template: users/invited
+
+  - model: authentik_stages_user_login.userloginstage
+    state: present
+    id: enrollment-user-login
+    identifiers:
+      name: enrollment-user-login
+
+  - model: authentik_flows.flow
+    state: present
+    id: enrollment-flow
+    identifiers:
+      slug: enrollment
+    attrs:
+      name: Enrollment
+      title: "Welcome — set up your account"
+      designation: enrollment
+      authentication: none
+
+  - model: authentik_flows.flowstagebinding
+    state: present
+    identifiers:
+      target: !KeyOf enrollment-flow
+      order: 10
+    attrs:
+      stage: !KeyOf enrollment-invitation
+  - model: authentik_flows.flowstagebinding
+    state: present
+    identifiers:
+      target: !KeyOf enrollment-flow
+      order: 20
+    attrs:
+      stage: !KeyOf enrollment-prompt
+  - model: authentik_flows.flowstagebinding
+    state: present
+    identifiers:
+      target: !KeyOf enrollment-flow
+      order: 30
+    attrs:
+      stage: !KeyOf enrollment-user-write
+  - model: authentik_flows.flowstagebinding
+    state: present
+    identifiers:
+      target: !KeyOf enrollment-flow
+      order: 40
+    attrs:
+      stage: !KeyOf enrollment-user-login

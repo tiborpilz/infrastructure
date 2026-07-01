@@ -1,0 +1,15 @@
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: atproto-handle
+  namespace: pds
+spec:
+  endpoints:
+    - dnsName: _atproto.tibor.tibor.sh
+      recordType: TXT
+      targets:
+        - "did=did:plc:uxci5w626xlqmmbkzis5ksww"
+    - dnsName: _atproto.tibor.sh
+      recordType: TXT
+      targets:
+        - "did=did:plc:uxci5w626xlqmmbkzis5ksww"

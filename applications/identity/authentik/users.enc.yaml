@@ -1,0 +1,67 @@
+apiVersion: isindir.github.com/v1alpha3
+kind: SopsSecret
+metadata:
+    name: authentik-user-passwords
+    namespace: authentik
+spec:
+    secretTemplates:
+        - name: tibor-password
+          stringData:
+            password: ENC[AES256_GCM,data:txm9bMynkwpg9vI=,iv:/CVyrYZNSWYlw71yXG7PL0LUVtjyZ0mbmjjbTUHxQ7Q=,tag:GTAnzCEi8W48FbKGgxS1/w==,type:str]
+        - name: tine-password
+          stringData:
+            password: ENC[AES256_GCM,data:zAPlFxruVODW3A==,iv:ZnUZsDNEjn6q81ThafopAQi6KlTgh+KAwjp7dL9QMss=,tag:BE36QGDfcHpdRbWk66436g==,type:str]
+sops:
+    age:
+        - recipient: age1nhsx40cf26syk9jt8hkd0grdrc9qc45sk52cl5vy0d78fxl2f4hs4h7laa
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB5M29UNU90MkRSOTVieU5R
+            Y2RuN3o2WUIzOTlGdHloQlJ5dFErWmpSREVrClpoY1pMNlRuY3ZEMkErVDlvallE
+            YklYUWhjTk1NZHpjWEF0cDdTQXlRZmsKLS0tIFUrVysxUEFxR1JnZlc2ZXlZSVg0
+            THNpY0lwTnpSK1dyK1FFYUpFUDk1SUEKOaCNYkjZrWjP5JUw3KPayncE3ms3JcYM
+            RVaPG/sOwlO53XkohcsJ77Ye4EXbgEqr61mosTsbxfGEUjmbvWnbRw==
+            -----END AGE ENCRYPTED FILE-----
+        - recipient: age1gzf883y8p0wfy5yjn5l3l2axnqxdgtw2zdcp8jqsrk65m7gf6y6qzgkf63
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA5bWpPM3VoMml3VE8rUnk1
+            Yjlva21wUldlUzFFTEVRZmlBVXhxSTJtb2tJClJpc1B6MXhtNWZKTElZRlBDcDM1
+            Y01ZYnJZVlRybnoyNmc0Uk5JckFGU2sKLS0tIFBVZzBWUHJLaUVLNG5YVU8rNzRY
+            NGI5WGNBM1pkVHRDZDMrZDF0dmE2NFEKLohcK8m3OKraSe4qoz9RDlrIDB76lGzT
+            6c3fBi/7KvfeVUKMFu6HWvEk9PaA1RhdUSBwjCINkKZ+AHiCqxbVwA==
+            -----END AGE ENCRYPTED FILE-----
+        - recipient: age1eagn023gem8ekv6q8gx7rc37x2rsxfscpyt2znd4j5l8ryehksdqzjek59
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBZdm55bGxmMit6ejZucDRQ
+            MmZzQWRTOUdMNWhFaDUrcG1jbEw2Qzk1L0M4CjJ5eEsybGpOVEFPYVRzVjhjMFlT
+            Uk4ybXpVeUk1bHNFbHk1RGo5VzdWUncKLS0tIE9DYW42QnBWRmpyNVlFYlUzeTI0
+            ZUdDWHFBeHdxK1pTWFFITldteUo1YjQKA4N/0YcMRNt9EwzrjIfaraI23xo32b03
+            Io5BPkF+HM/eJBKBMPcdjxEkQVsCONPBn/KuotA9ddvu8z6HrMd+YA==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-06-13T18:06:05Z"
+    mac: ENC[AES256_GCM,data:1Jn6/+5Fqr1Hqwj6NitAspyfXNnKu1+tcbzF8GiG2sz2LJMXRbYRXUVBQPxz6VsRVjJHeXHIy9q4WF/Bsqi8GllBTURd5J5j0AFuh9cKCR2Eilx7fsJbF8Wdzcrg7PBC/AlEhWSITVe/09L0TbURuLmuFRgYwWBSVSxE9dqgC8Q=,iv:3rK++wkBvsibVnyvfXsxw4ycwMEd1fxBD+zV+tRT3kU=,tag:oBk2ZcQUiOm3sft0TVANMQ==,type:str]
+    pgp:
+        - created_at: "2026-06-13T17:09:40Z"
+          enc: |-
+            -----BEGIN PGP MESSAGE-----
+
+            hQIMA0IKwDTH3WibARAAkcY0D8RH/Nisd8WSliOAGnX6YZjQAkuDQ4tM8HNzXle1
+            VcUlROIf9eNtKcK8TdAUHr6rsAVa9zszppr/8GIc9ntMiwwuQ0qMUd3GtTJKjuuV
+            xXy1pQfAidpgxgM6r9NdYQ+1h9NrDp4cLCKN3i9GEyTFFk19opyhRy1ERhTW2v2k
+            jyMg8lfbyRatr5Oq9fsqVfkoccim7Y1WS/Tb1SPF0MUCsufVHwggFr4p3GnzEgpe
+            lgkD/gWUSSdOsF1NXGEANrQDqBwjYMIjFI3HWUPRbJA4L2Ke7TtvYfv5F3FwkfXE
+            FwyzgrVb5zBkIt4YBPSaVSoI5yMMGGb7viiaGm8t0bYw9R08OyIx7cOiIAS6KxnR
+            8Kfv0Dyfh53NrQQh2qDcDqijyXvlHc+He/t60jFfQGbfPHEIw6YCTY+Hg/ey0uuV
+            PI5AIo0gu8NoISj73aaMWfv2A0Wt01B6cTILXGI112eqdi6uhwskelLxsZv79jHz
+            q2k6xIAY5abgURffueBq5TXRMU3Gl5gpDo+92/FRQk9FOCNAORZ/MNF5JW1TZTzm
+            5jP4LRGd4nrXPeQ1eg4L49m3weeJExE20eZuO1vT/rZOxnlNkpviWLWQ9JwUGZ0Z
+            L4kXiKVL929vqjsiv1qHuo9Gf60kBLTmsZHvU3pyJid7MRMT3eI9iRxAFnGtE2XS
+            XgFbI6f07eHpLDxhuq6RbinB72cO4G8K5nViJsXHMSDJi+KT13FkhFXSdbsYVnh7
+            /WCFGQavsKRbiOi4sz7hx/QxFReqHcGQGPaF4KAo9FGQz6FxAL0OL5TACrLkLWQ=
+            =2EQA
+            -----END PGP MESSAGE-----
+          fp: 03746612698994281D322B09923BC5E9B4E9509B
+    encrypted_regex: stringData
+    version: 3.12.2
