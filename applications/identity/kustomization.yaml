@@ -1,0 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# authentik runs the blueprints exec generator: renders need --enable-alpha-plugins --enable-exec.
+resources:
+  - authentik

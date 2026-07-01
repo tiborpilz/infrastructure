@@ -5,4 +5,9 @@
 **/kustomize/overlay/*
 .env
 *.cache
-**/*.terraform.lock.hcl
+.terragrunt-cache/
+.terragrunt-state/
+.direnv/
+.kube/
+.talos/
+.devenv

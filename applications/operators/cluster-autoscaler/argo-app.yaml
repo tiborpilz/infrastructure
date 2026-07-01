@@ -1,0 +1,81 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-autoscaler
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://kubernetes.github.io/autoscaler
+    chart: cluster-autoscaler
+    targetRevision: 9.57.0
+    helm:
+      valuesObject:
+        cloudProvider: hetzner
+
+        autoDiscovery:
+          clusterName: hcloud-poc
+
+        extraArgs:
+          v: 4
+          cloud-provider: hetzner
+          expander: least-waste
+          nodes_burst-medium: "0:3:cpx32:fsn1:burst-medium"
+          nodes_burst-large: "0:2:cpx52:fsn1:burst-large"
+          scale-down-enabled: "true"
+          scale-down-delay-after-add: 5m
+          scale-down-unneeded-time: 5m
+          scale-down-utilization-threshold: "0.5"
+          skip-nodes-with-system-pods: "false"
+          skip-nodes-with-local-storage: "false"
+          max-node-provision-time: 8m
+          unremovable-node-recheck-timeout: 2m
+
+        envFromSecret: cluster-autoscaler-hcloud
+        envFromConfigMap: cluster-autoscaler-config
+
+        rbac:
+          serviceAccount:
+            create: true
+            name: cluster-autoscaler
+
+        resources:
+          requests:
+            cpu: 200m
+            memory: 300Mi
+          limits:
+            cpu: 500m
+            memory: 500Mi
+
+        tolerations:
+          - key: node-role.kubernetes.io/control-plane
+            operator: Exists
+            effect: NoSchedule
+
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          fsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
+
+        containerSecurityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cluster-autoscaler
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /status/terminatingReplicas

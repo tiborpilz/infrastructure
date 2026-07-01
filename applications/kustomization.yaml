@@ -1,24 +1,8 @@
-resources:
-  - scope/application.yaml
-  - portainer/application.yaml
-  - harbor/application.yaml
-  - hajimari/application.yaml
-  - forgejo/application.yaml
-  - onedev/application.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 
-patches:
-  - target:
-      kind: Application
-    patch: |
-      - op: add
-        path: /spec/syncPolicy
-        value:
-          automated:
-            prune: true
-            selfHeal: true
-            allowEmpty: true
-          syncOptions:
-            - CreateNamespace=true
-            - Validate=false
-            - PrunePropagationPolicy=Foreground
-            - PruneLast=true
+resources:
+  - operators/application.yaml
+  - storage/application.yaml
+  - identity/application.yaml
+  - services/application.yaml
