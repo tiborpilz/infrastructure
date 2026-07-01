@@ -15,9 +15,9 @@ The fix requires end-to-end HTTPS to the dashboard.
 
 ## What's here
 
-- `saml.yaml` — Authentik SAML provider + `ceph` application blueprint (valid;
+- `saml.yaml`: Authentik SAML provider + `ceph` application blueprint (valid,
   all `!Find` names verified against live Authentik, `sign_assertion: true`).
-- `dashboard-sso.yaml` — Job (+ RBAC) that execs the toolbox to run
+- `dashboard-sso.yaml`: Job (+ RBAC) that execs the toolbox to run
   `ceph dashboard sso setup saml2` / `enable` and pre-create the admin user.
 
 ## To resume (end-to-end TLS, re-encrypt)
@@ -37,4 +37,4 @@ dashboard:
    `../`, re-add it to `../kustomization.yaml`.
 
 Alternative if e2e-TLS isn't worth the cert maintenance: front the dashboard with
-oauth2-proxy (Authentik OIDC) again — robust, but a second Ceph login.
+oauth2-proxy (Authentik OIDC) again, which is robust but means a second Ceph login.
