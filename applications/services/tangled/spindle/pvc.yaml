@@ -4,7 +4,6 @@ metadata:
   name: spindle-data
   namespace: tangled
   annotations:
-    # holds the sqlite db + docker layers; prune deletes the backing volume
     argocd.argoproj.io/sync-options: Prune=false
 spec:
   accessModes:

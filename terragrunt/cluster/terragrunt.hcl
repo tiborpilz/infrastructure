@@ -69,15 +69,11 @@ inputs = {
   talosconfig_path         = "${get_repo_root()}/.talos/${include.env.locals.cluster_name}.talosconfig"
   bootstrap_manifests_path = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}-bootstrap-manifests.yaml"
 
-  # Proxmox worker tier. VM IDs 9001+ and IPs .31+ avoid colliding with the
-  # standalone proxmox-terraform cluster on the same host (8001+ / .11-.22).
   proxmox_node               = include.env.locals.proxmox_node
   proxmox_talos_schematic_id = include.env.locals.proxmox_talos_schematic_id
   proxmox_ssh_private_key    = include.env.locals.secrets.proxmox_ssh_private_key
   proxmox_ssh_password       = include.env.locals.secrets.proxmox_ssh_password
 
-  # VM disks on "first" (LVM, vg0); ISO + snippets on talos-store (a dir store on
-  # an LV in vg0, since LVM can't hold iso/snippets and local is off-limits).
   proxmox_vm_datastore       = "first"
   proxmox_image_datastore    = "talos-store"
   proxmox_snippets_datastore = "talos-store"

@@ -1,7 +1,4 @@
 locals {
-  # Order matters: Talos applies inline manifests sequentially. Gateway CRDs
-  # come first so cert-manager/external-dns/cilium can reference Gateway types;
-  # gateway resources come last (after all CRDs are settled and Cilium is up).
   all_manifests = concat(
     local.gateway_pre_manifests,
     local.cilium_manifests,

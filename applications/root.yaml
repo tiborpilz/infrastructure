@@ -5,10 +5,6 @@ metadata:
   namespace: argocd
 spec:
   project: platform
-  # Single bootstrap entrypoint. Apply once (kubectl apply -f) after argocd is
-  # self-managing; everything else then flows from git. Renders the four tier
-  # Applications (operators/storage/identity/services), which render the per-app
-  # leaf Applications. argocd stays self-managed outside this tree.
   source:
     path: applications
     repoURL: https://github.com/tiborpilz/infrastructure

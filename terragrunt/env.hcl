@@ -1,15 +1,11 @@
 locals {
-  secrets = yamldecode(sops_decrypt_file("${get_repo_root()}/terragrunt/secrets.enc.yaml"))
+  secrets      = yamldecode(sops_decrypt_file("${get_repo_root()}/terragrunt/secrets.enc.yaml"))
   env_name     = "hcloud-poc"
   cluster_name = local.env_name
   location     = "fsn1"
   network_cidr = "10.0.0.0/16"
   subnet_cidr  = "10.0.0.0/24"
 
-  # Talos version + arch. Single source of truth across machines, cluster,
-  # and the upload script.
-  # Bump in lockstep with setup/upload-talos-image.sh.
-  # If CX43 in hel1 turns out to be ARM, change arch to "arm64" and re-run the upload script.
   talos_version = "1.13.0"
   arch          = "amd64"
 
@@ -19,34 +15,17 @@ locals {
     arch    = local.arch
   }
 
-  # Proxmox host: a Hetzner dedicated server running Proxmox. Provides extra
-  # worker capacity that joins hcloud-poc over KubeSpan. Endpoint + API token
-  # reach the host publicly; VMs sit on its NAT'd internal bridge.
   proxmox_endpoint = "https://proxmox.tibor.app:8006"
   proxmox_node     = "proxmox"
-  # Image Factory schematic with the qemu-guest-agent extension. Used for both
-  # the boot ISO and machine.install.image so the install carries the agent.
   proxmox_talos_schematic_id = "ce4c980550dd2ab1b17bbf2b08801c7eb59418eafe8f279833297925d67c7515"
 
-  # Empty list = no firewall created; Talos API (50000) and k8s API (6443)
-  # are exposed publicly. Both are mTLS-protected so this is safe-but-noisy.
-  # Tighten via VPN/bastion later, then list the gateway CIDR(s) here.
   admin_ip_cidrs = []
 
-  # Networking / DNS / TLS
   domain     = "tibor.sh"
   acme_email = "tibor@pilz.berlin"
 
-  # Shared "no-real-mailbox" address for chart-managed bootstrap admin users
-  # (Forgejo's `forgejo_admin`, etc.). Must NOT collide with any managed-user
-  # email — Forgejo's ACCOUNT_LINKING=auto and equivalents link OIDC identities
-  # to the existing local user with a matching email.
   bootstrap_admin_email = "admin@${local.domain}"
 
-  # Lightweight admin roster used only by downstream consumers that need
-  # initial-admin lists at bootstrap time (Woodpecker, Omni). Authentik
-  # users themselves are seeded via blueprints — see
-  # applications/identity/authentik/{blueprints/users.yaml, users.enc.yaml}.
   managed_users = {
     tibor = {
       email = "tibor@pilz.berlin"
@@ -56,9 +35,6 @@ locals {
 
   argocd_age_key = local.secrets.argocd_age_key
 
-  # Valid dummy PEM material for Terragrunt dependency mocks. Providers parse
-  # Kubernetes TLS fields during plan, so plain strings like "mock-ca" fail
-  # before the upstream cluster layer has been applied.
   mock_kubernetes_certificate_pem = <<-EOT
     -----BEGIN CERTIFICATE-----
     MIICvjCCAaYCCQC2jQw5Wk6IwDANBgkqhkiG9w0BAQsFADAhMR8wHQYDVQQDDBZ0

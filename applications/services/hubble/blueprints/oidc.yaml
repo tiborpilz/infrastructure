@@ -1,9 +1,3 @@
-# Authentik blueprint registering Hubble (its oauth2-proxy) as an OIDC client.
-# Deployed via ArgoCD alongside the hubble application.
-#
-# URLs are hardcoded to hubble.tibor.sh. The aggregator copies blueprint files
-# verbatim, so kustomize variable substitution never reaches them. authentik
-# validates meta_launch_url as a real URL and rejects an unsubstituted var.
 version: 1
 metadata:
   name: hubble-oidc

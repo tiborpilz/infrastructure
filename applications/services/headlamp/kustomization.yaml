@@ -1,9 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# argo-app.yaml omitted: it sources this path (self-referential). No namespace
-# transformer: child Applications pin to argocd. Same convention as hubble.
-
 resources:
   - namespace.yaml
   - argo-app-headlamp.yaml
@@ -13,8 +10,6 @@ resources:
 generators:
   - kustomization-ksops-generator.yaml
 
-# Reflect the secret into authentik (consumed as HEADLAMP_OIDC_CLIENT_SECRET).
-# Name is headlamp-prefixed to avoid colliding with hubble's in authentik.
 patches:
   - patch: |-
       apiVersion: v1

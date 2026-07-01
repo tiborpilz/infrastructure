@@ -4,15 +4,12 @@ locals {
     managed-by = "terragrunt"
   }
 
-  # Hetzner uses x86/arm; Talos labels use amd64/arm64.
   hcloud_arch_for_talos_arch = {
     amd64 = "x86"
     arm64 = "arm"
   }
 }
 
-# Hetzner doesn't have a Talos image per default. This is a image backup from a server that had Talos
-# installed via the management API. (This happens automatically through a script in `setup/upload-talos-image.sh`)
 data "hcloud_image" "talos" {
   with_selector     = join(",", [for k, v in var.talos_image_labels : "${k}=${v}"])
   with_architecture = local.hcloud_arch_for_talos_arch[var.talos_image_labels["arch"]]
@@ -25,8 +22,6 @@ resource "hcloud_placement_group" "control_plane" {
   labels = local.common_labels
 }
 
-# To avoid having all workers on the same physical host, place them in a
-# "spread" placement group.
 resource "hcloud_placement_group" "workers" {
   count = length(var.worker_nodes) > 0 ? 1 : 0
 
@@ -68,7 +63,6 @@ resource "hcloud_server" "control_plane" {
   })
 
   lifecycle {
-    # Without ignoring these changes, any update to the Talos image would result in drift.
     ignore_changes = [image]
   }
 }
@@ -126,8 +120,6 @@ resource "hcloud_server_network" "worker" {
   ip        = each.value.private_ipv4
 }
 
-# Optional raw block volume per worker, will only be created if the volume sized
-# is set explicitly. Left unformatted so it can be used for CEPH or other shenanigans.
 resource "hcloud_volume" "worker" {
   for_each = { for k, v in var.worker_nodes : k => v if v.volume_size_gb != null }
 

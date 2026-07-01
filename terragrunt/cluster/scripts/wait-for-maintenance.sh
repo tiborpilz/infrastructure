@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Wait for Talos maintenance API (TCP 50000) to be reachable on a given host.
-# Usage: wait-for-maintenance.sh <host> [timeout_seconds]
 
 set -euo pipefail
 
 HOST="${1:?Missing required argument: host}"
-TIMEOUT="${2:-300}"  # Default 5 minutes
+TIMEOUT="${2:-300}"
 INTERVAL=5
 ATTEMPTS=$((TIMEOUT / INTERVAL))
 

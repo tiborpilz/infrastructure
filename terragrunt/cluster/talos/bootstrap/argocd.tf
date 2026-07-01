@@ -12,8 +12,6 @@ locals {
     data       = { "keys.txt" = base64encode(var.argocd_age_key) }
   }
 
-  # ArgoCD uses the HOME env var to locate age keys. Mount the secret at
-  # /home/argocd/.age/keys.txt and set HOME=/home/argocd so SOPS finds it.
   argocd_repo_server_patch = {
     apiVersion = "apps/v1"
     kind       = "Deployment"
@@ -89,9 +87,6 @@ data "helm_template" "argocd" {
     value = "true"
   }
 
-  # Without this, argocd-cm bootstraps with the chart default url
-  # (argocd.example.com). The self-managed Application later corrects it, but
-  # any OIDC attempt before that first sync fails with "Invalid redirect URL".
   set {
     name  = "configs.cm.url"
     value = "https://argocd.${var.domain}"

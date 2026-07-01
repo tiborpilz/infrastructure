@@ -5,10 +5,6 @@ metadata:
   namespace: argocd
 spec:
   project: platform
-  # App-of-apps: this parent renders applications/rook (namespace + the
-  # rook-ceph-operator and rook-ceph-cluster child Applications). Apply this file
-  # once to bootstrap; everything below it then flows from git. Matches the
-  # git-path convention used by applications/tekton and applications/hubble.
   source:
     path: applications/storage/rook
     repoURL: https://github.com/tiborpilz/infrastructure

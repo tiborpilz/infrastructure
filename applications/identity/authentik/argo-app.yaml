@@ -34,27 +34,18 @@ spec:
                 secretKeyRef:
                   name: authentik-db-app
                   key: password
-            # Per-app OIDC client secrets: each app's <app>-oidc Secret (a
-            # SopsSecret reflected into this namespace) is surfaced as
-            # <APP>_OIDC_CLIENT_SECRET for the blueprint's !Env lookup. Add one
-            # entry per new OIDC app.
             - name: FORGEJO_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: forgejo-oidc
                   key: secret
                   optional: true
-            # Reflected from applications/hubble (oauth2-proxy-secrets in
-            # hubble-auth) into this namespace; surfaced as the blueprint
-            # `!Env HUBBLE_OIDC_CLIENT_SECRET` lookup in
-            # applications/hubble/blueprints/oidc.yaml.
             - name: HUBBLE_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: oauth2-proxy-secrets
                   key: client-secret
                   optional: true
-            # Reflected from applications/headlamp.
             - name: HEADLAMP_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:

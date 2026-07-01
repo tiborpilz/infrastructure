@@ -1,8 +1,7 @@
 module "bootstrap" {
   source = "./bootstrap"
 
-  admin_email = var.admin_email
-  # helm template needs a concrete version; Talos picks its own when null.
+  admin_email          = var.admin_email
   kubernetes_version   = coalesce(var.kubernetes_version, "1.30.0")
   hcloud_token         = var.hcloud_token
   domain               = var.domain
@@ -23,17 +22,12 @@ locals {
     "https://${local.first_control_plane_node.public_ipv4}:6443",
   )
 
-  # Cluster-wide config patch.
   base_patch = yamlencode({
     machine = {
       sysctls = {
         "user.max_user_namespaces" = "63359"
       }
       network = {
-        # KubeSpan builds a WireGuard mesh so nodes on different networks (e.g.
-        # NAT'd Proxmox VMs) reach each other and the control plane across NAT.
-        # advertiseKubernetesNetworks=false because Cilium owns pod routing;
-        # KubeSpan only needs to mesh node-to-node traffic, not the pod CIDRs.
         kubespan = {
           enabled                     = true
           advertiseKubernetesNetworks = false
@@ -43,12 +37,12 @@ locals {
     cluster = {
       allowSchedulingOnControlPlanes = var.allow_scheduling_on_control_planes
       network = {
-        cni            = { name = "none" } # We're gonna use Cilium
+        cni            = { name = "none" }
         podSubnets     = [var.pod_cidr]
         serviceSubnets = [var.service_cidr]
         dnsDomain      = var.dns_domain
       }
-      proxy = { disabled = true } # Cilium is going to replace kube-proxy.
+      proxy = { disabled = true }
       externalCloudProvider = {
         enabled = true
       }
@@ -58,11 +52,8 @@ locals {
     }
   })
 
-  # Network subnet (CIDR) the Proxmox workers live on, derived from the gateway.
-  # Used to pin the kubelet node IP since no CCM manages these nodes.
   proxmox_subnet = var.proxmox_network_gateway != null ? "${cidrhost("${var.proxmox_network_gateway}/${var.proxmox_network_cidr}", 0)}/${var.proxmox_network_cidr}" : null
 
-  # Only control-plane configs get this; workers ignore inlineManifests.
   bootstrap_patch = yamlencode({
     cluster = {
       inlineManifests = module.bootstrap.inline_manifests
@@ -72,7 +63,6 @@ locals {
   bootstrap_manifests_hash = md5(jsonencode(module.bootstrap.inline_manifests))
 }
 
-# Wait for Talos maintenance API (TCP 50000) on each control-plane to be up.
 resource "terraform_data" "wait_for_maintenance" {
   for_each = local.control_plane_nodes
 
@@ -106,7 +96,7 @@ data "talos_machine_configuration" "control_plane" {
       machine = {
         install = { disk = each.value.install_disk }
         nodeLabels = {
-          "storage.longhorn.io/eligible" = "true" # Enables Longhorn to run.
+          "storage.longhorn.io/eligible" = "true"
         }
       }
     }),
@@ -144,7 +134,6 @@ resource "terraform_data" "wait_for_maintenance_worker" {
   }
 }
 
-# Worker nodes that are with the cluster from the start, hence they are eligible for longhorn.
 data "talos_machine_configuration" "worker" {
   for_each = local.worker_nodes
 
@@ -168,7 +157,6 @@ data "talos_machine_configuration" "worker" {
   ]
 }
 
-# Generic worker MachineConfig with no per-node specifics, used for cluster autoscaler.
 data "talos_machine_configuration" "worker_template" {
   cluster_name       = var.cluster_name
   cluster_endpoint   = local.effective_endpoint
@@ -187,10 +175,6 @@ data "talos_machine_configuration" "worker_template" {
   ]
 }
 
-# Per-node worker MachineConfig for the Proxmox VMs. Unlike the hcloud workers
-# there is no talos_machine_configuration_apply here: these nodes are NAT'd, so
-# the proxmox/server module injects this config as nocloud user-data and the
-# node self-applies on first boot, then meshes in over KubeSpan.
 data "talos_machine_configuration" "proxmox_worker" {
   for_each = var.proxmox_workers
 
@@ -205,8 +189,6 @@ data "talos_machine_configuration" "proxmox_worker" {
     local.base_patch,
     yamlencode({
       machine = {
-        # Factory installer for the schematic, so the installed system carries
-        # its extensions (qemu-guest-agent); the bare installer would drop them.
         install = {
           disk  = each.value.install_disk
           image = "factory.talos.dev/installer/${var.proxmox_talos_schematic_id}:v${var.talos_version}"
@@ -224,28 +206,18 @@ data "talos_machine_configuration" "proxmox_worker" {
           }]
           nameservers = var.proxmox_nameservers
         }
-        # No CCM manages these nodes (externalCloudProvider is disabled below),
-        # so pin the kubelet node IP to the Proxmox subnet instead of relying on
-        # a cloud provider to set node addresses.
         kubelet = {
-          nodeIP = { validSubnets = [local.proxmox_subnet] }
-          # Non-hcloud providerID makes the CCM's lookup error rather than return
-          # "not found", so its lifecycle controller stops deleting these nodes.
-          extraArgs = { "provider-id" = "proxmox://${each.key}" }
+          nodeIP    = { validSubnets = [local.proxmox_subnet] }
+          extraArgs = { "provider-id" = "proxmox://${each.key}" } # non-hcloud provider-id makes the hcloud CCM error rather than delete these nodes
         }
         nodeLabels = {
           "node.tibor.sh/tier" = "proxmox"
         }
       }
-      # Not Hetzner servers, so the hcloud CCM can't init them (taint never
-      # clears). Disable it here (overrides base_patch) so they register Ready.
       cluster = {
         externalCloudProvider = { enabled = false }
       }
     }),
-    # Talos emits a HostnameConfig document (auto: stable) that conflicts with
-    # the static machine.network.hostname above. Drop it so the per-node
-    # hostname is the single source of truth.
     yamlencode({
       apiVersion = "v1alpha1"
       kind       = "HostnameConfig"
@@ -272,19 +244,14 @@ resource "talos_machine_bootstrap" "this" {
   client_configuration = talos_machine_secrets.this.client_configuration
   node                 = local.first_control_plane_node.public_ipv4
   endpoint             = local.first_control_plane_node.public_ipv4
-
-  # depends_on = [talos_machine_configuration_apply.control_plane]
 }
 
 resource "talos_cluster_kubeconfig" "this" {
   client_configuration = talos_machine_secrets.this.client_configuration
   node                 = local.first_control_plane_node.public_ipv4
   endpoint             = local.first_control_plane_node.public_ipv4
-
-  # depends_on = [talos_machine_bootstrap.this]
 }
 
-# talosctl client configuration manual intervention
 data "talos_client_configuration" "this" {
   cluster_name         = var.cluster_name
   client_configuration = talos_machine_secrets.this.client_configuration
@@ -292,7 +259,6 @@ data "talos_client_configuration" "this" {
   nodes                = [for n in local.control_plane_nodes : n.public_ipv4]
 }
 
-# kubeconfig for manual intervention
 resource "local_sensitive_file" "kubeconfig" {
   count = var.kubeconfig_path != null ? 1 : 0
 
@@ -317,8 +283,6 @@ resource "local_file" "bootstrap_manifests" {
   file_permission = "0644"
 }
 
-# Need to actually wait ourselves for the nodes to be available cause Talos
-# wilkl return earlier.
 resource "terraform_data" "wait_for_cluster" {
   triggers_replace = {
     nodes = join(",", concat(
@@ -392,9 +356,6 @@ resource "terraform_data" "app_secrets" {
         --namespace=authentik \
         --from-literal=password="$VALKEY_PASSWORD" \
         --dry-run=client -o yaml | kubectl apply -f -
-      # Narrow Secret reflector replicates into argocd ns. Annotations are
-      # the reason this isn't a `kubectl create secret generic` (that subcommand
-      # accepts no --annotation flag).
       kubectl apply -f - <<EOF
       apiVersion: v1
       kind: Secret
@@ -416,11 +377,6 @@ resource "terraform_data" "app_secrets" {
   depends_on = [terraform_data.wait_for_cluster]
 }
 
-# cluster-autoscaler consumes these via envFromSecret + envFromConfigMap. The
-# IDs ride in a ConfigMap (cluster topology, not secret); the token and the
-# Talos worker MachineConfig ride in a Secret (sensitive). All four come from
-# Terraform — no path to put them in git unencrypted, but the cluster owns the
-# truth.
 resource "terraform_data" "cluster_autoscaler_bootstrap" {
   triggers_replace = [
     sha256(var.hcloud_token),

@@ -4,16 +4,9 @@ metadata:
   name: rook-ceph-csi-drivers
   namespace: argocd
   annotations:
-    # After the operator: the csi.ceph.io CRDs and the ceph-csi-operator
-    # controller-manager (both from the rook-ceph chart) must exist first.
     argocd.argoproj.io/sync-wave: "1"
 spec:
   project: platform
-  # Rook v1.20 hands CSI driver deployment to the ceph-csi-operator (installed by
-  # the rook-ceph chart). But neither Rook nor that chart creates the csi.ceph.io
-  # Driver/OperatorConfig CRs that actually spawn the csi-rbdplugin/csi-cephfsplugin
-  # pods, so the ceph-block and ceph-filesystem StorageClasses have no provisioner.
-  # This chart supplies the missing Driver CRs, their RBAC, and the OperatorConfig.
   source:
     repoURL: https://ceph.github.io/ceph-csi-operator
     chart: ceph-csi-drivers
@@ -21,14 +14,8 @@ spec:
     helm:
       releaseName: rook-ceph-csi-drivers
       valuesObject:
-        # Rook creates CephConnection + ClientProfile per cluster at runtime. This
-        # chart must not also create them, so empty both lists.
         cephConnections: []
         clientProfiles: []
-        # The ceph-csi-operator watches for an OperatorConfig named
-        # ceph-csi-operator-config in its own namespace. Point its image set at the
-        # ConfigMap the rook-ceph chart already renders so driver images track the
-        # chart's pinned versions instead of the operator's compiled-in defaults.
         operatorConfig:
           create: true
           name: ceph-csi-operator-config
@@ -36,10 +23,6 @@ spec:
           driverSpecDefaults:
             imageSet:
               name: rook-csi-operator-image-set-configmap
-        # Driver names carry the operator-namespace prefix so they match the
-        # StorageClass provisioners from rook-ceph-cluster.yaml
-        # (rook-ceph.rbd.csi.ceph.com and rook-ceph.cephfs.csi.ceph.com). Only RBD
-        # and CephFS are in use; the object store uses Rook's own bucket provisioner.
         drivers:
           rbd:
             name: rook-ceph.rbd.csi.ceph.com
@@ -47,7 +30,7 @@ spec:
           cephfs:
             name: rook-ceph.cephfs.csi.ceph.com
             enabled: true
-            fsGroupPolicy: File # else non-root pods can't write CephFS
+            fsGroupPolicy: File
           nvmeof:
             enabled: false
           nfs:

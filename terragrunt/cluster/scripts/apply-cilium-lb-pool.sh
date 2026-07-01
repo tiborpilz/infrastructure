@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# Wait for the CiliumLoadBalancerIPPool CRD to be registered, then apply a
-# single-IP pool for the ingress floating IP.
-# Prerequisites: kubectl configured via KUBECONFIG env var.
-# Usage: apply-cilium-lb-pool.sh <floating-ip>
 
 set -euo pipefail
 

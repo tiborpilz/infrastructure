@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Wait for Kubernetes cluster to be healthy and all expected nodes to register.
-# Prerequisites: kubectl configured via KUBECONFIG env var.
-# Usage: wait-for-cluster.sh <node1> [node2 ...]
 
 set -euo pipefail
 
@@ -15,7 +12,6 @@ TIMEOUT=300
 INTERVAL=5
 ATTEMPTS=$((TIMEOUT / INTERVAL))
 
-# Wait for apiserver to be healthy
 for i in $(seq 1 "$ATTEMPTS"); do
   if kubectl get --raw /healthz >/dev/null 2>&1; then
     echo "apiserver /healthz OK"
@@ -30,7 +26,6 @@ kubectl get --raw /healthz >/dev/null || {
   exit 1
 }
 
-# Wait for all nodes to register
 for i in $(seq 1 "$ATTEMPTS"); do
   missing=""
   for node in "${EXPECTED_NODES[@]}"; do

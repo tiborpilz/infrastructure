@@ -107,24 +107,14 @@ variable "argocd_age_key" {
   sensitive   = true
 }
 
-# --- Proxmox workers -------------------------------------------------------
-# Optional. When proxmox_workers is non-empty, the proxmox/server module
-# provisions Talos worker VMs on the Proxmox host and they self-join hcloud-poc
-# over KubeSpan. Endpoint + API token are passed via the PROXMOX_VE_ENDPOINT /
-# PROXMOX_VE_API_TOKEN env vars (see terragrunt.hcl).
-
 variable "proxmox_workers" {
   description = "Proxmox-hosted worker VMs keyed by node name (the name becomes the Kubernetes node name)."
   type = map(object({
-    vm_id = number
-    ip    = string
-    cores = optional(number, 4)
-    # These are the Rook-Ceph OSD nodes, so default to 16 GiB: a full Ceph stack
-    # (mon+mgr+osd+mds+rgw) tops out around 4.8 GiB of limits on one node.
-    memory    = optional(number, 16384)
-    disk_size = optional(number, 60)
-    # Raw block device for the Ceph OSD, attached as virtio1 (/dev/vdb). Empty
-    # disk; Rook wipes and consumes it.
+    vm_id          = number
+    ip             = string
+    cores          = optional(number, 4)
+    memory         = optional(number, 16384)
+    disk_size      = optional(number, 60)
     data_disk_size = optional(number, 100)
     install_disk   = optional(string, "/dev/vda")
   }))

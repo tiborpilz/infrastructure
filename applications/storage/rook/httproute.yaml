@@ -15,8 +15,6 @@ spec:
         - path:
             type: PathPrefix
             value: /
-      # Straight to the mgr dashboard; the dashboard handles SAML SSO itself.
-      # Port 7000 because the cluster sets dashboard.ssl: false (gateway does TLS).
       backendRefs:
         - name: rook-ceph-mgr-dashboard
           port: 7000

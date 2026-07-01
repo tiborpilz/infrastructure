@@ -23,10 +23,6 @@ esac
 
 VERSION_NO_V="${TALOS_VERSION#v}"
 
-# Resolve schematic ID via the factory API if not pinned. The schematic is a
-# canonical hash of the extension list — same extensions always produce the
-# same ID, different extensions produce different IDs. That's exactly what we
-# need for snapshot idempotency.
 if [[ -z "$SCHEMATIC_ID" ]]; then
   echo "Resolving schematic ID for extensions: $TALOS_EXTENSIONS"
   SCHEMATIC_BODY="customization:
@@ -42,15 +38,9 @@ $(for ext in $TALOS_EXTENSIONS; do echo "      - $ext"; done)"
   echo "  -> $SCHEMATIC_ID"
 fi
 
-# Hetzner label values: max 63 chars, regex [A-Za-z0-9._-] with alphanumeric
-# start/end. Full schematic IDs are 64-char SHA256 hex — one char over the
-# cap. 16 hex chars = 64 bits of uniqueness, plenty for distinguishing image
-# snapshots. The version label (e.g. "1.13.0") fits the regex because dots
-# are allowed mid-value and the value starts/ends with a digit.
 SCHEMATIC_SHORT="${SCHEMATIC_ID:0:16}"
 LABEL_SELECTOR="os=talos,version=${VERSION_NO_V},arch=${ARCH},schematic=${SCHEMATIC_SHORT}"
 
-# Idempotency: skip if a matching snapshot already exists.
 EXISTING="$(hcloud image list --type snapshot --selector "$LABEL_SELECTOR" -o noheader -o columns=id || true)"
 
 if [[ -n "$EXISTING" ]]; then
