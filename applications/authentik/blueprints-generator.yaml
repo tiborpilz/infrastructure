@@ -1,8 +1,0 @@
-apiVersion: tibor.sh/v1
-kind: BlueprintsAggregator
-metadata:
-  name: blueprints-aggregator
-  annotations:
-    config.kubernetes.io/function: |
-      exec:
-        path: ../_generators/blueprints-aggregator.sh
