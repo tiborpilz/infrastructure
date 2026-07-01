@@ -1,0 +1,98 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: harbor
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://helm.goharbor.io
+    chart: harbor
+    targetRevision: 1.19.1
+    helm:
+      releaseName: harbor
+      valuesObject:
+        externalURL: https://harbor.tibor.sh
+
+        expose:
+          type: clusterIP
+          tls:
+            enabled: false
+          clusterIP:
+            name: harbor
+            ports:
+              httpPort: 80
+
+        ipFamily:
+          ipv6:
+            enabled: false
+
+        # RWO volumes deadlock on RollingUpdate (multi-attach).
+        updateStrategy:
+          type: Recreate
+
+        persistence:
+          enabled: true
+          resourcePolicy: keep
+          persistentVolumeClaim:
+            registry:
+              storageClass: hcloud-volumes
+              size: 30Gi
+            jobservice:
+              jobLog:
+                storageClass: hcloud-volumes
+                size: 10Gi
+            redis:
+              storageClass: hcloud-volumes
+              size: 10Gi
+
+        # All component secrets pinned via existingSecret so ArgoCD renders
+        # are deterministic; the chart would otherwise regenerate them on
+        # every sync.
+        existingSecretAdminPassword: harbor-admin
+        existingSecretSecretKey: harbor-encryption
+
+        core:
+          existingSecret: harbor-core
+          existingXsrfSecret: harbor-core
+
+        jobservice:
+          existingSecret: harbor-jobservice
+
+        registry:
+          existingSecret: harbor-registry
+          credentials:
+            existingSecret: harbor-registry
+
+        database:
+          type: external
+          external:
+            host: harbor-db-rw
+            port: "5432"
+            username: harbor
+            coreDatabase: registry
+            existingSecret: harbor-db-app
+
+        redis:
+          type: internal
+
+        trivy:
+          enabled: false
+
+        metrics:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: harbor
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /status/terminatingReplicas
