@@ -36,12 +36,12 @@ spec:
           resourcePolicy: keep
           persistentVolumeClaim:
             registry:
-              storageClass: hcloud-volumes
+              storageClass: ceph-block
               size: 30Gi
             jobservice:
               jobLog:
-                storageClass: hcloud-volumes
-                size: 10Gi
+                storageClass: ceph-block
+                size: 5Gi
 
         # All component secrets pinned via existingSecret so ArgoCD renders
         # are deterministic; the chart would otherwise regenerate them on
