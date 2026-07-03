@@ -1,0 +1,22 @@
+# Alloy tails pod logs via the K8s API; the chart's role omits pods/log.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: alloy-pods-log
+rules:
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: alloy-pods-log
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: alloy-pods-log
+subjects:
+  - kind: ServiceAccount
+    name: alloy
+    namespace: observability
