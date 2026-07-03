@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: signoz-app
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://charts.signoz.io
+    chart: signoz
+    targetRevision: 0.131.0
+    helm:
+      releaseName: signoz
+      valuesObject:
+        # Single default storage class for every PVC the chart provisions
+        # (ClickHouse + ZooKeeper). ceph-block matches the newest services.
+        global:
+          storageClass: ceph-block
+
+        # Gateway API (httproute.yaml) fronts the UI via oauth2-proxy, so the
+        # chart's own ingress stays off.
+        signoz:
+          ingress:
+            enabled: false
+          service:
+            type: ClusterIP
+            port: 8080
+
+        # Homelab single-node telemetry store. Bump these once real ingest
+        # volume is known; ClickHouse is the space hog.
+        clickhouse:
+          installCustomStorageClass: false
+          persistence:
+            size: 20Gi
+          layout:
+            replicasCount: 1
+            shardsCount: 1
+          zookeeper:
+            replicaCount: 1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: signoz
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /status/terminatingReplicas
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /status/terminatingReplicas
