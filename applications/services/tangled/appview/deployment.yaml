@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appview
+  namespace: tangled
+  labels:
+    app.kubernetes.io/name: tangled-appview
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tangled-appview
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tangled-appview
+    spec:
+      imagePullSecrets:
+        - name: atcr-pull
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: appview
+          image: atcr.io/tangled.org/appview:v1.15.0-alpha
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: TANGLED_LISTEN_ADDR
+              value: 0.0.0.0:3000
+            - name: TANGLED_DB_PATH
+              value: /data/appview.db
+            - name: TANGLED_APPVIEW_HOST
+              value: https://tangled.tibor.sh
+            # upstream's env tag for this option is literally `APPVIEW_Name`;
+            # set both spellings so it works regardless of version
+            - name: TANGLED_APPVIEW_NAME
+              value: Tangled
+            - name: TANGLED_APPVIEW_Name
+              value: Tangled
+            - name: TANGLED_DEV
+              value: "false"
+            - name: TANGLED_REDIS_ADDR
+              value: appview-redis:6379
+            - name: TANGLED_JETSTREAM_ENDPOINT
+              value: wss://jetstream1.us-east.bsky.network/subscribe
+            - name: TANGLED_PLC_URL
+              value: https://plc.directory
+            # only used for managed-account signups (needs
+            # TANGLED_PDS_ADMIN_SECRET); login via OAuth works without it
+            - name: TANGLED_PDS_HOST
+              value: https://pds.tibor.sh
+          envFrom:
+            - secretRef:
+                name: appview-secrets
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          startupProbe:
+            tcpSocket:
+              port: 3000
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            tcpSocket:
+              port: 3000
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: appview-data
