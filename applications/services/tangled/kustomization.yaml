@@ -5,3 +5,4 @@ resources:
   - namespace.yaml
   - knot/argo-app.yaml
   - spindle/argo-app.yaml
+  - appview/argo-app.yaml
