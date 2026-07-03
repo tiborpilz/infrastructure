@@ -1,0 +1,53 @@
+version: 1
+metadata:
+  name: grafana-oidc
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+  # Groups that Grafana maps to roles via role_attribute_path. Membership is
+  # managed in Authentik; add users to grafana-admins for full admin.
+  - model: authentik_core.group
+    state: present
+    identifiers:
+      name: grafana-admins
+  - model: authentik_core.group
+    state: present
+    identifiers:
+      name: grafana-editors
+  # Emits a `groups` claim so Grafana can do role mapping (mirrors the
+  # argocd-groups mapping).
+  - model: authentik_providers_oauth2.scopemapping
+    state: present
+    identifiers:
+      name: grafana-groups
+    attrs:
+      scope_name: groups
+      expression: "return {\"groups\": [group.name for group in user.ak_groups.all()]}"
+  - model: authentik_providers_oauth2.oauth2provider
+    state: present
+    identifiers:
+      name: grafana
+    attrs:
+      client_id: grafana
+      client_secret: !Env GRAFANA_OIDC_CLIENT_SECRET
+      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]
+      redirect_uris:
+        - matching_mode: strict
+          url: https://grafana.tibor.sh/login/generic_oauth
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'openid'"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'profile'"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'email'"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [name, grafana-groups]]
+      sub_mode: hashed_user_id
+  - model: authentik_core.application
+    state: present
+    identifiers:
+      slug: grafana
+    attrs:
+      name: Grafana
+      provider: !Find [authentik_providers_oauth2.oauth2provider, [name, grafana]]
+      meta_launch_url: https://grafana.tibor.sh

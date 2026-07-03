@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jaeger
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://jaegertracing.github.io/helm-charts
+    chart: jaeger
+    # All-in-one Jaeger backed by Badger. Bump once verified against the
+    # cluster.
+    targetRevision: 3.3.1
+    helm:
+      releaseName: jaeger
+      valuesObject:
+        # Deterministic service names: jaeger-query (UI/API :16686) and
+        # jaeger-collector (OTLP :4317/:4318) — referenced by the OTel
+        # Collector, the Grafana datasource and the oauth2-proxy upstream.
+        fullnameOverride: jaeger
+
+        # No external datastore — Badger is embedded in the all-in-one pod.
+        provisionDataStore:
+          cassandra: false
+          elasticsearch: false
+
+        agent:
+          enabled: false
+        collector:
+          enabled: false
+        query:
+          enabled: false
+
+        allInOne:
+          enabled: true
+          # Turn on the OTLP receivers (4317 gRPC / 4318 HTTP) so the OTel
+          # Collector can ship spans straight in.
+          extraEnv:
+            - name: COLLECTOR_OTLP_ENABLED
+              value: "true"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+
+        storage:
+          type: badger
+          badger:
+            ephemeral: false
+            persistence:
+              enabled: true
+              storageClass: ceph-block
+              size: 10Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

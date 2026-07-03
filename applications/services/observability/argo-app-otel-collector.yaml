@@ -1,0 +1,107 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-collector
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+    chart: opentelemetry-collector
+    # Bump once verified against the cluster.
+    targetRevision: 0.108.0
+    helm:
+      releaseName: otel-collector
+      valuesObject:
+        # contrib image — needed for the prometheusremotewrite exporter and
+        # the k8sattributes processor.
+        image:
+          repository: otel/opentelemetry-collector-contrib
+
+        # Single central gateway. Apps send OTLP here; it fans out to the
+        # three backends. This is the SigNoz "ingest everything at one OTLP
+        # endpoint" experience.
+        mode: deployment
+        replicaCount: 1
+
+        # Enriches every span/metric/log with pod, namespace, node and
+        # workload metadata. The preset also creates the ClusterRole the
+        # processor needs and injects it into every pipeline.
+        presets:
+          kubernetesAttributes:
+            enabled: true
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+
+        ports:
+          otlp:
+            enabled: true
+          otlp-http:
+            enabled: true
+          jaeger-compact:
+            enabled: false
+          jaeger-thrift:
+            enabled: false
+          jaeger-grpc:
+            enabled: false
+          zipkin:
+            enabled: false
+
+        config:
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+                http:
+                  endpoint: 0.0.0.0:4318
+          processors:
+            memory_limiter:
+              check_interval: 5s
+              limit_percentage: 80
+              spike_limit_percentage: 25
+            batch: {}
+          exporters:
+            # Traces -> Jaeger (OTLP gRPC).
+            otlp/jaeger:
+              endpoint: jaeger-collector.observability.svc.cluster.local:4317
+              tls:
+                insecure: true
+            # Metrics -> Prometheus remote-write receiver.
+            prometheusremotewrite:
+              endpoint: http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/api/v1/write
+              resource_to_telemetry_conversion:
+                enabled: true
+            # Logs -> Loki's native OTLP endpoint (/otlp/v1/logs).
+            otlphttp/loki:
+              endpoint: http://loki-gateway.observability.svc.cluster.local/otlp
+          service:
+            pipelines:
+              # k8sattributes is injected into each pipeline by the preset.
+              traces:
+                receivers: [otlp]
+                processors: [memory_limiter, batch]
+                exporters: [otlp/jaeger]
+              metrics:
+                receivers: [otlp]
+                processors: [memory_limiter, batch]
+                exporters: [prometheusremotewrite]
+              logs:
+                receivers: [otlp]
+                processors: [memory_limiter, batch]
+                exporters: [otlphttp/loki]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

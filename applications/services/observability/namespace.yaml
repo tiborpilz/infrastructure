@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    managed-by: argocd
+    # kube-prometheus-stack, Jaeger and the OTel Collector all run with
+    # upstream-default securityContexts that satisfy the `restricted` PSS,
+    # so no relaxed pod-security label is needed here.
