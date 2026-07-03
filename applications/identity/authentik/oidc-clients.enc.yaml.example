@@ -1,0 +1,18 @@
+# OIDC client secrets exposed to the Authentik server/worker as env vars
+# (consumed by !Env in the aggregated blueprints). One key per client,
+# named <APP>_OIDC_CLIENT_SECRET.
+#
+# NOTE: Harbor's value must equal the `secret` in the harbor-oidc template of
+# applications/services/harbor/secrets.enc.yaml — the two are kept in sync by
+# hand (see docs/secrets.md).
+apiVersion: isindir.github.com/v1alpha3
+kind: SopsSecret
+metadata:
+  name: authentik-oidc-clients
+  namespace: authentik
+spec:
+  secretTemplates:
+    - name: authentik-oidc-clients
+      stringData:
+        # openssl rand -base64 48
+        HARBOR_OIDC_CLIENT_SECRET: CHANGEME
