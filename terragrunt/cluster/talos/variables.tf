@@ -146,6 +146,11 @@ variable "domain" {
   type        = string
 }
 
+variable "gitops_repo_url" {
+  description = "Git repository URL the ArgoCD root Application (app-of-apps) syncs from."
+  type        = string
+}
+
 variable "location" {
   description = "Hetzner Cloud location. Used for the LB location annotation on the Gateway."
   type        = string

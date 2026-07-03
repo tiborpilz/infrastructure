@@ -1,0 +1,29 @@
+# Identity of this platform instance.
+#
+# This file is the single source of truth for every value that makes this
+# repository *this* instance rather than a generic platform:
+#
+#   - terragrunt reads it directly (terragrunt/env.hcl), so the Terraform
+#     layer (gateway, certs, DNS, ArgoCD, root Application) follows it.
+#   - everything under applications/ carries these values as literals;
+#     scripts/rebrand rewrites them when this file changes.
+#
+# Do NOT hand-edit values here: write your new values to a separate file and
+# run `scripts/rebrand <new-config.yaml>` so the rest of the tree is rewritten
+# in the same commit. CI enforces that this file and the tree agree.
+#
+# Values must stay flat (key: value) — scripts/rebrand parses them with awk.
+
+# Apex domain. Every service is exposed as <name>.<domain> through the shared
+# gateway, which serves a wildcard certificate for *.<domain>.
+domain: tibor.sh
+
+# GitOps source of truth: the ArgoCD app-of-apps points every Application here.
+repo_url: https://github.com/tiborpilz/infrastructure
+
+# Let's Encrypt account email for the cert-manager ClusterIssuer.
+acme_email: tibor@pilz.berlin
+
+# Cluster/environment name: Hetzner resource prefix, kubeconfig filename,
+# cluster-autoscaler autodiscovery name.
+cluster_name: hcloud-poc

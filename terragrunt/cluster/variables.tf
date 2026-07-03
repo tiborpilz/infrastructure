@@ -72,6 +72,11 @@ variable "domain" {
   type        = string
 }
 
+variable "gitops_repo_url" {
+  description = "Git repository URL the ArgoCD root Application (app-of-apps) syncs from."
+  type        = string
+}
+
 variable "cloudflare_api_token" {
   description = "Cloudflare API token with Zone:Edit on the configured zone. Consumed by the cloudflare provider via CLOUDFLARE_API_TOKEN."
   type        = string

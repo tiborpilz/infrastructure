@@ -70,7 +70,11 @@ variable "external_dns_chart_version" {
 variable "admin_email" {
   description = "Admin email for Let's Encrypt account registration."
   type        = string
-  default     = "tbrpilz@googlemail.com"
+}
+
+variable "gitops_repo_url" {
+  description = "Git repository URL the ArgoCD root Application (app-of-apps) syncs from."
+  type        = string
 }
 
 variable "gateway_api_version" {

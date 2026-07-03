@@ -45,7 +45,7 @@ locals {
               matchExpressions = [
                 { key = "instance.hetzner.cloud/is-root-server", operator = "NotIn", values = ["true"] },
                 { key = "instance.hetzner.cloud/provided-by", operator = "NotIn", values = ["robot"] },
-                { key = "node.tibor.sh/tier", operator = "NotIn", values = ["proxmox"] },
+                { key = "node.${var.domain}/tier", operator = "NotIn", values = ["proxmox"] },
               ]
             }]
           }
