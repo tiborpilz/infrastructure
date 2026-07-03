@@ -52,6 +52,7 @@ module "talos" {
   hcloud_token             = var.hcloud_token
   network_name             = module.hcloud_network.network_name
   domain                   = var.domain
+  gitops_repo_url          = var.gitops_repo_url
   location                 = var.location
   cloudflare_api_token     = var.cloudflare_api_token
   admin_email              = var.admin_email

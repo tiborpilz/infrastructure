@@ -5,6 +5,7 @@ module "bootstrap" {
   kubernetes_version   = coalesce(var.kubernetes_version, "1.30.0")
   hcloud_token         = var.hcloud_token
   domain               = var.domain
+  gitops_repo_url      = var.gitops_repo_url
   location             = var.location
   cloudflare_api_token = var.cloudflare_api_token
   network_name         = var.network_name
@@ -211,7 +212,7 @@ data "talos_machine_configuration" "proxmox_worker" {
           extraArgs = { "provider-id" = "proxmox://${each.key}" } # non-hcloud provider-id makes the hcloud CCM error rather than delete these nodes
         }
         nodeLabels = {
-          "node.tibor.sh/tier" = "proxmox"
+          "node.${var.domain}/tier" = "proxmox"
         }
       }
       cluster = {

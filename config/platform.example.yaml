@@ -1,0 +1,13 @@
+# Example identity config for a new instance of this platform.
+#
+# Copy this file, fill in your values, then run:
+#
+#   scripts/rebrand my-platform.yaml
+#
+# See config/platform.yaml for what each key means, and docs/rebranding.md
+# for the full adoption walkthrough.
+
+domain: platform.example.org
+repo_url: https://github.com/acme/infrastructure
+acme_email: platform@example.org
+cluster_name: acme-prod

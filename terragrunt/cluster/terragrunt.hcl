@@ -32,6 +32,7 @@ inputs = {
   firewall_admin_ips   = include.env.locals.admin_ip_cidrs
   talos_version        = include.env.locals.talos_version
   domain               = include.env.locals.domain
+  gitops_repo_url      = include.env.locals.repo_url
   admin_email          = include.env.locals.acme_email
   cloudflare_api_token = include.env.locals.secrets.cloudflare_api_token
   hcloud_token         = include.env.locals.secrets.hcloud_token
