@@ -1,0 +1,51 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: shellcheck scripts/rebrand scripts/init-keys
+
+  rebrand-round-trip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: rebrand to a throwaway identity
+        run: |
+          cat > /tmp/ci-identity.yaml <<'EOF'
+          domain: ci-test.example.net
+          repo_url: https://github.com/ci-test/infrastructure
+          acme_email: ci@ci-test.example.net
+          cluster_name: ci-test
+          EOF
+          # the script itself fails if any old identity value survives
+          # outside the allowlist
+          ./scripts/rebrand /tmp/ci-identity.yaml
+      - name: config file follows the tree
+        run: |
+          grep -q '^domain: ci-test.example.net$' config/platform.yaml
+          grep -q '^cluster_name: ci-test$' config/platform.yaml
+      - name: second run is a no-op
+        run: |
+          before="$(git diff | sha256sum)"
+          ./scripts/rebrand /tmp/ci-identity.yaml | grep -q 'nothing to do'
+          [ "$before" = "$(git diff | sha256sum)" ]
+      - name: dry-run changes nothing
+        run: |
+          git checkout -- .
+          ./scripts/rebrand /tmp/ci-identity.yaml --dry-run
+          git diff --quiet
+
+  tofu-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+      - run: tofu fmt -check -recursive -diff terragrunt/
