@@ -1,0 +1,17 @@
+# Passwords for the declaratively managed Authentik users.
+#
+# The secret template names (<user>-password) must match BOTH the volume
+# mounts in applications/identity/authentik/argo-app.yaml (worker.volumes /
+# volumeMounts) AND the !File references in
+# applications/identity/authentik/blueprints/users.yaml — change all three
+# together, one entry per managed user.
+apiVersion: isindir.github.com/v1alpha3
+kind: SopsSecret
+metadata:
+  name: authentik-user-passwords
+  namespace: authentik
+spec:
+  secretTemplates:
+    - name: admin-password
+      stringData:
+        password: CHANGEME

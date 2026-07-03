@@ -11,3 +11,5 @@
 .kube/
 .talos/
 .devenv
+.devenv.flake.nix
+.keys/

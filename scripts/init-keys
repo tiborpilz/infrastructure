@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+#
+# init-keys — set up sops encryption for a fresh instance of this platform.
+#
+# Usage:
+#   scripts/init-keys --recipient <age1...> [--recipient <age1...>] [--force]
+#
+# What it does:
+#   1. generates the in-cluster age key (.keys/platform.agekey, gitignored) —
+#      this key is mounted into the ArgoCD repo-server (ksops) and the
+#      sops-secrets-operator via the Terraform bootstrap
+#   2. writes .sops.yaml with that key plus your personal recipient(s)
+#   3. seeds every *.enc.yaml from its *.enc.yaml.example, injects the age
+#      private key into terragrunt/secrets.enc.yaml, and encrypts them
+#
+# Afterwards: fill in the CHANGEME values with `sops edit <file>` and back up
+# .keys/platform.agekey somewhere safe — it is intentionally not committed.
+#
+# --recipient takes an age PUBLIC key (age1...); generate a personal keypair
+# with `age-keygen -o my.agekey` first. At least one is required so a human
+# can still decrypt/edit secrets without the in-cluster key.
+#
+# This is for FRESH instances (typically right after scripts/rebrand). To
+# rotate keys on an existing instance, see docs/secrets.md instead.
+
+set -euo pipefail
+
+die() {
+  echo "error: $*" >&2
+  exit 1
+}
+
+usage() {
+  awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print } NR > 1 && !/^#/ { exit }' "$0"
+  exit "${1:-0}"
+}
+
+RECIPIENTS=()
+FORCE=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help) usage ;;
+    --force) FORCE=1 ;;
+    --recipient)
+      [ $# -ge 2 ] || die "--recipient needs a value"
+      [[ "$2" =~ ^age1[a-z0-9]+$ ]] || die "'$2' does not look like an age public key (age1...)"
+      RECIPIENTS+=("$2")
+      shift
+      ;;
+    *) die "unknown argument: $1" ;;
+  esac
+  shift
+done
+
+[ "${#RECIPIENTS[@]}" -ge 1 ] || usage 1
+
+command -v age-keygen >/dev/null || die "age-keygen not found (nix: pkgs.age — it is in the devenv shell)"
+command -v sops >/dev/null || die "sops not found (it is in the devenv shell)"
+
+cd "$(git rev-parse --show-toplevel)"
+
+KEY_FILE=".keys/platform.agekey"
+if [ -e "$KEY_FILE" ] && [ "$FORCE" -eq 0 ]; then
+  die "$KEY_FILE already exists — this looks like an initialized instance (use --force to redo)"
+fi
+
+mkdir -p .keys
+age-keygen -o "$KEY_FILE" 2>/dev/null
+chmod 600 "$KEY_FILE"
+PLATFORM_PUB="$(age-keygen -y "$KEY_FILE")"
+echo "generated in-cluster key: $PLATFORM_PUB ($KEY_FILE)"
+
+{
+  echo "keys:"
+  echo "  - &platform $PLATFORM_PUB"
+  i=1
+  for r in "${RECIPIENTS[@]}"; do
+    echo "  - &human${i} $r"
+    i=$((i + 1))
+  done
+  cat <<'EOF'
+creation_rules:
+  # Terragrunt-layer secrets: flat key/value file, every value encrypted.
+  - path_regex: terragrunt/secrets\.enc\.yaml$
+    key_groups:
+      - age:
+          - *platform
+EOF
+  i=1
+  for r in "${RECIPIENTS[@]}"; do
+    echo "          - *human${i}"
+    i=$((i + 1))
+  done
+  cat <<'EOF'
+  # Kubernetes secret manifests: keep apiVersion/kind/metadata/spec
+  # scaffolding plaintext so the SopsSecret operator and kubectl can parse
+  # the manifest; encrypt only the actual secret values.
+  - path_regex: \.enc\.yaml$
+    encrypted_regex: ^(data|stringData)$
+    key_groups:
+      - age:
+          - *platform
+EOF
+  i=1
+  for r in "${RECIPIENTS[@]}"; do
+    echo "          - *human${i}"
+    i=$((i + 1))
+  done
+} > .sops.yaml
+echo "wrote .sops.yaml"
+
+seeded=0
+skipped=0
+while IFS= read -r example; do
+  [ -n "$example" ] || continue
+  target="${example%.example}"
+  if [ -e "$target" ] && [ "$FORCE" -eq 0 ]; then
+    echo "  skip $target (exists — inherited from the upstream instance? rerun with --force to replace)"
+    skipped=$((skipped + 1))
+    continue
+  fi
+  if [ "$target" = "terragrunt/secrets.enc.yaml" ]; then
+    # Replace the argocd_age_key placeholder with the generated private key
+    # (block scalar, comments from the keyfile included).
+    awk -v keyfile="$KEY_FILE" '
+      /^argocd_age_key:/ {
+        print "argocd_age_key: |"
+        while ((getline line < keyfile) > 0) print "  " line
+        close(keyfile)
+        next
+      }
+      { print }
+    ' "$example" > "$target"
+  else
+    cp "$example" "$target"
+  fi
+  sops --encrypt --in-place "$target"
+  echo "  seeded $target"
+  seeded=$((seeded + 1))
+done <<< "$(git ls-files '*.enc.yaml.example')"
+
+cat <<EOF
+
+done: $seeded file(s) seeded, $skipped skipped.
+
+next steps:
+  1. back up $KEY_FILE (NOT committed; without it the cluster cannot decrypt)
+  2. keep your personal age private key safe — you need it for step 3
+  3. fill in the CHANGEME values:  sops edit <file>   (start with terragrunt/secrets.enc.yaml)
+  4. see docs/secrets.md for what each secret does
+EOF
