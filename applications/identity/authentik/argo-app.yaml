@@ -52,6 +52,18 @@ spec:
                   name: headlamp-oauth2-proxy-secrets
                   key: client-secret
                   optional: true
+            - name: GRAFANA_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secrets
+                  key: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+                  optional: true
+            - name: JAEGER_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jaeger-oauth2-proxy-secrets
+                  key: client-secret
+                  optional: true
 
         authentik:
           log_level: debug

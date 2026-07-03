@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jaeger
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://jaegertracing.github.io/helm-charts
+    chart: jaeger
+    targetRevision: 3.3.1
+    helm:
+      releaseName: jaeger
+      valuesObject:
+        fullnameOverride: jaeger
+        provisionDataStore:
+          cassandra: false
+          elasticsearch: false
+        agent:
+          enabled: false
+        collector:
+          enabled: false
+        query:
+          enabled: false
+        allInOne:
+          enabled: true
+          extraEnv:
+            - name: COLLECTOR_OTLP_ENABLED
+              value: "true"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+        storage:
+          type: badger
+          badger:
+            ephemeral: false
+            persistence:
+              enabled: true
+              storageClass: ceph-block
+              size: 10Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
