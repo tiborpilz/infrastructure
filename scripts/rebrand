@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+#
+# rebrand — re-target this repository to a new platform identity.
+#
+# Usage:
+#   scripts/rebrand <new-config.yaml> [--dry-run]
+#
+# Reads the current identity from config/platform.yaml, the desired identity
+# from <new-config.yaml> (same flat schema), and rewrites every literal
+# occurrence of the old values across the tracked tree — including
+# config/platform.yaml itself, so config and tree always change together.
+#
+# What it deliberately does NOT touch:
+#   - *.enc.yaml            sops MACs cover the whole file; run scripts/init-keys
+#                           on a fresh instance instead
+#   - usernames             admin users live in the Authentik blueprints and are
+#                           listed in the manual-review checklist at the end
+#
+# The script is idempotent: re-running with the same config is a no-op.
+
+set -euo pipefail
+
+CONFIG="config/platform.yaml"
+KEYS="domain repo_url acme_email cluster_name"
+
+# Substitute the most specific values first; the four value classes do not
+# overlap today, but repo_url before domain keeps that safe if they ever do
+# (e.g. a repo hosted under the platform domain).
+ORDERED_KEYS="repo_url cluster_name acme_email domain"
+
+# Files never rewritten by substitution.
+EXCLUDE_PATTERNS=(
+  '*.enc.yaml'
+)
+
+# Files where old values may legitimately remain after a rebrand.
+LEFTOVER_ALLOWLIST=(
+  '*.enc.yaml'
+  'applications/identity/authentik/blueprints/users.yaml'
+)
+
+usage() {
+  awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print } NR > 1 && !/^#/ { exit }' "$0"
+  exit "${1:-0}"
+}
+
+die() {
+  echo "error: $*" >&2
+  exit 1
+}
+
+# read_value <key> <file> — first "key: value" match, comments and quotes stripped.
+read_value() {
+  awk -v k="$1" '
+    $0 ~ "^" k ":" {
+      sub("^" k ":[[:space:]]*", "")
+      sub("[[:space:]]*(#.*)?$", "")
+      gsub(/^"|"$/, "")
+      print
+      exit
+    }
+  ' "$2"
+}
+
+validate() {
+  local key="$1" value="$2"
+  [ -n "$value" ] || die "missing or empty '$key' in new config"
+  case "$key" in
+    domain)
+      [[ "$value" =~ ^[a-z0-9][a-z0-9.-]*[a-z0-9]$ ]] || die "domain '$value' is not a bare DNS name"
+      ;;
+    repo_url)
+      [[ "$value" =~ ^https?:// ]] || die "repo_url '$value' must be an http(s) URL (ArgoCD source.repoURL)"
+      ;;
+    acme_email)
+      [[ "$value" == *@* ]] || die "acme_email '$value' is not an email address"
+      ;;
+    cluster_name)
+      [[ "$value" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "cluster_name '$value' must be a lowercase DNS-ish token"
+      ;;
+  esac
+}
+
+NEW_CONFIG=""
+DRY_RUN=0
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) usage ;;
+    --dry-run) DRY_RUN=1 ;;
+    -*) die "unknown flag: $arg" ;;
+    *) [ -z "$NEW_CONFIG" ] || usage 1; NEW_CONFIG="$arg" ;;
+  esac
+done
+[ -n "$NEW_CONFIG" ] || usage 1
+[ -f "$NEW_CONFIG" ] || die "no such file: $NEW_CONFIG"
+
+cd "$(git rev-parse --show-toplevel)"
+[ -f "$CONFIG" ] || die "$CONFIG not found"
+
+# Values are held in OLD_<key>/NEW_<key> scalars (macOS bash 3.2 has no
+# associative arrays); read them back with ${!var} indirection.
+any_change=0
+for key in $KEYS; do
+  old="$(read_value "$key" "$CONFIG")"
+  new="$(read_value "$key" "$NEW_CONFIG")"
+  [ -n "$old" ] || die "missing '$key' in $CONFIG"
+  validate "$key" "$new"
+  printf -v "OLD_$key" '%s' "$old"
+  printf -v "NEW_$key" '%s' "$new"
+  [ "$old" = "$new" ] || any_change=1
+done
+
+if [ "$any_change" -eq 0 ]; then
+  echo "config already matches $NEW_CONFIG; nothing to do"
+  exit 0
+fi
+
+# Substitution corpus: tracked text files minus exclusions.
+corpus() {
+  local pattern exclude_args=()
+  for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+    exclude_args+=(":(exclude)$pattern")
+  done
+  git ls-files -- . "${exclude_args[@]}"
+}
+
+echo "rebranding:"
+total=0
+for key in $ORDERED_KEYS; do
+  old_var="OLD_$key" new_var="NEW_$key"
+  old="${!old_var}" new="${!new_var}"
+  [ "$old" != "$new" ] || continue
+  files="$(corpus | xargs grep -I -F -l -- "$old" 2>/dev/null || true)"
+  count=0
+  if [ -n "$files" ]; then
+    count=$(echo "$files" | xargs grep -I -F -o -- "$old" | wc -l | tr -d ' ')
+    if [ "$DRY_RUN" -eq 0 ]; then
+      echo "$files" | OLD="$old" NEW="$new" xargs perl -pi -e 's/\Q$ENV{OLD}\E/$ENV{NEW}/g'
+    fi
+  fi
+  printf '  %-12s %s -> %s (%s occurrence(s))\n' "$key" "$old" "$new" "$count"
+  total=$((total + count))
+done
+
+if [ "$DRY_RUN" -eq 1 ]; then
+  echo "dry run: no files were changed ($total occurrence(s) would be rewritten)"
+  exit 0
+fi
+
+# Fail loudly if an old value survives anywhere it shouldn't.
+allowlisted() {
+  local file="$1" pattern
+  for pattern in "${LEFTOVER_ALLOWLIST[@]}"; do
+    # shellcheck disable=SC2254
+    case "$file" in
+      $pattern) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+leftovers=0
+for key in $ORDERED_KEYS; do
+  old_var="OLD_$key" new_var="NEW_$key"
+  old="${!old_var}"
+  [ "$old" != "${!new_var}" ] || continue
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    if ! allowlisted "$file"; then
+      echo "error: old $key '$old' still present in: $file" >&2
+      leftovers=1
+    fi
+  done <<< "$(git grep -I -F -l -- "$old" 2>/dev/null || true)"
+done
+[ "$leftovers" -eq 0 ] || die "unexpected leftovers found — fix them (or extend LEFTOVER_ALLOWLIST if legitimate)"
+
+cat <<'EOF'
+
+done. review these by hand — they carry identity the substitution cannot decide for you:
+
+  1. applications/identity/authentik/blueprints/users.yaml
+     admin users (usernames, emails, groups). Their password secrets live in
+     applications/identity/authentik/users.enc.yaml and are mounted by name in
+     applications/identity/authentik/argo-app.yaml — change all three together.
+  2. applications/services/woodpecker/argo-app.yaml
+     WOODPECKER_ADMIN lists admin usernames.
+  3. applications/services/pds/ and applications/services/tangled/
+     AT Protocol identity (PDS handles, did:web) is derived from the domain;
+     a domain change here means a NEW atproto identity, not a rename.
+  4. terragrunt/env.hcl
+     site facts (Hetzner location, Proxmox endpoint/nodes, CIDRs) — also check
+     the fsn1 node pools in applications/operators/cluster-autoscaler/argo-app.yaml.
+  5. Encryption: *.enc.yaml files and .sops.yaml recipients were NOT rewritten.
+     Fresh instance: run scripts/init-keys. Existing instance: rotate recipients
+     with `sops updatekeys` (see docs/secrets.md).
+
+EOF
+echo "rewrote $total occurrence(s); config/platform.yaml now reflects the new identity"
