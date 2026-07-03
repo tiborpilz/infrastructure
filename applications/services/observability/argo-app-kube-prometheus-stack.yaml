@@ -1,0 +1,151 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    # Pinned to a known-good release. Bump once verified against the live
+    # cluster (the web sandbox can't reach *.github.io to resolve latest).
+    targetRevision: 61.3.2
+    helm:
+      releaseName: kube-prometheus-stack
+      valuesObject:
+        # The Operator CRDs are applied by the chart. ServerSideApply (set in
+        # syncPolicy below) is required — client-side apply blows the 256 KiB
+        # annotation limit on the huge Prometheus CRDs.
+        crds:
+          enabled: true
+
+        # ------------------------------------------------------------------
+        # Prometheus — metrics store. Accepts OTLP-derived metrics from the
+        # OpenTelemetry Collector via the remote-write receiver.
+        # ------------------------------------------------------------------
+        prometheus:
+          prometheusSpec:
+            retention: 15d
+            retentionSize: "18GB"
+            enableRemoteWriteReceiver: true
+            enableFeatures:
+              - otlp-write-receiver
+            # Discover ServiceMonitors/PodMonitors from every namespace, not
+            # just those carrying the chart's release label.
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            probeSelectorNilUsesHelmValues: false
+            resources:
+              requests:
+                cpu: 200m
+                memory: 512Mi
+              limits:
+                memory: 1536Mi
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: ceph-block
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 20Gi
+
+        # ------------------------------------------------------------------
+        # Alertmanager — kept but modest. Storage is ephemeral; this is a
+        # homelab and alert state doesn't need to survive a restart.
+        # ------------------------------------------------------------------
+        alertmanager:
+          alertmanagerSpec:
+            resources:
+              requests:
+                cpu: 25m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
+
+        # ------------------------------------------------------------------
+        # Grafana — the single pane of glass. SSO via Authentik (generic
+        # OAuth); Prometheus is auto-provisioned, Loki + Jaeger added below.
+        # ------------------------------------------------------------------
+        grafana:
+          enabled: true
+          # client-id / client-secret / admin password all arrive as GF_*
+          # env vars from this Secret (created in secrets.enc.yaml).
+          envFromSecret: grafana-secrets
+          persistence:
+            enabled: true
+            storageClassName: ceph-block
+            size: 5Gi
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          grafana.ini:
+            server:
+              root_url: https://grafana.tibor.sh
+            auth:
+              # Hide the local login form; SSO is the front door. The admin
+              # user still works via /login if you need a break-glass account.
+              oauth_auto_login: false
+            "auth.generic_oauth":
+              enabled: true
+              name: Authentik
+              # client_id / client_secret come from GF_AUTH_GENERIC_OAUTH_*
+              # env (grafana-secrets), so they are not spelled out here.
+              scopes: "openid profile email groups"
+              auth_url: https://auth.tibor.sh/application/o/authorize/
+              token_url: https://auth.tibor.sh/application/o/token/
+              api_url: https://auth.tibor.sh/application/o/userinfo/
+              use_pkce: true
+              # Everyone gets Viewer; members of the `grafana-admins` group
+              # (created by the Authentik blueprint) are promoted to Admin.
+              role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin' || contains(groups[*], 'grafana-editors') && 'Editor' || 'Viewer'"
+              allow_assign_grafana_admin: true
+          # Prometheus datasource is auto-provisioned by the chart; wire the
+          # other two pillars here so all three live behind one Grafana.
+          additionalDataSources:
+            - name: Loki
+              type: loki
+              uid: loki
+              access: proxy
+              url: http://loki-gateway.observability.svc.cluster.local
+              jsonData:
+                # Pivot from a log line straight to its trace in Jaeger.
+                derivedFields:
+                  - name: TraceID
+                    matcherRegex: '(?:trace_id|traceID|trace\.id)"?[:=]"?(\w+)'
+                    url: "$${__value.raw}"
+                    datasourceUid: jaeger
+            - name: Jaeger
+              type: jaeger
+              uid: jaeger
+              access: proxy
+              url: http://jaeger-query.observability.svc.cluster.local:16686
+              jsonData:
+                # Jump from a trace to the metrics/logs for the same service.
+                tracesToLogsV2:
+                  datasourceUid: loki
+                tracesToMetrics:
+                  datasourceUid: prometheus
+
+        # node-exporter + kube-state-metrics ship with the chart and give the
+        # cluster-health dashboards their data. Left at defaults (small).
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /status/terminatingReplicas

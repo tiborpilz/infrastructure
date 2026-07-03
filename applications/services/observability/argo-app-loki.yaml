@@ -1,0 +1,101 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: loki
+    # Loki 3.x (chart 6.x) — brings the native OTLP ingest endpoint the
+    # OTel Collector writes to. Bump once verified against the cluster.
+    targetRevision: 6.6.3
+    helm:
+      releaseName: loki
+      valuesObject:
+        # Single-binary is the right shape for one node: one process, local
+        # filesystem, no object store, no microservice sprawl.
+        deploymentMode: SingleBinary
+
+        loki:
+          auth_enabled: false
+          commonConfig:
+            replication_factor: 1
+          storage:
+            type: filesystem
+          schemaConfig:
+            configs:
+              - from: "2024-04-01"
+                store: tsdb
+                object_store: filesystem
+                schema: v13
+                index:
+                  prefix: index_
+                  period: 24h
+          limits_config:
+            retention_period: 168h        # 7 days
+            allow_structured_metadata: true  # required for OTLP log ingest
+            volume_enabled: true
+          compactor:
+            retention_enabled: true
+            delete_request_store: filesystem
+          # Keep the single-binary pod from being scraped as if it were the
+          # distributed read/write path.
+          server:
+            grpc_server_max_recv_msg_size: 8388608
+            grpc_server_max_send_msg_size: 8388608
+
+        singleBinary:
+          replicas: 1
+          persistence:
+            enabled: true
+            storageClass: ceph-block
+            size: 20Gi
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+
+        # nginx gateway routes /loki/api/... and /otlp to the single binary.
+        gateway:
+          enabled: true
+          replicas: 1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+
+        # Disable everything that only makes sense in distributed mode. The
+        # memcached caches in particular default to multi-GiB — a non-starter
+        # on a single node.
+        read:
+          replicas: 0
+        write:
+          replicas: 0
+        backend:
+          replicas: 0
+        chunksCache:
+          enabled: false
+        resultsCache:
+          enabled: false
+        minio:
+          enabled: false
+        lokiCanary:
+          enabled: false
+        test:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
