@@ -1,0 +1,24 @@
+version: 1
+metadata:
+  name: authentication-flow-customizations
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+  # Render the password field on the same page as the username prompt.
+  # Setting password_stage on the identification stage inlines the password
+  # field; authentik then skips the separate password stage in the flow.
+  - model: authentik_stages_identification.identificationstage
+    state: present
+    identifiers:
+      name: default-authentication-identification
+    attrs:
+      password_stage: !Find [authentik_stages_password.passwordstage, [name, default-authentication-password]]
+
+  # Keep users signed in for 30 days. authentik's default session_duration is
+  # seconds=0, which expires the session when the browser closes.
+  - model: authentik_stages_user_login.userloginstage
+    state: present
+    identifiers:
+      name: default-authentication-login
+    attrs:
+      session_duration: days=30
