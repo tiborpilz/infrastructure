@@ -65,12 +65,61 @@ locals {
     }
   }
 
+  # The platform AppProject and root Application (app-of-apps entrypoint) are
+  # applied here so a fresh cluster starts syncing without any manual
+  # `kubectl apply`. Talos re-applies inline manifests on change but never
+  # deletes them; removals need a manual kubectl delete.
+  argocd_platform_appproject = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "AppProject"
+    metadata   = { name = "platform", namespace = "argocd" }
+    spec = {
+      description = "Platform infrastructure applications"
+      sourceRepos = ["*"]
+      destinations = [
+        { namespace = "*", server = "https://kubernetes.default.svc" }
+      ]
+      clusterResourceWhitelist   = [{ group = "*", kind = "*" }]
+      namespaceResourceWhitelist = [{ group = "*", kind = "*" }]
+    }
+  }
+
+  argocd_root_application = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata   = { name = "root", namespace = "argocd" }
+    spec = {
+      project = "platform"
+      source = {
+        path           = "applications"
+        repoURL        = var.gitops_repo_url
+        targetRevision = "HEAD"
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "argocd"
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = [
+          "ServerSideApply=true",
+          "CreateNamespace=false",
+        ]
+      }
+    }
+  }
+
   argocd_manifests = [
     { name = "ns-argocd", contents = yamlencode(local.argocd_namespace) },
     { name = "argocd", contents = data.helm_template.argocd.manifest },
     { name = "argocd-age-keys-secret", contents = yamlencode(local.argocd_age_keys_secret) },
     { name = "argocd-repo-server-patch", contents = yamlencode(local.argocd_repo_server_patch) },
     { name = "argocd-httproute", contents = yamlencode(local.argocd_httproute) },
+    { name = "argocd-platform-appproject", contents = yamlencode(local.argocd_platform_appproject) },
+    { name = "argocd-root-application", contents = yamlencode(local.argocd_root_application) },
   ]
 }
 
