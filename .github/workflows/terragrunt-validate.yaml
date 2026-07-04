@@ -1,0 +1,47 @@
+name: Terragrunt validate
+
+# Static checks for the terragrunt layer. Everything here runs without
+# credentials: no age key, no state passphrase, no provider tokens.
+#
+# What this cannot cover, by design of the current setup:
+#   - terragrunt-level evaluation (env.hcl decrypts secrets.enc.yaml via sops
+#     for every command, which needs an age key)
+#   - plans against real state (the local backend lives only on the machine
+#     that applied it, under .terragrunt-state/)
+#   - the proxmox module against a real API (the home lab is not reachable
+#     from GitHub-hosted runners)
+
+on:
+  pull_request:
+    paths:
+      - "terragrunt/**"
+      - ".github/workflows/terragrunt-validate.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: terragrunt-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: fmt + validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.10.0
+
+      - name: Check formatting
+        run: tofu fmt -check -diff -recursive terragrunt/
+
+      - name: Init (providers only, lockfile-verified)
+        run: tofu -chdir=terragrunt/cluster init -backend=false -input=false
+
+      - name: Validate module tree
+        # terragrunt/cluster is the single unit root; hcloud/*, talos,
+        # talos/bootstrap, proxmox/server and dns are validated transitively
+        # as child modules.
+        run: tofu -chdir=terragrunt/cluster validate
