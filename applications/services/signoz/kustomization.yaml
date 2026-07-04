@@ -5,3 +5,22 @@ resources:
   - namespace.yaml
   - httproute.yaml
   - argo-app.yaml
+  - argo-app-oauth2-proxy.yaml
+
+generators:
+  - kustomization-ksops-generator.yaml
+
+patches:
+  # Reflect the oauth2-proxy secret into the authentik namespace so the
+  # authentik app can wire client-secret into SIGNOZ_OIDC_CLIENT_SECRET.
+  - patch: |-
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: signoz-oauth2-proxy-secrets
+        namespace: signoz
+        annotations:
+          reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+          reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "authentik"
+          reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+          reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "authentik"
