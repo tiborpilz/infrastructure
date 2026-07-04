@@ -63,18 +63,6 @@ locals {
   bootstrap_manifests_hash = md5(jsonencode(module.bootstrap.inline_manifests))
 }
 
-resource "terraform_data" "wait_for_maintenance" {
-  for_each = local.control_plane_nodes
-
-  triggers_replace = {
-    public_ipv4 = each.value.public_ipv4
-  }
-
-  provisioner "local-exec" {
-    command = "${path.module}/../scripts/wait-for-maintenance.sh ${each.value.public_ipv4}"
-  }
-}
-
 resource "talos_machine_secrets" "this" {
   talos_version = "v${var.talos_version}"
 }
@@ -117,21 +105,8 @@ resource "talos_machine_configuration_apply" "control_plane" {
   node                        = each.value.public_ipv4
 
   depends_on = [
-    terraform_data.wait_for_maintenance,
     terraform_data.bootstrap_manifests_trigger,
   ]
-}
-
-resource "terraform_data" "wait_for_maintenance_worker" {
-  for_each = local.worker_nodes
-
-  triggers_replace = {
-    public_ipv4 = each.value.public_ipv4
-  }
-
-  provisioner "local-exec" {
-    command = "${path.module}/../scripts/wait-for-maintenance.sh ${each.value.public_ipv4}"
-  }
 }
 
 data "talos_machine_configuration" "worker" {
@@ -234,7 +209,6 @@ resource "talos_machine_configuration_apply" "worker" {
   node                        = each.value.public_ipv4
 
   depends_on = [
-    terraform_data.wait_for_maintenance_worker,
     terraform_data.bootstrap_manifests_trigger,
     talos_machine_bootstrap.this,
   ]
@@ -283,28 +257,23 @@ resource "local_file" "bootstrap_manifests" {
   file_permission = "0644"
 }
 
-resource "terraform_data" "wait_for_cluster" {
-  triggers_replace = {
-    nodes = join(",", concat(
-      [for k, _ in local.control_plane_nodes : k],
-      [for k, _ in local.worker_nodes : k],
-    ))
-  }
+# Blocks until the cluster is healthy (etcd, control plane, and all nodes Ready)
+# before downstream resources seed in-cluster state. Replaces the previous
+# wait-for-cluster.sh polling loop with the provider-native health check.
+data "talos_cluster_health" "this" {
+  client_configuration = talos_machine_secrets.this.client_configuration
+  control_plane_nodes  = [for n in local.control_plane_nodes : n.public_ipv4]
+  worker_nodes         = [for n in local.worker_nodes : n.public_ipv4]
+  endpoints            = [for n in local.control_plane_nodes : n.public_ipv4]
 
-  provisioner "local-exec" {
-    environment = {
-      KUBECONFIG = local_sensitive_file.kubeconfig[0].filename
-    }
-    command = "${path.module}/../scripts/wait-for-cluster.sh ${join(" ", concat(
-      [for k, _ in local.control_plane_nodes : k],
-      [for k, _ in local.worker_nodes : k],
-    ))}"
+  timeouts = {
+    read = "10m"
   }
 
   depends_on = [
     talos_cluster_kubeconfig.this,
     talos_machine_configuration_apply.worker,
-    local_sensitive_file.kubeconfig,
+    talos_machine_bootstrap.this,
   ]
 }
 
@@ -374,7 +343,7 @@ resource "terraform_data" "app_secrets" {
     BASH
   }
 
-  depends_on = [terraform_data.wait_for_cluster]
+  depends_on = [data.talos_cluster_health.this]
 }
 
 resource "terraform_data" "cluster_autoscaler_bootstrap" {
@@ -411,7 +380,7 @@ resource "terraform_data" "cluster_autoscaler_bootstrap" {
     BASH
   }
 
-  depends_on = [terraform_data.wait_for_cluster]
+  depends_on = [data.talos_cluster_health.this]
 }
 
 resource "terraform_data" "cilium_lb_pool" {
@@ -426,5 +395,5 @@ resource "terraform_data" "cilium_lb_pool" {
     command = "${path.module}/../scripts/apply-cilium-lb-pool.sh ${var.floating_ip_address}"
   }
 
-  depends_on = [terraform_data.wait_for_cluster]
+  depends_on = [data.talos_cluster_health.this]
 }
