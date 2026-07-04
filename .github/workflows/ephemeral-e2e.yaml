@@ -1,0 +1,293 @@
+name: Ephemeral cluster e2e
+
+# Spins up a throwaway kind cluster, installs ArgoCD the same way the real
+# cluster gets it, points the repo's own Application manifests at the PR
+# revision and asserts that authentik comes up with all blueprints applied.
+# Secrets that normally come from SopsSecret CRs are replaced with throwaway
+# stand-ins, since CI has no age key.
+
+on:
+  pull_request:
+    paths:
+      - "applications/**"
+      - ".github/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ephemeral-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  KIND_VERSION: v0.29.0
+  KUSTOMIZE_VERSION: v5.6.0
+  KUBECONFORM_VERSION: v0.6.7
+  GATEWAY_API_VERSION: v1.3.0
+  # Keep in sync with applications/argocd/argo-app.yaml
+  ARGOCD_CHART_VERSION: 8.6.4
+  # Keep in sync with applications/operators/sops-secrets-operator/argo-app.yaml
+  SOPS_OPERATOR_CHART_VERSION: 0.27.1
+
+jobs:
+  render:
+    name: Render and validate manifests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kustomize and kubeconform
+        run: |
+          curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | tar -xz kustomize
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar -xz kubeconform
+          sudo mv kustomize kubeconform /usr/local/bin/
+
+      - name: Aggregate authentik blueprints
+        run: |
+          applications/_generators/blueprints-aggregator.sh > /tmp/blueprints.yaml
+          grep -qE '__.+\.yaml' /tmp/blueprints.yaml
+          echo "Aggregated blueprint keys:"
+          grep -oE '^      [A-Za-z0-9_.-]+\.yaml' /tmp/blueprints.yaml
+
+      - name: Render kustomizations
+        run: |
+          # services/* pull in ksops generators that need age keys, so only the
+          # sops-free paths render here.
+          for dir in applications applications/argocd applications/identity applications/operators; do
+            out="/tmp/rendered-$(echo "$dir" | tr / -).yaml"
+            echo "--- kustomize build $dir"
+            kustomize build --enable-alpha-plugins --enable-exec "$dir" > "$out"
+          done
+
+      - name: Validate rendered manifests
+        run: kubeconform -strict -ignore-missing-schemas -summary /tmp/rendered-*.yaml
+
+  ephemeral-cluster:
+    name: Ephemeral cluster (kind + ArgoCD + authentik)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve revision for ArgoCD
+        id: rev
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "repo_url=${{ github.event.pull_request.head.repo.clone_url }}" >> "$GITHUB_OUTPUT"
+            echo "revision=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "repo_url=${{ github.server_url }}/${{ github.repository }}" >> "$GITHUB_OUTPUT"
+            echo "revision=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create kind cluster
+        run: |
+          curl -fsSLo kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          chmod +x kind && sudo mv kind /usr/local/bin/
+          kind create cluster --name ephemeral --wait 120s
+          kubectl cluster-info
+
+      - name: Install cluster prerequisites
+        run: |
+          # HTTPRoutes reference a gateway that doesn't exist here; the CRDs
+          # are enough for the resources to apply.
+          kubectl apply -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/${GATEWAY_API_VERSION}/standard-install.yaml"
+
+          # SopsSecret CRD only: without an age key the operator couldn't
+          # decrypt anything anyway, so the CRs just sit unreconciled and the
+          # Secrets they would produce are faked in the next step.
+          helm repo add sops-operator https://isindir.github.io/sops-secrets-operator >/dev/null
+          helm template sops sops-operator/sops-secrets-operator \
+            --version "${SOPS_OPERATOR_CHART_VERSION}" --include-crds \
+            | yq 'select(.kind == "CustomResourceDefinition")' \
+            | kubectl apply -f -
+
+          # The CNPG cluster requests the Hetzner CSI storage class; map the
+          # name onto kind's local-path provisioner.
+          kubectl apply -f - <<'EOF'
+          apiVersion: storage.k8s.io/v1
+          kind: StorageClass
+          metadata:
+            name: hcloud-volumes
+          provisioner: rancher.io/local-path
+          volumeBindingMode: WaitForFirstConsumer
+          EOF
+
+      - name: Create stand-in secrets
+        run: |
+          kubectl create namespace authentik
+
+          VALKEY_PASSWORD="$(openssl rand -hex 16)"
+          AK_TOKEN="$(openssl rand -hex 32)"
+          echo "::add-mask::${AK_TOKEN}"
+          echo "AK_TOKEN=${AK_TOKEN}" >> "$GITHUB_ENV"
+
+          kubectl -n authentik create secret generic authentik-bootstrap \
+            --from-literal=AUTHENTIK_SECRET_KEY="$(openssl rand -hex 32)" \
+            --from-literal=AUTHENTIK_BOOTSTRAP_PASSWORD="ci-admin-password" \
+            --from-literal=AUTHENTIK_BOOTSTRAP_TOKEN="${AK_TOKEN}" \
+            --from-literal=AUTHENTIK_REDIS__HOST="authentik-valkey" \
+            --from-literal=AUTHENTIK_REDIS__PASSWORD="${VALKEY_PASSWORD}" \
+            --from-literal=AUTHENTIK_POSTGRESQL__HOST="authentik-db-rw" \
+            --from-literal=AUTHENTIK_POSTGRESQL__NAME="authentik" \
+            --from-literal=AUTHENTIK_POSTGRESQL__USER="authentik" \
+            --from-literal=AUTHENTIK_DISABLE_UPDATE_CHECK="true" \
+            --from-literal=AUTHENTIK_ERROR_REPORTING__ENABLED="false"
+
+          kubectl -n authentik create secret generic authentik-valkey \
+            --from-literal=password="${VALKEY_PASSWORD}"
+
+          # OIDC client secrets the blueprints read via !Env.
+          kubectl -n authentik create secret generic authentik-oidc-clients \
+            --from-literal=ARGOCD_OIDC_CLIENT_SECRET=ci-dummy \
+            --from-literal=FORGEJO_OIDC_CLIENT_SECRET=ci-dummy \
+            --from-literal=HUBBLE_OIDC_CLIENT_SECRET=ci-dummy \
+            --from-literal=HEADLAMP_OIDC_CLIENT_SECRET=ci-dummy \
+            --from-literal=HARBOR_OIDC_CLIENT_SECRET=ci-dummy
+
+          # User passwords the users blueprint reads via !File.
+          kubectl -n authentik create secret generic tibor-password --from-literal=password=ci-dummy-password
+          kubectl -n authentik create secret generic tine-password --from-literal=password=ci-dummy-password
+
+          # Mounted at /blueprints/managed; the same content already ships via
+          # the aggregated ConfigMap, so an empty secret is enough to start.
+          kubectl -n authentik create secret generic authentik-users-blueprint
+
+      - name: Install ArgoCD
+        run: |
+          cat > /tmp/argocd-values.yaml <<'EOF'
+          configs:
+            params:
+              server.insecure: "true"
+            cm:
+              kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
+          EOF
+          helm repo add argo https://argoproj.github.io/argo-helm >/dev/null
+          helm install argocd argo/argo-cd \
+            --version "${ARGOCD_CHART_VERSION}" \
+            --namespace argocd --create-namespace \
+            -f /tmp/argocd-values.yaml \
+            --wait --timeout 10m
+          kubectl apply -f applications/argocd/project.yaml
+
+      - name: Deploy CNPG operator from the repo revision
+        run: |
+          REPO_URL="${{ steps.rev.outputs.repo_url }}"
+          REVISION="${{ steps.rev.outputs.revision }}"
+          kubectl apply -f - <<EOF
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: operators-cnpg
+            namespace: argocd
+          spec:
+            project: platform
+            source:
+              repoURL: ${REPO_URL}
+              targetRevision: ${REVISION}
+              path: applications/operators/cnpg-operator
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: argocd
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+              retry:
+                limit: 5
+                backoff:
+                  duration: 10s
+                  factor: 2
+                  maxDuration: 2m
+              syncOptions:
+                - ServerSideApply=true
+          EOF
+
+          echo "Waiting for the nested cnpg-operator Application..."
+          for i in $(seq 1 60); do
+            kubectl -n argocd get application cnpg-operator >/dev/null 2>&1 && break
+            [ "$i" -eq 60 ] && { echo "cnpg-operator Application never appeared" >&2; exit 1; }
+            sleep 5
+          done
+          kubectl -n argocd wait application/cnpg-operator \
+            --for=jsonpath='{.status.health.status}'=Healthy --timeout=600s
+
+      - name: Deploy the identity app from the repo revision
+        run: |
+          REPO_URL="${{ steps.rev.outputs.repo_url }}"
+          REVISION="${{ steps.rev.outputs.revision }}"
+          kubectl apply -f - <<EOF
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: identity
+            namespace: argocd
+          spec:
+            project: platform
+            source:
+              repoURL: ${REPO_URL}
+              targetRevision: ${REVISION}
+              path: applications/identity
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: argocd
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
+              retry:
+                limit: 5
+                backoff:
+                  duration: 10s
+                  factor: 2
+                  maxDuration: 2m
+              syncOptions:
+                - ServerSideApply=true
+          EOF
+
+      - name: Wait for authentik to come up
+        run: |
+          echo "Waiting for the nested authentik Application..."
+          for i in $(seq 1 60); do
+            kubectl -n argocd get application authentik >/dev/null 2>&1 && break
+            [ "$i" -eq 60 ] && { echo "authentik Application never appeared" >&2; exit 1; }
+            sleep 5
+          done
+
+          echo "Waiting for the CNPG database cluster..."
+          for i in $(seq 1 60); do
+            kubectl -n authentik get clusters.postgresql.cnpg.io authentik-db >/dev/null 2>&1 && break
+            [ "$i" -eq 60 ] && { echo "authentik-db Cluster never appeared" >&2; exit 1; }
+            sleep 5
+          done
+          kubectl -n authentik wait clusters.postgresql.cnpg.io/authentik-db \
+            --for=condition=Ready --timeout=600s
+
+          echo "Waiting for authentik server and worker..."
+          for i in $(seq 1 60); do
+            kubectl -n authentik get deploy authentik-server authentik-worker >/dev/null 2>&1 && break
+            [ "$i" -eq 60 ] && { echo "authentik deployments never appeared" >&2; exit 1; }
+            sleep 10
+          done
+          kubectl -n authentik rollout status deploy/authentik-server --timeout=600s
+          kubectl -n authentik rollout status deploy/authentik-worker --timeout=600s
+
+      - name: Check blueprints applied
+        run: |
+          kubectl -n authentik port-forward svc/authentik-server 9000:80 >/dev/null 2>&1 &
+          sleep 3
+          AUTHENTIK_TOKEN="${AK_TOKEN}" .github/ci/check-blueprints.sh
+
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          echo "=== ArgoCD applications ==="
+          kubectl -n argocd get applications -o wide || true
+          kubectl -n argocd get applications -o yaml | yq '.items[] | {"name": .metadata.name, "sync": .status.sync.status, "health": .status.health.status, "conditions": .status.conditions}' || true
+          echo "=== Pods ==="
+          kubectl get pods -A || true
+          echo "=== authentik events ==="
+          kubectl -n authentik get events --sort-by=.lastTimestamp | tail -n 50 || true
+          echo "=== authentik worker logs ==="
+          kubectl -n authentik logs deploy/authentik-worker --tail=200 || true
+          echo "=== authentik server logs ==="
+          kubectl -n authentik logs deploy/authentik-server --tail=100 || true
