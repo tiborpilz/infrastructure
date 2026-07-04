@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: signoz
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://charts.signoz.io
+    chart: signoz
+    targetRevision: 0.131.0
+    helm:
+      releaseName: signoz
+      valuesObject:
+        # ceph-block backs every stateful component (ClickHouse, Zookeeper,
+        # SigNoz sqlite). global.storageClass is the single knob the chart
+        # threads into each PVC template. redpanda and the bundled postgresql
+        # stay at their chart defaults (disabled).
+        global:
+          storageClass: ceph-block
+
+        clickhouse:
+          enabled: true
+          persistence:
+            enabled: true
+            storageClass: ceph-block
+            size: 20Gi
+
+        # Ingress handled out-of-band via httproute.yaml (Gateway API), so the
+        # chart's own Ingress stays off.
+        signoz:
+          service:
+            type: ClusterIP
+            port: 8080
+          ingress:
+            enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: signoz
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+    # The chart bundles the clickhouse-operator CRDs and a ClickHouseInstallation
+    # CR together; retry lets the CR land once its CRD is registered.
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

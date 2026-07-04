@@ -5,6 +5,7 @@ resources:
   - gitops-canary.yaml
   - forgejo
   - harbor
+  - signoz
   - woodpecker
   - tangled/argo-app.yaml
   - pds/argo-app.yaml
