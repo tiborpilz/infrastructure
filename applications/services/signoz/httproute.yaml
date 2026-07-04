@@ -18,5 +18,5 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: signoz
-          port: 8080
+        - name: oauth2-proxy
+          port: 80
