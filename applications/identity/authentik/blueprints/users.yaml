@@ -71,6 +71,15 @@ entries:
   - model: authentik_core.group
     state: present
     identifiers:
+      name: coder-admins
+    attrs:
+      is_superuser: false
+      users:
+        - !Find [authentik_core.user, [username, tibor]]
+
+  - model: authentik_core.group
+    state: present
+    identifiers:
       name: authentik-superusers
     attrs:
       is_superuser: true

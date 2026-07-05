@@ -1,0 +1,96 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: coder
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://helm.coder.com/v2
+    chart: coder
+    targetRevision: 2.34.5
+    helm:
+      releaseName: coder
+      valuesObject:
+        coder:
+          image:
+            repo: ghcr.io/coder/coder
+            pullPolicy: IfNotPresent
+          replicaCount: 1
+
+          # The built-in provisioner runs inside the coder pod. Granting the
+          # service account workspace/deployment permissions lets templates that
+          # use the in-cluster kubernetes provider manage workspace
+          # pods/deployments/PVCs within this namespace.
+          serviceAccount:
+            workspacePerms: true
+            enableDeployments: true
+            name: coder
+
+          # TLS is terminated at the Cilium Gateway; expose only a ClusterIP and
+          # route to it via the HTTPRoute in httproute.yaml.
+          service:
+            type: ClusterIP
+          ingress:
+            enable: false
+
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop: ["ALL"]
+
+          env:
+            - name: CODER_ACCESS_URL
+              value: https://coder.tibor.sh
+            # Subdomain app access needs a *.coder.tibor.sh wildcard cert/DNS,
+            # which the single-label *.tibor.sh wildcard does not cover. Leave
+            # empty so Coder serves apps via path-based access only.
+            - name: CODER_WILDCARD_ACCESS_URL
+              value: ""
+
+            - name: CODER_PG_CONNECTION_URL
+              valueFrom:
+                secretKeyRef:
+                  name: coder-db-app
+                  key: uri
+
+            # OIDC via Authentik. The client secret is provisioned by
+            # oidc-bootstrap.yaml (shared with Authentik via the reflected
+            # coder-oidc secret).
+            - name: CODER_OIDC_ISSUER_URL
+              value: https://auth.tibor.sh/application/o/coder/
+            - name: CODER_OIDC_CLIENT_ID
+              value: coder
+            - name: CODER_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: coder-oidc
+                  key: client-secret
+            - name: CODER_OIDC_SCOPES
+              value: openid,profile,email
+            - name: CODER_OIDC_SIGN_IN_TEXT
+              value: Sign in with Authentik
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: coder
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
