@@ -1,0 +1,66 @@
+name: Talos local VM cluster
+
+# Boots real Talos VMs (QEMU/KVM on the GitHub runner) with the production
+# machine-config shape and the actually-rendered bootstrap inline manifests,
+# then asserts nodes go Ready and the bootstrap layer (Cilium, cert-manager,
+# ArgoCD, Gateway) comes up. This is the node-level counterpart to the
+# kind-based ephemeral e2e workflow: it tests the talos + bootstrap half of
+# the terragrunt layer without any cloud credentials.
+
+on:
+  pull_request:
+    paths:
+      - "terragrunt/cluster/talos/**"
+      - "terragrunt/test/local-vm/**"
+      - "setup/local-talos-cluster.sh"
+      - ".github/workflows/talos-local-vm.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: talos-local-vm-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local-vm-cluster:
+    name: QEMU Talos cluster
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.10.0
+
+      - name: Install talosctl (pinned to the repo's Talos version)
+        run: |
+          TALOS_VERSION="$(grep -oE 'talos_version[[:space:]]*=[[:space:]]*"[0-9.]+"' terragrunt/env.hcl | grep -oE '[0-9.]+')"
+          echo "Talos version from env.hcl: ${TALOS_VERSION}"
+          curl -fsSLo /tmp/talosctl "https://github.com/siderolabs/talos/releases/download/v${TALOS_VERSION}/talosctl-linux-amd64"
+          sudo install -m 0755 /tmp/talosctl /usr/local/bin/talosctl
+          talosctl version --client
+
+      - name: Install QEMU
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils
+          echo "KVM device:"
+          ls -la /dev/kvm
+
+      - name: Boot local Talos cluster
+        run: PROVISIONER=qemu setup/local-talos-cluster.sh up
+
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          export KUBECONFIG=terragrunt/test/local-vm/out/kubeconfig
+          export TALOSCONFIG=terragrunt/test/local-vm/out/talosconfig
+          sudo -E talosctl cluster show --name local-test --provisioner qemu || true
+          sudo -E talosctl --talosconfig "$TALOSCONFIG" health --wait-timeout 30s || true
+          kubectl get nodes -o wide || true
+          kubectl get pods -A || true
+          kubectl get events -A --sort-by=.lastTimestamp | tail -n 60 || true
+
+      - name: Destroy cluster
+        if: always()
+        run: PROVISIONER=qemu setup/local-talos-cluster.sh down || true
