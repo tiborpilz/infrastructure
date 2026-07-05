@@ -6,6 +6,7 @@ resources:
   - forgejo
   - harbor
   - woodpecker
+  - coder
   - tangled/argo-app.yaml
   - pds/argo-app.yaml
   - tekton/argo-app.yaml
