@@ -46,7 +46,9 @@ spec:
             runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
-            readOnlyRootFilesystem: true
+            # The server + embedded Terraform provisioner write to ~/.cache/coder
+            # and temp dirs during builds, so the root FS must stay writable
+            # (the chart default). Other hardening is kept.
             allowPrivilegeEscalation: false
             seccompProfile:
               type: RuntimeDefault
