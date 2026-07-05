@@ -8,7 +8,7 @@ kind: Kustomization
 # resource and is pushed to Coder out-of-band (see templates/nix-devbox/README.md).
 resources:
   - namespace.yaml
-  - oidc-bootstrap.yaml
+  - secrets.enc.yaml
   - httproute.yaml
   - database.yaml
   - argo-app.yaml

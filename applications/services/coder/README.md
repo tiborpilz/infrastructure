@@ -11,13 +11,15 @@
 | `database.yaml` | cnpg `Cluster` `coder-db` (secret `coder-db-app`, service `coder-db-rw`). |
 | `httproute.yaml` | Gateway API route `coder.tibor.sh` → `coder` service. |
 | `blueprints/oidc.yaml` | Authentik OAuth2 provider + application `coder`. Collected by `applications/_generators/blueprints-aggregator.sh`. |
-| `oidc-bootstrap.yaml` | Job that generates the shared OIDC client secret (`coder-oidc`) and reflects it into the `authentik` namespace — mirrors `woodpecker/oauth-bootstrap.yaml`, so no new sops secret is needed. |
+| `secrets.enc.yaml` | sops-encrypted `SopsSecret` holding the shared OIDC `client-secret` (`coder-oidc`), annotated for reflection into the `authentik` namespace — same pattern as `forgejo/secrets.enc.yaml`. |
 | `templates/nix-devbox/` | A Coder workspace template reproducing the neovim/zsh/tmux config from `github:tiborpilz/nixos`. See its README. |
 
 ## Auth flow
 
-1. `oidc-bootstrap` Job creates `coder-oidc` (random `client-secret`) in the `coder`
-   namespace, annotated for reflection into `authentik`.
+1. The `SopsSecret` in `secrets.enc.yaml` creates `coder-oidc` (a fixed `client-secret`) in
+   the `coder` namespace, annotated for reflection into `authentik`. This is declarative and
+   race-free — the secret exists before Coder's pod needs it (unlike a bootstrap Job that
+   would sync in a separate ArgoCD Application).
 2. Authentik exposes it as `CODER_OIDC_CLIENT_SECRET`
    (`applications/identity/authentik/argo-app.yaml`); `blueprints/oidc.yaml` sets the
    provider's `client_secret` from that env.
@@ -26,6 +28,10 @@
 
 The first user to sign in via Authentik becomes the Coder owner. Authentik must roll once
 after the `coder-oidc` secret first appears (ArgoCD self-heal handles this).
+
+> The secret is encrypted to the three age recipients in `.sops.yaml` (the operator decrypts
+> with the `argocd` age key). To also add the PGP recipient for parity with the other
+> secrets, run `sops updatekeys applications/services/coder/secrets.enc.yaml`.
 
 ## Known limitations
 
