@@ -182,8 +182,8 @@ resource "kubernetes_persistent_volume_claim" "home" {
 }
 
 resource "kubernetes_deployment" "main" {
-  count = data.coder_workspace.me.start_count
-  depends_on = [kubernetes_persistent_volume_claim.home]
+  count            = data.coder_workspace.me.start_count
+  depends_on       = [kubernetes_persistent_volume_claim.home]
   wait_for_rollout = false
 
   metadata {
@@ -228,6 +228,19 @@ resource "kubernetes_deployment" "main" {
           env {
             name  = "CODER_AGENT_TOKEN"
             value = coder_agent.main.token
+          }
+
+          # coder_agent.env only reaches the agent's managed sessions, not the
+          # agent process itself (the container command). Point its cache at the
+          # writable PVC here, or it defaults to $HOME/.cache (/home/coder/.cache)
+          # and crashes: "create cache directory: ... read-only file system".
+          env {
+            name  = "HOME"
+            value = local.home_dir
+          }
+          env {
+            name  = "XDG_CACHE_HOME"
+            value = "${local.home_dir}/.cache"
           }
 
           resources {
