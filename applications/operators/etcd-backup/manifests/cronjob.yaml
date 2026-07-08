@@ -1,0 +1,84 @@
+# Takes an etcd snapshot every 6 hours via the Talos API and pushes it to the
+# Ceph object store, age-encrypted. Auth comes from the mounted talos.dev
+# ServiceAccount secret; S3 creds/bucket come from the ObjectBucketClaim.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-backup
+  namespace: etcd-backup
+spec:
+  schedule: "17 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: talos-backup
+              # TODO: pin to a released ghcr.io/siderolabs/talos-backup tag.
+              image: ghcr.io/siderolabs/talos-backup:latest
+              env:
+                - name: CLUSTER_NAME
+                  value: hcloud-poc
+                - name: CUSTOM_S3_ENDPOINT
+                  value: http://rook-ceph-rgw-ceph-objectstore.rook-ceph.svc:80
+                - name: AWS_REGION
+                  value: us-east-1
+                - name: USE_PATH_STYLE
+                  value: "true"
+                - name: ENABLE_COMPRESSION
+                  value: "true"
+                - name: S3_PREFIX
+                  value: etcd
+                # age recipient for each snapshot — the .sops.yaml YubiKey
+                # identity. Restoring needs the matching private key.
+                - name: AGE_RECIPIENT_PUBLIC_KEY
+                  value: age1gzf883y8p0wfy5yjn5l3l2axnqxdgtw2zdcp8jqsrk65m7gf6y6qzgkf63
+                - name: BUCKET
+                  valueFrom:
+                    configMapKeyRef:
+                      name: etcd-backup
+                      key: BUCKET_NAME
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: etcd-backup
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: etcd-backup
+                      key: AWS_SECRET_ACCESS_KEY
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+                - name: talos
+                  mountPath: /.talos
+                - name: talos-secrets
+                  mountPath: /var/run/secrets/talos.dev
+          volumes:
+            - name: tmp
+              emptyDir: {}
+            - name: talos
+              emptyDir: {}
+            - name: talos-secrets
+              secret:
+                secretName: talos-etcd-backup
