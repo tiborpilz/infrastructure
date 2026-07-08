@@ -7,3 +7,4 @@ resources:
   - cnpg-operator
   - metrics-server
   - cluster-autoscaler
+  - etcd-backup
