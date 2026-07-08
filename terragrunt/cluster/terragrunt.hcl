@@ -38,15 +38,15 @@ inputs = {
   authentik_secret_key = include.env.locals.secrets.authentik_secret_key
   argocd_age_key       = include.env.locals.argocd_age_key
 
+  # Single control plane, sized up so it can also carry workloads. One etcd
+  # member means no quorum/HA: a CP outage stops the API (workloads keep
+  # running on the workers) and losing the node requires an etcd snapshot
+  # restore, so etcd backups are mandatory. Scaling a *live* 3-member etcd
+  # down to 1 must be done one member at a time (destroying two at once loses
+  # quorum); on a disposable POC, rebuild instead.
   control_plane_nodes = {
     controlplane-1 = {
-      server_type = "cx23"
-    }
-    controlplane-2 = {
-      server_type = "cx23"
-    }
-    controlplane-3 = {
-      server_type = "cx23"
+      server_type = "cx33"
     }
   }
 
