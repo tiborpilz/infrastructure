@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - secrets.enc.yaml
   - argo-app-kube-prometheus-stack.yaml
   - argo-app-loki.yaml
   - argo-app-alloy.yaml
@@ -12,31 +13,3 @@ resources:
   - argo-app-otel-collector.yaml
   - httproute-grafana.yaml
   - httproute-jaeger.yaml
-
-generators:
-  - kustomization-ksops-generator.yaml
-
-# Reflect the OIDC secrets into the authentik namespace (see README).
-patches:
-  - patch: |-
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: grafana-secrets
-        namespace: observability
-        annotations:
-          reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-          reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "authentik"
-          reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-          reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "authentik"
-  - patch: |-
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: jaeger-oauth2-proxy-secrets
-        namespace: observability
-        annotations:
-          reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-          reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "authentik"
-          reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-          reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "authentik"
