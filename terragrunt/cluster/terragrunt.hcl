@@ -38,15 +38,12 @@ inputs = {
   authentik_secret_key = include.env.locals.secrets.authentik_secret_key
   argocd_age_key       = include.env.locals.argocd_age_key
 
+  # Single control plane, sized up so it can also schedule workloads. One etcd
+  # member means no HA: a CP outage stops the API (workers keep serving) and
+  # losing the node needs an etcd snapshot restore — see applications/operators/etcd-backup.
   control_plane_nodes = {
     controlplane-1 = {
-      server_type = "cx23"
-    }
-    controlplane-2 = {
-      server_type = "cx23"
-    }
-    controlplane-3 = {
-      server_type = "cx23"
+      server_type = "cx33"
     }
   }
 
