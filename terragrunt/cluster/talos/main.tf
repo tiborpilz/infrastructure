@@ -98,6 +98,17 @@ data "talos_machine_configuration" "control_plane" {
         nodeLabels = {
           "storage.longhorn.io/eligible" = "true"
         }
+        # Let a pod in the etcd-backup namespace call the Talos API for etcd
+        # snapshots, scoped to the os:etcd:backup role only. Consumed by the
+        # talos-backup CronJob (applications/operators/etcd-backup). Applied
+        # in place, no reboot.
+        features = {
+          kubernetesTalosAPIAccess = {
+            enabled                     = true
+            allowedRoles                = ["os:etcd:backup"]
+            allowedKubernetesNamespaces = ["etcd-backup"]
+          }
+        }
       }
     }),
   ]

@@ -1,0 +1,13 @@
+# Provisions an S3 bucket on the Ceph object store (RGW). Rook creates a
+# ConfigMap and Secret named "etcd-backup" in this namespace holding the
+# bucket name and access keys, which the CronJob consumes. The bucket lives
+# on the Ceph OSDs (Proxmox tier) — a different failure domain from the
+# single Hetzner control plane.
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: etcd-backup
+  namespace: etcd-backup
+spec:
+  generateBucketName: etcd-backup
+  storageClassName: ceph-bucket
