@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radicle-explorer
+  labels:
+    app.kubernetes.io/name: radicle-explorer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: radicle-explorer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: radicle-explorer
+    spec:
+      initContainers:
+        - name: build
+          image: node:24-bookworm
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -eu
+              git clone https://github.com/radicle-dev/radicle-explorer.git /workspace
+              cd /workspace
+              git checkout 8e2148599ebd115db126eb60d8fd99be8904c978
+              npm ci
+              VITE_RUNTIME_CONFIG=true npm run build
+              cp -r build/. /site/
+              cp /config/config.json /site/config.json
+          env:
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=3072
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 4Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: site
+              mountPath: /site
+            - name: config
+              mountPath: /config
+      containers:
+        - name: web
+          image: caddy:2-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: site
+              mountPath: /srv
+            - name: caddyfile
+              mountPath: /etc/caddy/Caddyfile
+              subPath: Caddyfile
+          readinessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 20
+            periodSeconds: 30
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: site
+          emptyDir: {}
+        - name: caddyfile
+          configMap:
+            name: radicle-explorer-caddy
+        - name: config
+          configMap:
+            name: radicle-explorer-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radicle-explorer
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: radicle-explorer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

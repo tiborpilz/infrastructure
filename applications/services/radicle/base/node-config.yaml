@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: radicle-node-config
+data:
+  config.json: |
+    {
+      "node": {
+        "alias": "radicle",
+        "seedingPolicy": {
+          "default": "block"
+        }
+      }
+    }
