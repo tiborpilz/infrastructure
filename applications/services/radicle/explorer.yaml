@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radicle-explorer
+  namespace: radicle
+  labels:
+    app.kubernetes.io/name: radicle-explorer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: radicle-explorer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: radicle-explorer
+    spec:
+      containers:
+        # Static SPA served by Caddy on :80 out of /usr/share/caddy. The image
+        # loads runtime config from /config.json in that web root, which we
+        # supply via the ConfigMap below.
+        - name: explorer
+          image: khuedoan/radicle-explorer:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: config
+              mountPath: /usr/share/caddy/config.json
+              subPath: config.json
+          readinessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 20
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: radicle-explorer-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radicle-explorer
+  namespace: radicle
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: radicle-explorer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

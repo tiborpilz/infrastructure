@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: radicle
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    path: applications/services/radicle
+    repoURL: https://github.com/tiborpilz/infrastructure
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: radicle
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

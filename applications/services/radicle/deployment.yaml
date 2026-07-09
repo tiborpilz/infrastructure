@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radicle
+  namespace: radicle
+  labels:
+    app.kubernetes.io/name: radicle
+spec:
+  replicas: 1
+  # radicle-node and radicle-httpd share one ReadWriteOnce volume (RAD_HOME),
+  # so they must live in the same pod, and only one pod may mount it at a time.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: radicle
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: radicle
+    spec:
+      initContainers:
+        # The fredix images ship only the radicle-node / radicle-httpd binaries
+        # (no `rad` CLI), so they expect a pre-created profile. Radicle node
+        # keys are standard OpenSSH Ed25519 keys, so we bootstrap a
+        # passphrase-less identity with ssh-keygen on first boot. The key (=
+        # the Node ID) then persists on the PVC across restarts.
+        - name: init-identity
+          image: alpine:3.20
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              # Pre-create the profile layout so radicle-httpd doesn't crash if
+              # it starts before radicle-node has initialized storage.
+              mkdir -p "$RAD_HOME/keys" "$RAD_HOME/storage"
+              if [ ! -f "$RAD_HOME/keys/radicle" ]; then
+                echo "No node identity found - generating a passphrase-less Ed25519 key"
+                apk add --no-cache openssh-keygen
+                ssh-keygen -t ed25519 -N "" -C "radicle-tibor" -f "$RAD_HOME/keys/radicle"
+              fi
+              # config.json is declarative: refresh it from the ConfigMap every start.
+              cp /config/config.json "$RAD_HOME/config.json"
+              echo "Radicle node public key (Node ID):"
+              cat "$RAD_HOME/keys/radicle.pub"
+          env:
+            - name: RAD_HOME
+              value: /radicle
+          volumeMounts:
+            - name: home
+              mountPath: /radicle
+            - name: node-config
+              mountPath: /config
+      containers:
+        # P2P daemon. Entrypoint is `radicle-node --listen 0.0.0.0:8776`.
+        - name: node
+          image: fredix/radicle-node:1.6.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RAD_HOME
+              value: /radicle
+            - name: RUST_LOG
+              value: info
+          ports:
+            - name: p2p
+              containerPort: 8776
+          volumeMounts:
+            - name: home
+              mountPath: /radicle
+          readinessProbe:
+            tcpSocket:
+              port: 8776
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8776
+            initialDelaySeconds: 45
+            periodSeconds: 30
+        # HTTP API gateway (read-only access to the node's storage). Entrypoint
+        # is `radicle-httpd --listen 0.0.0.0:8080`. This is what the Explorer
+        # SPA talks to from the browser, so it is exposed publicly via /api.
+        - name: httpd
+          image: fredix/radicle-httpd:0.23.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RAD_HOME
+              value: /radicle
+            - name: RUST_LOG
+              value: info
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 30
+          volumeMounts:
+            - name: home
+              mountPath: /radicle
+      volumes:
+        - name: home
+          persistentVolumeClaim:
+            claimName: radicle-home
+        - name: node-config
+          configMap:
+            name: radicle-node-config
