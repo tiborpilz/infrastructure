@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: radicle-home
+  namespace: radicle
+  # Prune=false so ArgoCD never deletes the volume holding the node identity
+  # key and replicated repo storage during a sync.
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: hcloud-volumes
+  resources:
+    requests:
+      storage: 20Gi

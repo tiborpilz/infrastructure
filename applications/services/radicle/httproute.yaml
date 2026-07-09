@@ -1,0 +1,31 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: radicle
+  namespace: radicle
+spec:
+  parentRefs:
+    - name: public
+      namespace: gateway-system
+      sectionName: https
+  hostnames:
+    - radicle.tibor.sh
+  rules:
+    # httpd HTTP API. The more specific /api prefix is matched before / so the
+    # Explorer SPA's browser calls to https://radicle.tibor.sh/api/v1 reach the
+    # radicle-httpd backend (same origin, no CORS).
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api
+      backendRefs:
+        - name: radicle-httpd
+          port: 8080
+    # Everything else serves the Explorer web UI.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: radicle-explorer
+          port: 80

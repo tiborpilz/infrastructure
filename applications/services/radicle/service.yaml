@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: radicle-httpd
+  namespace: radicle
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: radicle
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radicle-node
+  namespace: radicle
+  # ClusterIP only: the P2P port is internal for now. Swap to type: LoadBalancer
+  # with the Hetzner annotations (see applications/services/tangled/knot
+  # services.yaml for the pattern) to make this a publicly reachable seed.
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: radicle
+  ports:
+    - name: p2p
+      port: 8776
+      targetPort: 8776

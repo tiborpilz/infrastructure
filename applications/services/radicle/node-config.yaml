@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: radicle-node-config
+  namespace: radicle
+data:
+  # Radicle node config (RAD_HOME/config.json). Kept intentionally minimal so
+  # radicle-node fills in its own defaults (default seedingPolicy is "block",
+  # i.e. this node only replicates repos you explicitly `rad seed`). The init
+  # container copies this over RAD_HOME/config.json on every start, so this is
+  # the declarative source of truth.
+  #
+  # externalAddresses is left empty because the P2P port (8776) is currently
+  # internal-only. To turn this into a publicly reachable seed later, expose
+  # 8776 via a LoadBalancer and add e.g.
+  #   "externalAddresses": ["radicle.tibor.sh:8776"]
+  # then flip seedingPolicy to {"default":"allow","scope":"all"} for an open
+  # (fully-replicating) seed.
+  config.json: |
+    {
+      "node": {
+        "alias": "radicle-tibor"
+      }
+    }
