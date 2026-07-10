@@ -2,12 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: radicle-node-config
-  namespace: radicle
 data:
   config.json: |
     {
       "node": {
-        "alias": "radicle-tibor",
+        "alias": "radicle",
         "seedingPolicy": {
           "default": "block"
         }
