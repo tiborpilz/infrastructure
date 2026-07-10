@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: radicle-explorer-config
+data:
+  config.json: |
+    {
+      "nodes": {
+        "fallbackPublicExplorer": "https://app.radicle.xyz/nodes/$host/$rid$path",
+        "requiredApiVersion": ">=0.18.0",
+        "defaultHttpdPort": 443,
+        "defaultLocalHttpdPort": 8080,
+        "defaultHttpdScheme": "https"
+      },
+      "source": {
+        "commitsPerPage": 30
+      },
+      "supportWebsite": "https://radicle.zulipchat.com",
+      "deploymentId": null,
+      "preferredSeeds": [
+        {
+          "hostname": "radicle.example.com",
+          "port": 443,
+          "scheme": "https"
+        }
+      ]
+    }
