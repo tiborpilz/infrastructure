@@ -9,6 +9,9 @@ module "bootstrap" {
   cloudflare_api_token = var.cloudflare_api_token
   network_name         = var.network_name
   argocd_age_key       = var.argocd_age_key
+
+  external_dns_txt_owner_id   = var.external_dns_txt_owner_id
+  external_dns_domain_filters = var.external_dns_domain_filters
 }
 
 locals {

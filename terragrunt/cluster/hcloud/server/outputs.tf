@@ -29,6 +29,11 @@ output "worker_server_ids" {
   value       = { for k, s in hcloud_server.worker : k => s.id }
 }
 
+output "control_plane_server_ids" {
+  description = "Map of control-plane name to Hetzner server ID."
+  value       = { for k, s in hcloud_server.control_plane : k => s.id }
+}
+
 output "location" {
   description = "Hetzner Cloud location."
   value       = var.location

@@ -33,12 +33,18 @@ module "hcloud_server" {
 }
 
 locals {
-  ingress_worker = sort(keys(var.worker_nodes))[0]
+  # Ingress traffic lands on the first worker; worker-less (single-node) test
+  # clusters fall back to the first control plane.
+  ingress_server_id = (
+    length(var.worker_nodes) > 0
+    ? module.hcloud_server.worker_server_ids[sort(keys(var.worker_nodes))[0]]
+    : module.hcloud_server.control_plane_server_ids[sort(keys(var.control_plane_nodes))[0]]
+  )
 }
 
 resource "hcloud_floating_ip_assignment" "ingress" {
   floating_ip_id = module.hcloud_network.floating_ip_id
-  server_id      = module.hcloud_server.worker_server_ids[local.ingress_worker]
+  server_id      = local.ingress_server_id
 }
 
 module "talos" {
@@ -62,6 +68,9 @@ module "talos" {
   hcloud_image_id          = tostring(module.hcloud_server.talos_image_id)
   hcloud_network_id        = tostring(module.hcloud_network.network_id)
   hcloud_firewall_id       = try(tostring(module.hcloud_network.firewall_ids[0]), "")
+
+  external_dns_txt_owner_id   = var.external_dns_txt_owner_id
+  external_dns_domain_filters = var.external_dns_domain_filters
 
   proxmox_workers = {
     for name, w in var.proxmox_workers : name => {
@@ -108,6 +117,7 @@ module "dns" {
   source = "./dns"
 
   domain  = var.domain
+  zone    = var.dns_zone
   lb_ipv4 = module.hcloud_network.floating_ip_address
   nodes   = module.hcloud_server.nodes
 }
