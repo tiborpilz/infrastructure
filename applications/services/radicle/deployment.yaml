@@ -39,6 +39,46 @@ spec:
               mountPath: /radicle
             - name: node-config
               mountPath: /config
+        - name: import-repo
+          image: alpine:3.20
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -u
+              MARK="$RAD_HOME/.imported-infrastructure"
+              if [ -f "$MARK" ]; then
+                echo "infrastructure already imported"
+                exit 0
+              fi
+              import() {
+                set -eu
+                apk add --no-cache curl git tar xz openssh-client
+                curl -fsSL "https://files.radicle.xyz/releases/1.6.1/radicle-x86_64-unknown-linux-musl.tar.xz" -o /tmp/radicle.tar.xz
+                mkdir -p /tmp/radicle
+                tar -xJf /tmp/radicle.tar.xz -C /tmp/radicle
+                export PATH="$(dirname "$(find /tmp/radicle -type f -name rad | head -n1)"):$PATH"
+                eval "$(ssh-agent -s)"
+                ssh-add "$RAD_HOME/keys/radicle" || true
+                git clone https://github.com/tiborpilz/infrastructure.git /tmp/infrastructure
+                cd /tmp/infrastructure
+                rad init --name infrastructure \
+                  --description "Mirror of tiborpilz/infrastructure" \
+                  --default-branch main --public --no-confirm
+                git push rad
+              }
+              if import; then
+                touch "$MARK"
+                echo "imported infrastructure"
+              else
+                echo "WARNING: infrastructure import failed; starting node without it" >&2
+              fi
+              exit 0
+          env:
+            - name: RAD_HOME
+              value: /radicle
+          volumeMounts:
+            - name: home
+              mountPath: /radicle
         - name: build-httpd
           image: rust:1-bookworm
           command: ["/bin/bash", "-c"]
