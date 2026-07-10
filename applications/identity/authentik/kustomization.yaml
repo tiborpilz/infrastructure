@@ -19,4 +19,4 @@ resources:
 # valuesObject (kustomize's images transformer matches any containers[] list).
 images:
   - name: valkey/valkey
-    newTag: "8-alpine"
+    newTag: "9-alpine"

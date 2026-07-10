@@ -13,6 +13,6 @@ resources:
 
 images:
   - name: valkey/valkey
-    newTag: "8-alpine"
+    newTag: "9-alpine"
   - name: alpine/k8s
     newTag: "1.30.4"
