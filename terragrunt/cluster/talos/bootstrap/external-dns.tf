@@ -28,5 +28,13 @@ data "helm_template" "external_dns" {
   version      = var.external_dns_chart_version
   kube_version = var.kubernetes_version
 
-  values = [file("${path.module}/files/external-dns-values.yaml")]
+  values = [
+    file("${path.module}/files/external-dns-values.yaml"),
+    # Empty owner id / filters render no flags, keeping the default
+    # single-cluster manifest unchanged.
+    yamlencode({
+      txtOwnerId    = var.external_dns_txt_owner_id
+      domainFilters = var.external_dns_domain_filters
+    }),
+  ]
 }

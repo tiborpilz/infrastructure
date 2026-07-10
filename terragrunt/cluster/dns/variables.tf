@@ -3,6 +3,12 @@ variable "domain" {
   type        = string
 }
 
+variable "zone" {
+  description = "Cloudflare zone holding the records. Defaults to var.domain; set it when the domain is a subdomain of the zone."
+  type        = string
+  default     = null
+}
+
 variable "lb_ipv4" {
   description = "IPv4 of the ingress floating IP. Used for the wildcard DNS record."
   type        = string

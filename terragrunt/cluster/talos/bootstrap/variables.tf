@@ -84,3 +84,15 @@ variable "argocd_age_key" {
   type        = string
   sensitive   = true
 }
+
+variable "external_dns_txt_owner_id" {
+  description = "external-dns TXT registry owner id (txtOwnerId). Distinct per cluster sharing a zone. Empty keeps the chart default and renders no flag."
+  type        = string
+  default     = ""
+}
+
+variable "external_dns_domain_filters" {
+  description = "Domains external-dns may manage (domainFilters). Empty list renders no filter."
+  type        = list(string)
+  default     = []
+}

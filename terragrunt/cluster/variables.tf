@@ -200,3 +200,21 @@ variable "proxmox_talos_schematic_id" {
   type        = string
   default     = ""
 }
+
+variable "dns_zone" {
+  description = "Cloudflare zone holding the cluster DNS records. Defaults to var.domain; set it when the domain is a subdomain of the zone (e.g. domain test.tibor.sh in zone tibor.sh)."
+  type        = string
+  default     = null
+}
+
+variable "external_dns_txt_owner_id" {
+  description = "external-dns TXT registry owner id. Give every cluster sharing a zone a distinct id so they leave each other's records alone. Empty keeps the chart default."
+  type        = string
+  default     = ""
+}
+
+variable "external_dns_domain_filters" {
+  description = "Domains external-dns may manage. Empty list means no filter."
+  type        = list(string)
+  default     = []
+}

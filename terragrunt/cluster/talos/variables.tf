@@ -200,3 +200,15 @@ variable "hcloud_firewall_id" {
   type        = string
   default     = ""
 }
+
+variable "external_dns_txt_owner_id" {
+  description = "external-dns TXT registry owner id, passed to bootstrap. Empty keeps the chart default."
+  type        = string
+  default     = ""
+}
+
+variable "external_dns_domain_filters" {
+  description = "Domains external-dns may manage, passed to bootstrap. Empty list means no filter."
+  type        = list(string)
+  default     = []
+}
