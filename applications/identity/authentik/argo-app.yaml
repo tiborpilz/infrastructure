@@ -175,7 +175,7 @@ spec:
                       type: RuntimeDefault
                   containers:
                     - name: valkey
-                      image: valkey/valkey:8-alpine
+                      image: valkey/valkey
                       imagePullPolicy: IfNotPresent
                       securityContext:
                         allowPrivilegeEscalation: false

@@ -22,9 +22,8 @@ spec:
               type: RuntimeDefault
           containers:
             - name: talos-backup
-              # TODO: pin to a released tag from
-              # ghcr.io/siderolabs/talos-backup once confirmed.
-              image: ghcr.io/siderolabs/talos-backup:latest
+              # tag is set via images: in kustomization.yaml
+              image: ghcr.io/siderolabs/talos-backup
               env:
                 - name: CLUSTER_NAME
                   value: hcloud-poc
