@@ -14,3 +14,9 @@ resources:
   - users.enc.yaml
   - secrets.enc.yaml
   - oidc-clients.enc.yaml
+
+# Rewrites the valkey sidecar StatefulSet embedded in the Application's helm
+# valuesObject (kustomize's images transformer matches any containers[] list).
+images:
+  - name: valkey/valkey
+    newTag: "8-alpine"

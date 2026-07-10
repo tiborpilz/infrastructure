@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "ignorePaths": ["**/_parked/**"],
+  "kubernetes": {
+    "managerFilePatterns": ["/^applications/.+\\.ya?ml$/"]
+  },
+  "argocd": {
+    "managerFilePatterns": ["/^applications/.+/argo-app[^/]*\\.ya?ml$/"]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "CloudNativePG Cluster spec.imageName (not a containers[] image, so neither the kustomize images transformer nor the kubernetes manager sees it)",
+      "managerFilePatterns": ["/^applications/.+\\.ya?ml$/"],
+      "matchStrings": ["imageName: (?<depName>[^\\s:]+):(?<currentValue>[^\\s@\"']+)"],
+      "datasourceTemplate": "docker"
+    }
+  ]
+}

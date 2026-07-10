@@ -8,3 +8,7 @@ resources:
   - httproute.yaml
   - database.yaml
   - argo-app.yaml
+
+images:
+  - name: alpine/k8s
+    newTag: "1.30.4"

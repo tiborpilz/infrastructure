@@ -6,3 +6,8 @@ resources:
   - talos-serviceaccount.yaml
   - objectbucketclaim.yaml
   - cronjob.yaml
+
+images:
+  # TODO: pin to a released tag from ghcr.io/siderolabs/talos-backup once confirmed.
+  - name: ghcr.io/siderolabs/talos-backup
+    newTag: "latest"
