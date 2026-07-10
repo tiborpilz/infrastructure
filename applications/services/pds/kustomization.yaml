@@ -10,5 +10,9 @@ resources:
   - httproute-handles.yaml
   - dnsendpoint.yaml
 
+images:
+  - name: ghcr.io/bluesky-social/pds
+    newTag: "0.4"
+
 generators:
   - kustomization-ksops-generator.yaml

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: explorer
-          image: khuedoan/radicle-explorer:latest
+          image: khuedoan/radicle-explorer
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
