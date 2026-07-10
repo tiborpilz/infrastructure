@@ -6,3 +6,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - httproute.yaml
+
+images:
+  - name: docker.io/heywoodlh/spindle
+    newTag: "c38881b4"

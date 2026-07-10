@@ -10,3 +10,15 @@ resources:
   - explorer-caddy.yaml
   - explorer.yaml
   - httproute.yaml
+
+images:
+  - name: alpine
+    newTag: "3.20"
+  - name: fredix/radicle-node
+    newTag: "1.6.1"
+  - name: fredix/radicle-httpd
+    newTag: "0.23.0"
+  - name: node
+    newTag: "24-bookworm"
+  - name: caddy
+    newTag: "2-alpine"

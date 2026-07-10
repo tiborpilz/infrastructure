@@ -7,5 +7,11 @@ resources:
   - services.yaml
   - httproute-knot.yaml
 
+images:
+  - name: busybox
+    newTag: "1.37"
+  - name: atcr.io/tangled.org/knot
+    newTag: "v1.15.0-alpha"
+
 generators:
   - kustomization-ksops-generator.yaml
