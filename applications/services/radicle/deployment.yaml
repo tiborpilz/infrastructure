@@ -39,6 +39,41 @@ spec:
               mountPath: /radicle
             - name: node-config
               mountPath: /config
+        - name: build-httpd
+          image: rust:1-bookworm
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -eu
+              REF=8e2148599ebd115db126eb60d8fd99be8904c978
+              BIN="$RAD_HOME/bin/radicle-httpd"
+              MARK="$RAD_HOME/bin/.httpd-ref"
+              if [ -x "$BIN" ] && [ "$(cat "$MARK" 2>/dev/null || true)" = "$REF" ]; then
+                echo "radicle-httpd already built at $REF"
+                exit 0
+              fi
+              git clone https://github.com/radicle-dev/radicle-explorer.git /workspace
+              cd /workspace
+              git checkout "$REF"
+              cargo build --release --manifest-path radicle-httpd/Cargo.toml
+              mkdir -p "$RAD_HOME/bin"
+              cp "$(find . -type f -path '*/release/radicle-httpd' | head -n1)" "$BIN"
+              chmod +x "$BIN"
+              echo "$REF" > "$MARK"
+          env:
+            - name: RAD_HOME
+              value: /radicle
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              memory: 6Gi
+          volumeMounts:
+            - name: home
+              mountPath: /radicle
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: node
           image: fredix/radicle-node:1.6.1
@@ -65,8 +100,8 @@ spec:
             initialDelaySeconds: 45
             periodSeconds: 30
         - name: httpd
-          image: fredix/radicle-httpd:0.23.0
-          imagePullPolicy: IfNotPresent
+          image: rust:1-bookworm
+          command: ["/radicle/bin/radicle-httpd", "--listen", "0.0.0.0:8080"]
           env:
             - name: RAD_HOME
               value: /radicle
@@ -95,3 +130,5 @@ spec:
         - name: node-config
           configMap:
             name: radicle-node-config
+        - name: workspace
+          emptyDir: {}

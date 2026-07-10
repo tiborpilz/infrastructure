@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: radicle-explorer-caddy
+  namespace: radicle
+data:
+  Caddyfile: |
+    :80 {
+        root * /srv
+        encode gzip
+        try_files {path} /index.html
+        file_server
+    }
