@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radicle
+  namespace: radicle
+  labels:
+    app.kubernetes.io/name: radicle
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: radicle
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: radicle
+    spec:
+      initContainers:
+        - name: init-identity
+          image: alpine:3.20
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              mkdir -p "$RAD_HOME/keys" "$RAD_HOME/storage"
+              if [ ! -f "$RAD_HOME/keys/radicle" ]; then
+                apk add --no-cache openssh-keygen
+                ssh-keygen -t ed25519 -N "" -C "radicle-tibor" -f "$RAD_HOME/keys/radicle"
+              fi
+              cp /config/config.json "$RAD_HOME/config.json"
+              cat "$RAD_HOME/keys/radicle.pub"
+          env:
+            - name: RAD_HOME
+              value: /radicle
+          volumeMounts:
+            - name: home
+              mountPath: /radicle
+            - name: node-config
+              mountPath: /config
+      containers:
+        - name: node
+          image: fredix/radicle-node:1.6.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RAD_HOME
+              value: /radicle
+            - name: RUST_LOG
+              value: info
+          ports:
+            - name: p2p
+              containerPort: 8776
+          volumeMounts:
+            - name: home
+              mountPath: /radicle
+          readinessProbe:
+            tcpSocket:
+              port: 8776
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8776
+            initialDelaySeconds: 45
+            periodSeconds: 30
+        - name: httpd
+          image: fredix/radicle-httpd:0.23.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RAD_HOME
+              value: /radicle
+            - name: RUST_LOG
+              value: info
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 30
+          volumeMounts:
+            - name: home
+              mountPath: /radicle
+      volumes:
+        - name: home
+          persistentVolumeClaim:
+            claimName: radicle-home
+        - name: node-config
+          configMap:
+            name: radicle-node-config
