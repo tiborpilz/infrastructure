@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: radicle
-  namespace: radicle
   labels:
     app.kubernetes.io/name: radicle
 spec:
@@ -27,7 +26,7 @@ spec:
               mkdir -p "$RAD_HOME/keys" "$RAD_HOME/storage"
               if [ ! -f "$RAD_HOME/keys/radicle" ]; then
                 apk add --no-cache openssh-keygen
-                ssh-keygen -t ed25519 -N "" -C "radicle-tibor" -f "$RAD_HOME/keys/radicle"
+                ssh-keygen -t ed25519 -N "" -C "radicle" -f "$RAD_HOME/keys/radicle"
               fi
               cp /config/config.json "$RAD_HOME/config.json"
               cat "$RAD_HOME/keys/radicle.pub"
