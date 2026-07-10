@@ -18,7 +18,7 @@ spec:
     spec:
       initContainers:
         - name: init-identity
-          image: alpine:3.20
+          image: alpine
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -40,7 +40,7 @@ spec:
               mountPath: /config
       containers:
         - name: node
-          image: fredix/radicle-node:1.6.1
+          image: fredix/radicle-node
           imagePullPolicy: IfNotPresent
           env:
             - name: RAD_HOME
@@ -64,7 +64,7 @@ spec:
             initialDelaySeconds: 45
             periodSeconds: 30
         - name: httpd
-          image: fredix/radicle-httpd:0.23.0
+          image: fredix/radicle-httpd
           imagePullPolicy: IfNotPresent
           env:
             - name: RAD_HOME
