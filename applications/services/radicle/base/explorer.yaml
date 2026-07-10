@@ -16,7 +16,7 @@ spec:
     spec:
       initContainers:
         - name: build
-          image: node:24-bookworm
+          image: node
           command: ["/bin/bash", "-c"]
           args:
             - |
@@ -46,7 +46,7 @@ spec:
               mountPath: /config
       containers:
         - name: web
-          image: caddy:2-alpine
+          image: caddy
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
