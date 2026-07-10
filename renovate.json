@@ -6,8 +6,9 @@
   },
   "packageRules": [
     {
-      "description": "Automerge patch-level updates",
+      "description": "Automerge patch-level updates once the release is 3 days old",
       "matchUpdateTypes": ["patch"],
+      "minimumReleaseAge": "3 days",
       "automerge": true
     }
   ]
