@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: code.forgejo.org/forgejo-helm
     chart: forgejo
-    targetRevision: 17.0.1
+    targetRevision: 17.1.2
     helm:
       valuesObject:
         storageClass: hcloud-volumes
