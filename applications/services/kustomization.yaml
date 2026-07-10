@@ -12,4 +12,3 @@ resources:
   - tekton/argo-app.yaml
   - headlamp/argo-app.yaml
   - hubble/argo-app.yaml
-  - observability/argo-app.yaml
