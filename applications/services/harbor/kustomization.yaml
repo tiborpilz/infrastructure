@@ -10,3 +10,9 @@ resources:
   - httproute.yaml
   - oidc-config.yaml
   - argo-app.yaml
+
+images:
+  - name: valkey/valkey
+    newTag: "8-alpine"
+  - name: alpine/k8s
+    newTag: "1.30.4"

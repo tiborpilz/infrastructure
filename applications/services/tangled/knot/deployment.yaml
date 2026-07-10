@@ -21,7 +21,7 @@ spec:
         - name: atcr-pull
       initContainers:
         - name: fix-perms
-          image: busybox:1.37
+          image: busybox
           command: ["sh", "-c", "chown -R 1000:1000 /home/git /etc/ssh/keys"]
           volumeMounts:
             - name: app
@@ -32,7 +32,7 @@ spec:
               mountPath: /etc/ssh/keys
       containers:
         - name: knot
-          image: atcr.io/tangled.org/knot:v1.15.0-alpha
+          image: atcr.io/tangled.org/knot
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
