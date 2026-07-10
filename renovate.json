@@ -3,5 +3,12 @@
   "extends": ["config:recommended"],
   "argocd": {
     "managerFilePatterns": ["/^applications/.+/argo-app[^/]*\\.ya?ml$/"]
-  }
+  },
+  "packageRules": [
+    {
+      "description": "Automerge patch-level updates",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    }
+  ]
 }
