@@ -1,0 +1,196 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: renovate-user-bootstrap
+  namespace: renovate
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: renovate-user-bootstrap-forgejo-reader
+  namespace: forgejo
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["forgejo-admin"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: renovate-user-bootstrap-forgejo-reader
+  namespace: forgejo
+subjects:
+  - kind: ServiceAccount
+    name: renovate-user-bootstrap
+    namespace: renovate
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: renovate-user-bootstrap-forgejo-reader
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: renovate-user-bootstrap
+  namespace: renovate
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["renovate-token"]
+    verbs: ["get", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: renovate-user-bootstrap
+  namespace: renovate
+subjects:
+  - kind: ServiceAccount
+    name: renovate-user-bootstrap
+    namespace: renovate
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: renovate-user-bootstrap
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: renovate-user-bootstrap
+  namespace: renovate
+spec:
+  backoffLimit: 20
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: renovate-user-bootstrap
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bootstrap
+          image: alpine/k8s:1.30.4
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: HOME
+              value: /tmp
+            - name: FORGEJO_URL
+              value: https://git.tibor.sh
+            - name: BOT_USER
+              value: renovate
+            - name: BOT_EMAIL
+              value: renovate@tibor.sh
+            - name: TOKEN_NAME
+              value: renovate
+            - name: SECRET_NAME
+              value: renovate-token
+            - name: NS
+              value: renovate
+            - name: FORGEJO_NS
+              value: forgejo
+          command: ["/bin/sh", "-eu", "-c"]
+          args:
+            - |
+              existing=$(kubectl -n "$NS" get secret "$SECRET_NAME" -o json 2>/dev/null || true)
+              if [ -n "$existing" ]; then
+                token=$(printf '%s' "$existing" | jq -r '.data.RENOVATE_TOKEN // empty' | (base64 -d 2>/dev/null || true))
+                if [ -n "$token" ]; then
+                  echo "$SECRET_NAME already populated; nothing to do."
+                  exit 0
+                fi
+              fi
+
+              FORGEJO_ADMIN_USERNAME=$(kubectl -n "$FORGEJO_NS" get secret forgejo-admin -o jsonpath='{.data.username}' | base64 -d)
+              FORGEJO_ADMIN_PASSWORD=$(kubectl -n "$FORGEJO_NS" get secret forgejo-admin -o jsonpath='{.data.password}' | base64 -d)
+
+              AUTH="$FORGEJO_ADMIN_USERNAME:$FORGEJO_ADMIN_PASSWORD"
+              API="$FORGEJO_URL/api/v1"
+
+              fetch() {
+                METHOD="$1"; URL="$2"; BODY="${3:-}"
+                if [ -n "$BODY" ]; then
+                  curl -s -u "$AUTH" -X "$METHOD" -H 'Content-Type: application/json' -w '\n%{http_code}' -d "$BODY" "$URL"
+                else
+                  curl -s -u "$AUTH" -X "$METHOD" -w '\n%{http_code}' "$URL"
+                fi
+              }
+
+              RAW=$(fetch GET "$API/users/$BOT_USER")
+              HTTP=$(printf '%s' "$RAW" | tail -n1)
+              if [ "$HTTP" = "404" ]; then
+                echo "Creating user '$BOT_USER'"
+                PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
+                BODY=$(jq -nc --arg u "$BOT_USER" --arg e "$BOT_EMAIL" --arg p "$PASSWORD" \
+                  '{username:$u, email:$e, full_name:"Renovate Bot", password:$p, must_change_password:false}')
+                RAW=$(fetch POST "$API/admin/users" "$BODY")
+                HTTP=$(printf '%s' "$RAW" | tail -n1)
+                if [ "$HTTP" != "201" ]; then
+                  echo "Failed to create user (HTTP $HTTP): $(printf '%s' "$RAW" | sed '$d')" >&2
+                  exit 1
+                fi
+              elif [ "$HTTP" != "200" ]; then
+                echo "Failed to look up user (HTTP $HTTP)" >&2
+                exit 1
+              fi
+
+              # Admin lets autodiscover reach every repo without per-repo collaborator setup
+              BODY=$(jq -nc --arg u "$BOT_USER" '{login_name:$u, source_id:0, admin:true}')
+              RAW=$(fetch PATCH "$API/admin/users/$BOT_USER" "$BODY")
+              HTTP=$(printf '%s' "$RAW" | tail -n1)
+              if [ "$HTTP" != "200" ]; then
+                echo "Failed to grant admin (HTTP $HTTP): $(printf '%s' "$RAW" | sed '$d')" >&2
+                exit 1
+              fi
+
+              RAW=$(fetch GET "$API/users/$BOT_USER/tokens")
+              HTTP=$(printf '%s' "$RAW" | tail -n1)
+              TOKENS=$(printf '%s' "$RAW" | sed '$d')
+              if [ "$HTTP" != "200" ]; then
+                echo "Failed to list tokens (HTTP $HTTP): $TOKENS" >&2
+                exit 1
+              fi
+
+              TOKEN_ID=$(printf '%s' "$TOKENS" | jq -r --arg n "$TOKEN_NAME" '.[] | select(.name == $n) | .id' | head -n1)
+              if [ -n "$TOKEN_ID" ] && [ "$TOKEN_ID" != "null" ]; then
+                echo "Token '$TOKEN_NAME' exists (id=$TOKEN_ID); deleting so we can recreate with a known value"
+                DEL_RAW=$(fetch DELETE "$API/users/$BOT_USER/tokens/$TOKEN_ID")
+                DEL_HTTP=$(printf '%s' "$DEL_RAW" | tail -n1)
+                if [ "$DEL_HTTP" != "204" ] && [ "$DEL_HTTP" != "404" ]; then
+                  echo "Failed to delete existing token (HTTP $DEL_HTTP)" >&2
+                  exit 1
+                fi
+              fi
+
+              echo "Creating access token '$TOKEN_NAME' for '$BOT_USER'"
+              BODY=$(jq -nc --arg n "$TOKEN_NAME" \
+                '{name:$n, scopes:["write:repository","read:user","write:issue","read:organization"]}')
+              RAW=$(fetch POST "$API/users/$BOT_USER/tokens" "$BODY")
+              HTTP=$(printf '%s' "$RAW" | tail -n1)
+              RESP=$(printf '%s' "$RAW" | sed '$d')
+              if [ "$HTTP" != "201" ]; then
+                echo "Failed to create token (HTTP $HTTP): $RESP" >&2
+                exit 1
+              fi
+
+              TOKEN=$(printf '%s' "$RESP" | jq -r '.sha1 // empty')
+              if [ -z "$TOKEN" ]; then
+                echo "Forgejo response missing token: $RESP" >&2
+                exit 1
+              fi
+
+              kubectl -n "$NS" create secret generic "$SECRET_NAME" \
+                --from-literal=RENOVATE_TOKEN="$TOKEN" \
+                --dry-run=client -o yaml | kubectl apply -f -
+
+              echo "Renovate user bootstrap complete."
