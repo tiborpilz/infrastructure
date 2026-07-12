@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: signoz-oauth2-proxy
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://oauth2-proxy.github.io/manifests
+    chart: oauth2-proxy
+    targetRevision: 10.7.0
+    helm:
+      releaseName: signoz-oauth2-proxy
+      valuesObject:
+        # Distinct fullname so the Service doesn't collide with jaeger's
+        # oauth2-proxy in the same namespace. SigNoz Community has no built-in
+        # OIDC login, so we gate the UI here (same pattern as Jaeger/Hubble).
+        fullnameOverride: signoz-oauth2-proxy
+        config:
+          existingSecret: signoz-oauth2-proxy-secrets
+        extraArgs:
+          provider: oidc
+          oidc-issuer-url: https://auth.tibor.sh/application/o/signoz/
+          redirect-url: https://signoz.tibor.sh/oauth2/callback
+          upstream: http://signoz.observability.svc.cluster.local:8080
+          email-domain: "*"
+          reverse-proxy: "true"
+          cookie-secure: "true"
+          cookie-domain: signoz.tibor.sh
+          cookie-samesite: lax
+          whitelist-domain: signoz.tibor.sh
+          code-challenge-method: S256
+          pass-authorization-header: "true"
+          pass-access-token: "true"
+          pass-user-headers: "true"
+          set-authorization-header: "true"
+          set-xauthrequest: "true"
+          skip-provider-button: "false"
+          insecure-oidc-allow-unverified-email: "true"
+          scope: openid profile email
+        service:
+          portNumber: 80
+        ingress:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

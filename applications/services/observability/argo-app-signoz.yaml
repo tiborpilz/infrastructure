@@ -1,0 +1,76 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: signoz
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://charts.signoz.io
+    chart: signoz
+    targetRevision: 0.132.2
+    helm:
+      releaseName: signoz
+      valuesObject:
+        # Runs in parallel with the Prometheus/Loki/Jaeger stack for feature
+        # comparison. It is fed the same OTLP stream via an exporter added to
+        # the shared otel-collector (see argo-app-otel-collector.yaml).
+        global:
+          storageClass: ceph-block
+
+        clickhouse:
+          persistence:
+            enabled: true
+            storageClass: ceph-block
+            size: 20Gi
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              memory: 2Gi
+          zookeeper:
+            persistence:
+              enabled: true
+              storageClass: ceph-block
+              size: 8Gi
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 512Mi
+
+        signoz:
+          persistence:
+            enabled: true
+            storageClass: ceph-block
+            size: 1Gi
+          ingress:
+            enabled: false
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+
+        otelCollector:
+          ingress:
+            enabled: false
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

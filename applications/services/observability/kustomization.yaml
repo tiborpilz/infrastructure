@@ -11,5 +11,11 @@ resources:
   - argo-app-jaeger.yaml
   - argo-app-jaeger-oauth2-proxy.yaml
   - argo-app-otel-collector.yaml
+  - argo-app-signoz.yaml
+  - argo-app-signoz-oauth2-proxy.yaml
   - httproute-grafana.yaml
   - httproute-jaeger.yaml
+  - httproute-signoz.yaml
+  # SigNoz OIDC secret: encrypt secrets-signoz.enc.yaml.example -> secrets-signoz.enc.yaml
+  # with sops (see README), then uncomment the line below.
+  # - secrets-signoz.enc.yaml
