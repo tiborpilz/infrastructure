@@ -4,8 +4,8 @@ metadata:
   labels:
     blueprints.goauthentik.io/instantiate: "true"
 entries:
-  # Groups that Grafana maps to roles via role_attribute_path. Membership is
-  # managed in Authentik; add users to grafana-admins for full admin.
+  # Groups that Grafana maps to roles via role_attribute_path. Admin membership
+  # is managed declaratively in authentik/blueprints/users.yaml (grafana-admins).
   - model: authentik_core.group
     state: present
     identifiers:
