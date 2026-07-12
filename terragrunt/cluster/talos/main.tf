@@ -127,6 +127,14 @@ resource "talos_machine_configuration_apply" "control_plane" {
   machine_configuration_input = data.talos_machine_configuration.control_plane[each.key].machine_configuration
   node                        = each.value.public_ipv4
 
+  # Graceful reset leaves etcd before the hcloud server is destroyed;
+  # without it a scale-down kills members cold and can lose quorum.
+  on_destroy = {
+    graceful = true
+    reset    = true
+    reboot   = false
+  }
+
   depends_on = [
     terraform_data.wait_for_maintenance,
     terraform_data.bootstrap_manifests_trigger,
@@ -243,6 +251,13 @@ resource "talos_machine_configuration_apply" "worker" {
   client_configuration        = talos_machine_secrets.this.client_configuration
   machine_configuration_input = data.talos_machine_configuration.worker[each.key].machine_configuration
   node                        = each.value.public_ipv4
+
+  # Cordon/drain on scale-down; graceful is a no-op for workers' etcd.
+  on_destroy = {
+    graceful = true
+    reset    = true
+    reboot   = false
+  }
 
   depends_on = [
     terraform_data.wait_for_maintenance_worker,
