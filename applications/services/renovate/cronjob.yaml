@@ -1,0 +1,106 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: renovate
+  namespace: renovate
+  labels:
+    app.kubernetes.io/name: renovate
+spec:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: renovate
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            # Renovate autodiscovery only sees repos the bot is related to
+            # (repos/search?uid=), so sync the bot into every repo first.
+            - name: collaborator-sync
+              image: alpine/k8s:1.30.4
+              securityContext:
+                runAsUser: 1000
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: HOME
+                  value: /tmp
+                - name: FORGEJO_URL
+                  value: https://git.tibor.sh
+                - name: BOT_USER
+                  value: renovate
+              envFrom:
+                - secretRef:
+                    name: renovate-token
+              command: ["/bin/sh", "-eu", "-c"]
+              args:
+                - |
+                  auth() { curl -s -H "Authorization: token $RENOVATE_TOKEN" "$@"; }
+                  page=1
+                  while :; do
+                    resp=$(auth "$FORGEJO_URL/api/v1/repos/search?archived=false&limit=50&page=$page")
+                    names=$(printf '%s' "$resp" | jq -r '.data[] | select(.mirror | not) | .full_name')
+                    for full in $names; do
+                      owner=${full%%/*}
+                      [ "$owner" = "$BOT_USER" ] && continue
+                      if ! auth -f -o /dev/null "$FORGEJO_URL/api/v1/repos/$full/collaborators/$BOT_USER" 2>/dev/null; then
+                        echo "Adding $BOT_USER as collaborator on $full"
+                        HTTP=$(auth -X PUT -H 'Content-Type: application/json' \
+                          -d '{"permission":"write"}' -o /dev/null -w '%{http_code}' \
+                          "$FORGEJO_URL/api/v1/repos/$full/collaborators/$BOT_USER")
+                        [ "$HTTP" = "204" ] || { echo "Failed on $full (HTTP $HTTP)" >&2; exit 1; }
+                      fi
+                    done
+                    count=$(printf '%s' "$resp" | jq '.data | length')
+                    [ "$count" -lt 50 ] && break
+                    page=$((page+1))
+                  done
+                  echo "Collaborator sync complete."
+          containers:
+            - name: renovate
+              image: renovate/renovate:43
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: RENOVATE_PLATFORM
+                  value: forgejo
+                - name: RENOVATE_ENDPOINT
+                  value: https://git.tibor.sh/
+                - name: RENOVATE_AUTODISCOVER
+                  value: "true"
+                - name: RENOVATE_GIT_AUTHOR
+                  value: Renovate Bot <renovate@tibor.sh>
+                - name: LOG_LEVEL
+                  value: info
+              envFrom:
+                - secretRef:
+                    name: renovate-token
+                - secretRef:
+                    name: renovate-env
+                    optional: true
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 512Mi
+                limits:
+                  memory: 2Gi
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir: {}
