@@ -2,14 +2,20 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "argocd": {
-    "managerFilePatterns": ["/^applications/.+/argo-app[^/]*\\.ya?ml$/"]
+    "managerFilePatterns": ["/applications/.*\\.ya?ml$/"]
   },
-  "packageRules": [
+  "kubernetes": {
+    "managerFilePatterns": ["/applications/.*\\.ya?ml$/"]
+  },
+  "nix": {
+    "enabled": true
+  },
+  "customManagers": [
     {
-      "description": "Automerge patch-level updates once the release is 3 days old",
-      "matchUpdateTypes": ["patch"],
-      "minimumReleaseAge": "3 days",
-      "automerge": true
+      "customType": "regex",
+      "managerFilePatterns": ["/applications/.*\\.ya?ml$/"],
+      "matchStrings": ["imageName: (?<depName>[^\\s:]+):(?<currentValue>\\S+)"],
+      "datasourceTemplate": "docker"
     }
   ]
 }
