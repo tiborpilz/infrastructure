@@ -63,20 +63,27 @@ spec:
                 enabled: true
             otlphttp/loki:
               endpoint: http://loki-gateway.observability.svc.cluster.local/otlp
+            # Fan the same OTLP stream into SigNoz (parallel stack, for
+            # feature comparison). SigNoz's collector takes all three signals
+            # over OTLP gRPC on 4317.
+            otlp/signoz:
+              endpoint: signoz-otel-collector.observability.svc.cluster.local:4317
+              tls:
+                insecure: true
           service:
             pipelines:
               traces:
                 receivers: [otlp]
                 processors: [memory_limiter, batch]
-                exporters: [otlp/jaeger]
+                exporters: [otlp/jaeger, otlp/signoz]
               metrics:
                 receivers: [otlp]
                 processors: [memory_limiter, batch]
-                exporters: [prometheusremotewrite]
+                exporters: [prometheusremotewrite, otlp/signoz]
               logs:
                 receivers: [otlp]
                 processors: [memory_limiter, batch]
-                exporters: [otlphttp/loki]
+                exporters: [otlphttp/loki, otlp/signoz]
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
