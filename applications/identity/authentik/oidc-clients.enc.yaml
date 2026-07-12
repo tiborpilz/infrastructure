@@ -13,31 +13,43 @@ sops:
         - recipient: age1nhsx40cf26syk9jt8hkd0grdrc9qc45sk52cl5vy0d78fxl2f4hs4h7laa
           enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBocFRFeGRRQkpwV05uYlAv
-            Y1ZBM1hjdzREZWhrTUV1YTRCWG90R2MrT0dFCk8xeU1ra2NJK1BTRVNjTG9pWGJU
-            eDM3dGk2cWdEQnJSVElRWFh1ekpoalkKLS0tIGpjUGFQMHBFbmdQMlFlRHpIdTJY
-            NER3Uzc2Rm5wUDJ2dnNpaFJiSkJwVEEKIuVtxnD+HJpjm1XBqZgfVQx1tV6PyWvB
-            j70e1RSzza7KF3FMMFocbDSKKwIfFsi+WD5Hs9bJfOtHUVEmroGSKg==
-            -----END AGE ENCRYPTED FILE-----
-        - recipient: age1gzf883y8p0wfy5yjn5l3l2axnqxdgtw2zdcp8jqsrk65m7gf6y6qzgkf63
-          enc: |
-            -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBlcHE0MEdTM3dUUGJGclho
-            NEJFNGY0SFRDVDJwY3l5dURBYmNUVUxQT0dRCllCV0JFekFRVHpHZUk0em1lSWtZ
-            YmVUU1pBaVFMUjlVMjB0TVFkZnlZUEUKLS0tIDkxZVluWWRjOTcrMVJ0ZnAxS3Rj
-            Z3RwSzZpNEtDc3VtVE54V1lYendkY1UK1N7a+yG6o3t5lF7mOdQyMj4XfZHcmNK8
-            QtVy1URmEWQXOKWBN2BqtaPXNzCsMFrDz5JfexggQt31wah2XF3UlA==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAzd2NJTjVucEdtRGJCWlNw
+            d0liaFV1aFl1amJaU0FmeXB6RkIwVnRobDJvCmo0Z3JCbDJXTEhBYWwreTByaTdW
+            djZXRkppdnl0dm1jTkl0RnBrd1dvekUKLS0tIHI5Sk9QRHV4ajF1RWt2Y2l1SWNH
+            MkxKTGVudlVNUFkvUThhN0pXeDh4NE0Ka6au+a+PDoRYhvP8qsvkzKZwbtiJkf7i
+            Zl+gSO0lPzYLT3Z6cQPsTZmvfn8W8extKQktxAtKquVJSOn4uUXKKg==
             -----END AGE ENCRYPTED FILE-----
         - recipient: age1eagn023gem8ekv6q8gx7rc37x2rsxfscpyt2znd4j5l8ryehksdqzjek59
           enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB4Vk1jRktYVEpuQmVzQnY5
-            L3BLcWZ5aFhKaDcvY1o4Q1ZaekRXRnFVZ0JNCmJpcjVMdHlRMDZFUjNDdEw5VkNY
-            cWZxTVBBWk1lcHFDdkc2ZVpuNGlCRWcKLS0tIEJWak03M2Y2dDZQSmZiY0NhQ0VC
-            ZDdLRnl4RXdaVjJ2dmV6VEE3c3pobHcKooDJoJPXrUqnMET7ZUk3Ld9Vwc2JIKpR
-            Vd95/8bwx2sqOfPQa9x7t55NgmoeIXwg3lOKSr0J4qQnlAIgu8UJmQ==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBLL2tjQ0NFTVZlOFN4Zkdx
+            L3cyUm04Y1RFYVBOS3FtU2tVNHNJSzRmU2s4Cm1rNmkwN051TFl4eFBMN3RrQ2lX
+            VHZvcU1lbncrMUdxMXQzSlQ2ZUJscVEKLS0tIDQ5OUhUdTUvYWVucDdtZWNzM0hT
+            M3pySVJpa0d1aFh5SXdCcngzY29DNVUKzc2OfYklm63fjfjBmrh/b60W7Uz+YKP+
+            dqyKXKStdGzNRh+A0iQeFEmHxh4KEepR6qYWSb4Q7W34Av2/gP2hhA==
             -----END AGE ENCRYPTED FILE-----
     lastmodified: "2026-07-01T22:54:48Z"
     mac: ENC[AES256_GCM,data:+olYSG20TuFKakNI+k/rIOziuw3GJY/cjdHMatBxdAfbHQcRZfoN4YyVVnEBvyzuy8oT6BBpt/wbskeW6Lwg/k+lT99d1YxcYdrC5RP6z87N7INA5uRPDRlIoNHPmSZewhX0npdbHvwveW/PR6uS9rAYM6MQyBlcC9sM7sxa9tM=,iv:lT9m2LuLbpJ1Y9q3FCsxWef/+RmsnLZ/7llzKa9spKA=,tag:JRCanGX06pLxjp5VczJOTA==,type:str]
+    pgp:
+        - created_at: "2026-07-12T20:03:27Z"
+          enc: |-
+            -----BEGIN PGP MESSAGE-----
+
+            hQIMA0IKwDTH3WibAQ//Sv2Lh14V6hxUwkq1MGfx6rYtwDEHaW/hWS+Rg/pOENPo
+            jElO9sosNrG/Z9zRafWiPYVmowo61jjkgH0J+V4qWaxNDtXHuOc1PYOMpoOjT8fO
+            rt7Z2O7sTrYWk+7gPKV1UKX9vj1UGFItA0oaZ0OrjDGrpPWOh6WdKaM32IZPlZUQ
+            e9MhAfXo9ED3nnTO/JXXp8rOzomX5djBSV4HDDPIQ5bca8L6q/I+xhjNrUWMXjax
+            +WuU7XMOWIEMBKWLRp8xdskZfV7DFWNNQ9nEP2ZJ9hImVaJecrw90VeS+O7GdeAL
+            3587nEY3p6WUHYa8PTpD2q5XqBNlRapCTJfgaEhAH9mTTO1A+yIZWGzKshT7gHZF
+            FaKB2+bE8o8yV95G/HB58LoLiC1VaxIfR1yhd4DOcKQGtmN6shp2O3Fjn15V/vqT
+            VvonYmioRApu8avimlIdMWVOft9WiHYUrz59BmbF13zl2mD0zVCT8qzgX4IOBSBE
+            TVrPMnzTNdY76cM0cNO0rORnlmPmd8KsH172E8+ErGrQQ8XAYyI0fpxQX2XfskEa
+            9XmlnqtkpXy4uihOQahdq7/GRCtfMCte2++Jtg2k16rJqAtvXpeGsYgg1XLhq/9i
+            kYxxtnl4SsaRxDFkZJty0DsSqA2fE/R30AD2ISCNoQvTKhgaFbrfA1z5dvhYN7nS
+            XgGp2WkkS+YEHZfregUdrzz93+fBETS0lJhcKFNIeYF9vfZJvccvHZ8oNWatBpXa
+            vJHmr660glHRyXBS9MrxMYupAiXYoFVfM1vMyHT6jKfW4nlEt6ERecTSfTVQ9jQ=
+            =AW9h
+            -----END PGP MESSAGE-----
+          fp: 03746612698994281D322B09923BC5E9B4E9509B
     encrypted_regex: ^(data|stringData)$
     version: 3.12.2
