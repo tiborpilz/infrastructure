@@ -94,7 +94,7 @@ spec:
               type: jaeger
               uid: jaeger
               access: proxy
-              url: http://jaeger-query.observability.svc.cluster.local:16686
+              url: http://jaeger.observability.svc.cluster.local:16686
               jsonData:
                 tracesToLogsV2:
                   datasourceUid: loki

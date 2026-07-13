@@ -18,7 +18,7 @@ spec:
           provider: oidc
           oidc-issuer-url: https://auth.tibor.sh/application/o/jaeger/
           redirect-url: https://jaeger.tibor.sh/oauth2/callback
-          upstream: http://jaeger-query.observability.svc.cluster.local:16686
+          upstream: http://jaeger.observability.svc.cluster.local:16686
           email-domain: "*"
           reverse-proxy: "true"
           cookie-secure: "true"
