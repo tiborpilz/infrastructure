@@ -8,3 +8,4 @@ resources:
   - metrics-server
   - cluster-autoscaler
   - etcd-backup
+  - envoy-gateway

@@ -1,0 +1,22 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: tracing
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        annotations:
+          load-balancer.hetzner.cloud/location: fsn1
+          load-balancer.hetzner.cloud/disable-private-ingress: "true"
+  telemetry:
+    tracing:
+      samplingRate: 100
+      provider:
+        type: OpenTelemetry
+        backendRefs:
+          - name: otel-collector-opentelemetry-collector
+            namespace: observability
+            port: 4317
