@@ -3,6 +3,8 @@ kind: EnvoyProxy
 metadata:
   name: tracing
   namespace: envoy-gateway-system
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   provider:
     type: Kubernetes
