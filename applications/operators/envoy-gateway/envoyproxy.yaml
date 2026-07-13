@@ -11,11 +11,21 @@ spec:
     kubernetes:
       envoyDeployment:
         pod:
-          # hcloud LB targets are hcloud servers only; with externalTrafficPolicy
-          # Local an envoy pod on the proxmox tier leaves the LB with no healthy
-          # targets.
-          nodeSelector:
-            instance.hetzner.cloud/provided-by: cloud
+          # The generated LB service is externalTrafficPolicy=Local, so envoy
+          # pods must run on nodes the hcloud LB can target: hcloud servers
+          # (proxmox tier is invisible to the CCM) excluding control planes
+          # (exclude-from-external-load-balancers).
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: instance.hetzner.cloud/provided-by
+                        operator: In
+                        values:
+                          - cloud
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: DoesNotExist
       envoyService:
         annotations:
           load-balancer.hetzner.cloud/location: fsn1
