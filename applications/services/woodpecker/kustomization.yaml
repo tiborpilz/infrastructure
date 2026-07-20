@@ -11,4 +11,4 @@ resources:
 
 images:
   - name: alpine/k8s
-    newTag: "1.30.4"
+    newTag: "1.36.2"

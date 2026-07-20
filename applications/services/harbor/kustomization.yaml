@@ -15,4 +15,4 @@ images:
   - name: valkey/valkey
     newTag: "9-alpine"
   - name: alpine/k8s
-    newTag: "1.30.4"
+    newTag: "1.36.2"
