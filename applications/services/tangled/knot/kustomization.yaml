@@ -9,7 +9,7 @@ resources:
 
 images:
   - name: busybox
-    newTag: "1.37"
+    newTag: "1.38"
   - name: atcr.io/tangled.org/knot
     newTag: "v1.15.0-alpha"
 
