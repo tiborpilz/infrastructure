@@ -27,7 +27,7 @@ spec:
             # Renovate autodiscovery only sees repos the bot is related to
             # (repos/search?uid=), so sync the bot into every repo first.
             - name: collaborator-sync
-              image: alpine/k8s:1.30.4
+              image: alpine/k8s:1.36.2
               securityContext:
                 runAsUser: 1000
                 allowPrivilegeEscalation: false
