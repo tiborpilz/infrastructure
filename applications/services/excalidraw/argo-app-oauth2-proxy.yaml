@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: excalidraw-oauth2-proxy
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://oauth2-proxy.github.io/manifests
+    chart: oauth2-proxy
+    targetRevision: 10.7.0
+    helm:
+      releaseName: oauth2-proxy
+      valuesObject:
+        config:
+          existingSecret: excalidraw-oauth2-proxy-secrets
+        extraArgs:
+          provider: oidc
+          oidc-issuer-url: https://auth.tibor.sh/application/o/excalidraw/
+          redirect-url: https://excalidraw.tibor.sh/oauth2/callback
+          upstream: http://excalidraw.excalidraw.svc.cluster.local:80
+          email-domain: "*"
+          reverse-proxy: "true"
+          cookie-secure: "true"
+          cookie-domain: excalidraw.tibor.sh
+          cookie-samesite: lax
+          whitelist-domain: excalidraw.tibor.sh
+          code-challenge-method: S256
+          pass-authorization-header: "true"
+          pass-access-token: "true"
+          pass-user-headers: "true"
+          set-authorization-header: "true"
+          set-xauthrequest: "true"
+          skip-provider-button: "false"
+          insecure-oidc-allow-unverified-email: "true"
+          scope: openid profile email
+        service:
+          portNumber: 80
+        ingress:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: excalidraw
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
