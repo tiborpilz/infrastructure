@@ -13,3 +13,18 @@ resources:
   - argo-app-otel-collector.yaml
   - httproute-grafana.yaml
   - httproute-jaeger.yaml
+
+# Grafana provisions dashboards from ConfigMaps labelled grafana_dashboard via
+# the kube-prometheus-stack sidecar. Ceph metrics come from the rook-ceph-mgr
+# ServiceMonitor (rook monitoring.enabled).
+configMapGenerator:
+  - name: grafana-dashboards-ceph
+    files:
+      - dashboards/ceph-cluster.json
+      - dashboards/ceph-osds-overview.json
+      - dashboards/ceph-pool-overview.json
+      - dashboards/ceph-rbd-overview.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
