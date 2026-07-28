@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - secrets.enc.yaml
   - database.yaml
   - valkey.yaml
   - pvc.yaml
@@ -13,19 +14,3 @@ resources:
 images:
   - name: outlinewiki/outline
     newTag: "1.9.2"
-
-generators:
-  - kustomization-ksops-generator.yaml
-
-patches:
-  - patch: |-
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: outline-oidc
-        namespace: outline
-        annotations:
-          reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-          reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "authentik"
-          reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-          reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "authentik"
