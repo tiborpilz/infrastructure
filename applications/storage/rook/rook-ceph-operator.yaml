@@ -17,7 +17,7 @@ spec:
         crds:
           enabled: true
         monitoring:
-          enabled: false
+          enabled: true
   destination:
     server: https://kubernetes.default.svc
     namespace: rook-ceph
