@@ -13,3 +13,4 @@ resources:
   - headlamp/argo-app.yaml
   - hubble/argo-app.yaml
   - excalidraw/argo-app.yaml
+  - outline/argo-app.yaml

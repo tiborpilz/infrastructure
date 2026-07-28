@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: outline
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    path: applications/services/outline
+    repoURL: https://github.com/tiborpilz/infrastructure
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: outline
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
