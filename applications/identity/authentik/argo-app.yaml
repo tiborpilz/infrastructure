@@ -58,6 +58,12 @@ spec:
                   name: excalidraw-oauth2-proxy-secrets
                   key: client-secret
                   optional: true
+            - name: OUTLINE_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: outline-oidc
+                  key: client-secret
+                  optional: true
             - name: GRAFANA_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
