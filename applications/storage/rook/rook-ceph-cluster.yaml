@@ -108,6 +108,8 @@ spec:
                   replicated:
                     size: 3
                   name: data0
+                  parameters:
+                    pg_num_min: "8"
               metadataServer:
                 activeCount: 1
                 activeStandby: true
