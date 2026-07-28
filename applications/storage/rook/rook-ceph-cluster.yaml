@@ -149,6 +149,8 @@ spec:
                 failureDomain: host
                 replicated:
                   size: 3
+                parameters:
+                  pg_num_min: "8"
               preservePoolsOnDelete: false
               gateway:
                 port: 80
