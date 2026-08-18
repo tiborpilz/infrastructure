@@ -27,7 +27,8 @@ spec:
       initContainers:
         - name: migrate
           image: outlinewiki/outline
-          command: ["yarn", "db:migrate", "--env=production-ssl-disabled"]
+          # image ships no yarn/npm; db:migrate is just a wrapper for sequelize
+          command: ["node", "node_modules/.bin/sequelize", "db:migrate", "--env=production-ssl-disabled"]
           env:
             - name: PGSSLMODE
               value: disable
