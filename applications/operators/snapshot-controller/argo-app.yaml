@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: snapshot-controller
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://piraeus.io/helm-charts/
+    chart: snapshot-controller
+    targetRevision: 5.2.0
+    helm:
+      valuesObject:
+        installCRDs: true
+
+        controller:
+          replicaCount: 1
+
+        # Only needed to convert VolumeGroupSnapshots still stored under the
+        # v1beta1/v1beta2 APIs. Nothing here predates v1, so leave it off.
+        webhook:
+          enabled: false
+
+        # Snapshot classes mirror the storage class names they apply to.
+        # clusterID and the provisioner secrets are copied from the live
+        # StorageClass parameters, so they track whatever rook provisions.
+        # deletionPolicy is Delete: the pool has ~65 GiB available, and
+        # retained snapshots outliving their VolumeSnapshot would consume it
+        # with nothing left referencing them.
+        volumeSnapshotClasses:
+          - name: ceph-block
+            driver: rook-ceph.rbd.csi.ceph.com
+            deletionPolicy: Delete
+            parameters:
+              clusterID: rook-ceph
+              csi.storage.k8s.io/snapshotter-secret-name: rook-csi-rbd-provisioner
+              csi.storage.k8s.io/snapshotter-secret-namespace: rook-ceph
+          - name: ceph-filesystem
+            driver: rook-ceph.cephfs.csi.ceph.com
+            deletionPolicy: Delete
+            parameters:
+              clusterID: rook-ceph
+              csi.storage.k8s.io/snapshotter-secret-name: rook-csi-cephfs-provisioner
+              csi.storage.k8s.io/snapshotter-secret-namespace: rook-ceph
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: snapshot-controller
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true
