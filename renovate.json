@@ -10,6 +10,12 @@
   "nix": {
     "enabled": true
   },
+  "packageRules": [
+    {
+      "matchDepNames": ["docker.io/heywoodlh/spindle"],
+      "pinDigests": true
+    }
+  ],
   "customManagers": [
     {
       "customType": "regex",
