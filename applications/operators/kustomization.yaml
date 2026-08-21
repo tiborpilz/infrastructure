@@ -9,3 +9,4 @@ resources:
   - cluster-autoscaler
   - etcd-backup
   - envoy-gateway
+  - snapshot-controller
