@@ -9,4 +9,5 @@ resources:
 
 images:
   - name: docker.io/heywoodlh/spindle
-    newTag: "50574018"
+    newTag: latest
+    digest: sha256:7f2dd3200885a799abbf2c8480ec546d24d48cf75c102d8b929e3b0f8c75b9f7
