@@ -3,22 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - secrets.enc.yaml
   - argo-app-headlamp.yaml
   - argo-app-oauth2-proxy.yaml
   - httproute.yaml
-
-generators:
-  - kustomization-ksops-generator.yaml
-
-patches:
-  - patch: |-
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: headlamp-oauth2-proxy-secrets
-        namespace: headlamp
-        annotations:
-          reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-          reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "authentik"
-          reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-          reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "authentik"
