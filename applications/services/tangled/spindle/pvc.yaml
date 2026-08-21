@@ -8,7 +8,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: hcloud-volumes
+  storageClassName: ceph-filesystem
   resources:
     requests:
       storage: 20Gi
