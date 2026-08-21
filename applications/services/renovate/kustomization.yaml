@@ -3,8 +3,6 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - secrets.enc.yaml
   - user-bootstrap.yaml
   - cronjob.yaml
-
-generators:
-  - kustomization-ksops-generator.yaml

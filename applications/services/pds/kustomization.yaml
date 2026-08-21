@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - secrets.enc.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml
@@ -13,6 +14,3 @@ resources:
 images:
   - name: ghcr.io/bluesky-social/pds
     newTag: "0.4"
-
-generators:
-  - kustomization-ksops-generator.yaml

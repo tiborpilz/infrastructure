@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - secrets.enc.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml
@@ -12,19 +13,3 @@ resources:
 images:
   - name: ghcr.io/ozencb/excalidraw-persist
     newTag: 0.18.0-persist.7
-
-generators:
-  - kustomization-ksops-generator.yaml
-
-patches:
-  - patch: |-
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: excalidraw-oauth2-proxy-secrets
-        namespace: excalidraw
-        annotations:
-          reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-          reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "authentik"
-          reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
-          reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "authentik"
