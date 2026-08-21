@@ -9,4 +9,4 @@ resources:
 
 images:
   - name: docker.io/heywoodlh/spindle
-    newTag: "c38881b4"
+    newTag: "50574018"
