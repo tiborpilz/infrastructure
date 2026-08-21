@@ -6,7 +6,11 @@ metadata:
   labels:
     app.kubernetes.io/name: pds
 spec:
-  replicas: 1
+  # Held at 0 for the hcloud-volumes to ceph storage migration: the sqlite
+  # data lives almost entirely in un-checkpointed WAL, so the volume can only
+  # be copied consistently while nothing is writing to it. Back to 1 once the
+  # data is restored onto the new claim.
+  replicas: 0
   strategy:
     type: Recreate
   selector:
