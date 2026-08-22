@@ -6,15 +6,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  # ceph-block rather than ceph-filesystem: the pds databases run sqlite in
-  # WAL mode, which needs mmap'd shared memory and is only defined on a local
-  # filesystem. RBD is a block device, so the semantics match the hcloud
-  # volume this replaces. Databases elsewhere in the repo sit on ceph-block
-  # for the same reason.
   storageClassName: ceph-block
   resources:
     requests:
-      # Was 20Gi holding 592KiB. The ceph pool has ~65GiB available and is
-      # already over-committed, and ceph-block allows expansion, so claim
-      # what is plausibly needed instead of reserving the old size.
       storage: 10Gi
