@@ -1,22 +1,26 @@
 keys:
   - &argocd age1nhsx40cf26syk9jt8hkd0grdrc9qc45sk52cl5vy0d78fxl2f4hs4h7laa
   - &cluster age1eagn023gem8ekv6q8gx7rc37x2rsxfscpyt2znd4j5l8ryehksdqzjek59
+  - &yubi age1gzf883y8p0wfy5yjn5l3l2axnqxdgtw2zdcp8jqsrk65m7gf6y6qzgkf63
+  - &bitwarden age1j460k9yf4l3smlegue9yx4lwm70cr02308ea5wnpsuqagm25tgrsmfmpj2
 creation_rules:
-  # Terragrunt secrets are consumed locally, never by the cluster: encrypt
-  # every value (no encrypted_regex) and only to the user's PGP key so the
-  # in-cluster keys can't read terraform state material.
+  # Main secret file for the cluster, used for deployment. (Should not use argocd or cluster keys)
   - path_regex: terragrunt/.*\.enc\.yaml$
     key_groups:
-      - pgp:
+      - age:
+          - *yubi
+          - *bitwarden
+        pgp:
           - 03746612698994281D322B09923BC5E9B4E9509B
+  # Application secrets for ArgoCD, since they use SopsSecrets, only the actual secret data should be encrypted.
   - path_regex: \.enc\.yaml$
-    # Keep apiVersion/kind/metadata/spec scaffolding plaintext so the
-    # SopsSecret operator and kubectl can parse the manifest; encrypt only
-    # the actual secret values.
+    
     encrypted_regex: ^(data|stringData)$
     key_groups:
       - age:
           - *argocd
           - *cluster
+          - *yubi
+          - *bitwarden
         pgp:
           - 03746612698994281D322B09923BC5E9B4E9509B
