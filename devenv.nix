@@ -106,4 +106,12 @@ in
       or set -g fish_complete_path "$FISH_COMPLETION_DIR" $fish_complete_path
     fi
   '';
+
+  # Not wired into enterShell: it runs a terragrunt apply, which decrypts sops
+  # secrets and reaches the network. Run it by hand on a fresh checkout.
+  tasks."infra:local-configs" = {
+    description = "Write kubeconfig and talosconfig from terraform state";
+    exec = "$DEVENV_ROOT/setup/write-local-configs.sh";
+    status = "test -s $DEVENV_ROOT/.kube/hcloud-poc.kubeconfig && test -s $DEVENV_ROOT/.talos/hcloud-poc.talosconfig";
+  };
 }

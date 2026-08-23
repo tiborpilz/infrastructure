@@ -11,3 +11,4 @@
 .kube/
 .talos/
 .devenv
+.devenv/
