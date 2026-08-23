@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Scans the commits about to be pushed for secrets. Runs three checks:
+# gitleaks over the pushed range, a guard that every .enc.yaml is actually
+# encrypted, and a block on committed terraform state.
+#
+# Installed by pointing core.hooksPath at setup/hooks, which devenv does on
+# shell entry. Bypass with `git push --no-verify` when you have a reason.
+set -uo pipefail
+
+ZERO=0000000000000000000000000000000000000000
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+fail=0
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-push: gitleaks not on PATH, enter the devenv shell first" >&2
+  exit 1
+fi
+
+while read -r _local_ref local_oid _remote_ref remote_oid; do
+  [ "$local_oid" = "$ZERO" ] && continue  # branch deletion
+
+  if [ "$remote_oid" = "$ZERO" ]; then
+    log_opts="$local_oid --not --remotes"   # new branch
+  else
+    log_opts="$remote_oid..$local_oid"
+  fi
+
+  commits=$(git rev-list "$log_opts" 2>/dev/null)
+  [ -z "$commits" ] && continue
+
+  if ! gitleaks git --log-opts="$log_opts" --no-banner --redact -c "$REPO_ROOT/.gitleaks.toml"; then
+    fail=1
+  fi
+
+  for commit in $commits; do
+    while IFS= read -r path; do
+      [ -z "$path" ] && continue
+
+      case "$path" in
+        *.tfstate|*.tfstate.backup|*.tfstate.*)
+          echo "pre-push: $commit adds terraform state at $path" >&2
+          fail=1
+          ;;
+      esac
+
+      case "$path" in
+        *.enc.yaml)
+          if ! git show "$commit:$path" 2>/dev/null | grep -q '^sops:'; then
+            echo "pre-push: $commit has $path without a sops block, it is not encrypted" >&2
+            fail=1
+          fi
+          ;;
+      esac
+    done < <(git diff-tree --no-commit-id --name-only --diff-filter=AM -r "$commit")
+  done
+done
+
+if [ "$fail" -ne 0 ]; then
+  echo >&2
+  echo "pre-push: refusing to push. Fix the findings, or use --no-verify if they are false positives." >&2
+  exit 1
+fi
+
+exit 0

@@ -29,6 +29,7 @@ in
 
     pkgs.sops
     pkgs.age
+    pkgs.gitleaks
     pkgs.ssh-to-age
     pkgs.jq
 
@@ -40,6 +41,11 @@ in
 
     export KUBECONFIG="$REPO_ROOT/.kube/hcloud-poc.kubeconfig"
     export TALOSCONFIG="$REPO_ROOT/.talos/hcloud-poc.talosconfig"
+
+    # Secret scanning on push.
+    if [ -d "$REPO_ROOT/setup/hooks" ]; then
+      git config core.hooksPath setup/hooks
+    fi
 
     COMPLETION_DIR="$REPO_ROOT/.devenv/state/completions"
     BASH_COMPLETION_DIR="$COMPLETION_DIR/bash"

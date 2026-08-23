@@ -1,0 +1,8 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Mock PKI material used for terragrunt validation"
+regexes = [
+  '''MIIEwAIBADANBgkqhkiG9w0BAQEFAASCBKowggSmAgEAAoIBAQDspwVwyIxb\+nku''',
+]
