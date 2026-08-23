@@ -12,3 +12,4 @@
 .talos/
 .devenv
 .devenv/
+.devenv.flake.nix
