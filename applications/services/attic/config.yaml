@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: attic-config
+  namespace: attic
+data:
+  # Secrets are NOT in here. They come from the environment:
+  #   ATTIC_SERVER_DATABASE_URL              <- CNPG secret attic-db-app
+  #   ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64 <- SopsSecret attic-secrets
+  #   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY <- OBC secret attic-storage
+  server.toml: |
+    listen = "[::]:8080"
+
+    # Must match the public URL and end with a slash; attic hands this out to
+    # clients in `attic login`, so getting it wrong breaks pushes silently.
+    api-endpoint = "https://attic.tibor.sh/"
+    allowed-hosts = ["attic.tibor.sh"]
+
+    [storage]
+    type = "s3"
+    region = "us-east-1"
+    bucket = "attic"
+    # Rook names the RGW service after the CephObjectStore: `ceph-objectstore`,
+    # exposed on port 80 (see applications/storage/rook/rook-ceph-cluster.yaml).
+    endpoint = "http://rook-ceph-rgw-ceph-objectstore.rook-ceph.svc"
+
+    [chunking]
+    nar-size-threshold = 65536
+    min-size = 16384
+    avg-size = 65536
+    max-size = 262144
+
+    [compression]
+    type = "zstd"
+
+    [garbage-collection]
+    interval = "12 hours"
+    # Paths not pushed or pulled within this window become GC candidates.
+    # This is the knob that stops Ceph filling up; tune it, don't remove it.
+    default-retention-period = "3 months"

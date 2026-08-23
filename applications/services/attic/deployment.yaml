@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attic
+  namespace: attic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: attic
+  template:
+    metadata:
+      labels:
+        app: attic
+    spec:
+      containers:
+        - name: attic
+          image: ghcr.io/zhaofengli/attic:latest
+          args:
+            - --config
+            - /etc/attic/server.toml
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: ATTIC_SERVER_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: attic-db-app
+                  key: uri
+            - name: ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: attic-secrets
+                  key: ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: attic-storage
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: attic-storage
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: RUST_LOG
+              value: "attic_server=info,tower_http=warn"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/attic
+              readOnly: true
+          # attic's restrict_host middleware rejects any request whose Host
+          # header is not in `allowed-hosts`. Kubelet probes default to the pod
+          # IP, so the Host header has to be set explicitly or every probe 404s.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: attic.tibor.sh
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: attic.tibor.sh
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+      volumes:
+        - name: config
+          configMap:
+            name: attic-config
