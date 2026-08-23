@@ -107,7 +107,6 @@ module "proxmox_server" {
 module "dns" {
   source = "./dns"
 
-  domain  = var.domain
-  lb_ipv4 = module.hcloud_network.floating_ip_address
-  nodes   = module.hcloud_server.nodes
+  domain = var.domain
+  nodes  = module.hcloud_server.nodes
 }

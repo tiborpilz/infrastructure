@@ -1,0 +1,17 @@
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: wildcard
+  namespace: gateway-system
+spec:
+  endpoints:
+    - dnsName: "*.tibor.sh"
+      recordType: A
+      recordTTL: 60
+      targets:
+        - 138.199.128.61
+    - dnsName: "*.tibor.sh"
+      recordType: AAAA
+      recordTTL: 60
+      targets:
+        - 2a01:4f8:c01e:339b::1

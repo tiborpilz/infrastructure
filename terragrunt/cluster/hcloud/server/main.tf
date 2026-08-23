@@ -39,6 +39,10 @@ resource "hcloud_primary_ip" "control_plane" {
   auto_delete       = false
   delete_protection = false
   labels            = local.common_labels
+
+  lifecycle {
+    ignore_changes = [assignee_id, assignee_type]
+  }
 }
 
 resource "hcloud_server" "control_plane" {
@@ -63,7 +67,7 @@ resource "hcloud_server" "control_plane" {
   })
 
   lifecycle {
-    ignore_changes = [image]
+    ignore_changes = [image, public_net]
   }
 }
 
@@ -73,6 +77,10 @@ resource "hcloud_server_network" "control_plane" {
   server_id = hcloud_server.control_plane[each.key].id
   subnet_id = var.subnet_id
   ip        = each.value.private_ipv4
+
+  lifecycle {
+    ignore_changes = [subnet_id]
+  }
 }
 
 resource "hcloud_primary_ip" "worker" {
@@ -84,6 +92,10 @@ resource "hcloud_primary_ip" "worker" {
   auto_delete       = false
   delete_protection = false
   labels            = local.common_labels
+
+  lifecycle {
+    ignore_changes = [assignee_id, assignee_type]
+  }
 }
 
 resource "hcloud_server" "worker" {
@@ -108,7 +120,7 @@ resource "hcloud_server" "worker" {
   })
 
   lifecycle {
-    ignore_changes = [image]
+    ignore_changes = [image, public_net]
   }
 }
 
@@ -118,6 +130,10 @@ resource "hcloud_server_network" "worker" {
   server_id = hcloud_server.worker[each.key].id
   subnet_id = var.subnet_id
   ip        = each.value.private_ipv4
+
+  lifecycle {
+    ignore_changes = [subnet_id]
+  }
 }
 
 resource "hcloud_volume" "worker" {

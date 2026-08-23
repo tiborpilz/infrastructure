@@ -38,12 +38,6 @@ inputs = {
   authentik_secret_key = include.env.locals.secrets.authentik_secret_key
   argocd_age_key       = include.env.locals.argocd_age_key
 
-  # Single control plane, sized up so it can also carry workloads. One etcd
-  # member means no quorum/HA: a CP outage stops the API (workloads keep
-  # running on the workers) and losing the node requires an etcd snapshot
-  # restore, so etcd backups are mandatory. Scaling a *live* 3-member etcd
-  # down to 1 must be done one member at a time (destroying two at once loses
-  # quorum); on a disposable POC, rebuild instead.
   control_plane_nodes = {
     controlplane-1 = {
       server_type = "cx33"
@@ -79,8 +73,8 @@ inputs = {
   proxmox_snippets_datastore = "talos-store"
 
   proxmox_workers = {
-    proxmox-1 = { vm_id = 9001, ip = "10.0.10.31" }
-    proxmox-2 = { vm_id = 9002, ip = "10.0.10.32" }
-    proxmox-3 = { vm_id = 9003, ip = "10.0.10.33" }
+    proxmox-1 = { vm_id = 9001, ip = "10.0.10.31", data_disk_size = 200 }
+    proxmox-2 = { vm_id = 9002, ip = "10.0.10.32", data_disk_size = 200 }
+    proxmox-3 = { vm_id = 9003, ip = "10.0.10.33", data_disk_size = 200 }
   }
 }

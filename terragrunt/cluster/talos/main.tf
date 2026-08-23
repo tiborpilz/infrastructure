@@ -337,16 +337,28 @@ resource "terraform_data" "wait_for_cluster" {
 resource "random_password" "authentik_valkey" {
   length  = 32
   special = false
+
+  lifecycle {
+    ignore_changes = [special]
+  }
 }
 
 resource "random_password" "authentik_bootstrap_token" {
   length  = 40
   special = false
+
+  lifecycle {
+    ignore_changes = [special]
+  }
 }
 
 resource "random_password" "argocd_oidc_client_secret" {
   length  = 48
   special = false
+
+  lifecycle {
+    ignore_changes = [special]
+  }
 }
 
 resource "terraform_data" "app_secrets" {

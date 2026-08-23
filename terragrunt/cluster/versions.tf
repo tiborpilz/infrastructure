@@ -6,5 +6,17 @@ terraform {
       source  = "bpg/proxmox"
       version = "~> 0.95"
     }
+    hcloud = {
+      source  = "hetznercloud/hcloud"
+      version = "~> 1.49"
+    }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
+    talos = {
+      source  = "siderolabs/talos"
+      version = "~> 0.9"
+    }
   }
 }

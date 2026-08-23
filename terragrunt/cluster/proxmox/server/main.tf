@@ -9,6 +9,10 @@ resource "proxmox_download_file" "talos" {
   file_name    = "talos-v${var.talos_version}-nocloud-amd64.iso"
   url          = local.talos_image_url
   overwrite    = false
+
+  lifecycle {
+    ignore_changes = [url]
+  }
 }
 
 resource "proxmox_virtual_environment_file" "user_data" {
@@ -99,6 +103,10 @@ resource "proxmox_virtual_environment_vm" "worker" {
   }
 
   depends_on = [terraform_data.node_evict]
+
+  lifecycle {
+    ignore_changes = [initialization[0].user_data_file_id]
+  }
 }
 
 resource "terraform_data" "untaint" {

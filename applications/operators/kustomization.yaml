@@ -10,3 +10,4 @@ resources:
   - etcd-backup
   - envoy-gateway
   - snapshot-controller
+  - gateway-dns
