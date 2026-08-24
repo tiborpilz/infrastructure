@@ -14,3 +14,4 @@ resources:
   - hubble/argo-app.yaml
   - excalidraw/argo-app.yaml
   - outline/argo-app.yaml
+  - attic/argo-app.yaml
