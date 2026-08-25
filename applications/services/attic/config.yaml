@@ -16,6 +16,8 @@ data:
     api-endpoint = "https://attic.tibor.sh/"
     allowed-hosts = ["attic.tibor.sh"]
 
+    [database]
+
     [storage]
     type = "s3"
     region = "us-east-1"
