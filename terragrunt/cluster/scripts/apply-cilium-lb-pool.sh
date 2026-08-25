@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+source "$(dirname "${BASH_SOURCE[0]}")/require-kubeconfig.sh"
+
 if [[ $# -ne 1 ]]; then
   echo "Usage: $0 <floating-ip>" >&2
   exit 1

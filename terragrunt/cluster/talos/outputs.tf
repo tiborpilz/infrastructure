@@ -4,6 +4,11 @@ output "kubeconfig" {
   sensitive   = true
 }
 
+output "kubeconfig_file" {
+  description = "Path to the kubeconfig on disk. Depend on this, not the kubeconfig_path input, to order after the file is written."
+  value       = try(local_sensitive_file.kubeconfig[0].filename, var.kubeconfig_path)
+}
+
 output "talosconfig" {
   description = "talosconfig for talosctl. Sensitive."
   value       = data.talos_client_configuration.this.talos_config

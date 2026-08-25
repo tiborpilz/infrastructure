@@ -89,7 +89,7 @@ module "proxmox_server" {
   nameservers        = var.proxmox_nameservers
   talos_version      = var.talos_version
   talos_schematic_id = var.proxmox_talos_schematic_id
-  kubeconfig_path    = var.kubeconfig_path
+  kubeconfig_path    = module.talos.kubeconfig_file
 
   workers = {
     for name, w in var.proxmox_workers : name => {

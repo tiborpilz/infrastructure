@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+source "$(dirname "${BASH_SOURCE[0]}")/require-kubeconfig.sh"
+
 if [[ $# -eq 0 ]]; then
   echo "Usage: $0 <node1> [node2 ...]" >&2
   exit 1
