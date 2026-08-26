@@ -28,15 +28,25 @@ spec:
         - name: migrate
           image: outlinewiki/outline
           # image ships no yarn/npm; db:migrate is just a wrapper for sequelize
+          # some migrations shell out to scripts that load the full server config,
+          # so the migrator needs the same env as the app container
           command: ["node", "node_modules/.bin/sequelize", "db:migrate", "--env=production-ssl-disabled"]
-          env:
-            - name: PGSSLMODE
-              value: disable
+          envFrom:
+            - configMapRef:
+                name: outline-config
+            - secretRef:
+                name: outline-secrets
+          env: &outlineEnv
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: outline-db-app
                   key: uri
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: outline-oidc
+                  key: client-secret
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
@@ -49,57 +59,12 @@ spec:
           ports:
             - name: http
               containerPort: 3000
-          env:
-            - name: NODE_ENV
-              value: production
-            - name: URL
-              value: https://outline.tibor.sh
-            - name: PORT
-              value: "3000"
-            - name: PGSSLMODE
-              value: disable
-            - name: REDIS_URL
-              value: redis://outline-valkey:6379
-            - name: FILE_STORAGE
-              value: local
-            - name: FILE_STORAGE_LOCAL_ROOT_DIR
-              value: /var/lib/outline/data
-            - name: FILE_STORAGE_UPLOAD_MAX_SIZE
-              value: "262144000"
-            - name: OIDC_CLIENT_ID
-              value: outline
-            - name: OIDC_AUTH_URI
-              value: https://auth.tibor.sh/application/o/authorize/
-            - name: OIDC_TOKEN_URI
-              value: https://auth.tibor.sh/application/o/token/
-            - name: OIDC_USERINFO_URI
-              value: https://auth.tibor.sh/application/o/userinfo/
-            - name: OIDC_USERNAME_CLAIM
-              value: preferred_username
-            - name: OIDC_DISPLAY_NAME
-              value: authentik
-            - name: OIDC_SCOPES
-              value: openid profile email
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: outline-db-app
-                  key: uri
-            - name: SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: outline-secrets
-                  key: SECRET_KEY
-            - name: UTILS_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: outline-secrets
-                  key: UTILS_SECRET
-            - name: OIDC_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: outline-oidc
-                  key: client-secret
+          envFrom:
+            - configMapRef:
+                name: outline-config
+            - secretRef:
+                name: outline-secrets
+          env: *outlineEnv
           volumeMounts:
             - name: data
               mountPath: /var/lib/outline/data
