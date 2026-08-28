@@ -22,6 +22,7 @@ spec:
             enableRemoteWriteReceiver: true
             enableFeatures:
               - otlp-write-receiver
+              - exemplar-storage
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
             ruleSelectorNilUsesHelmValues: false

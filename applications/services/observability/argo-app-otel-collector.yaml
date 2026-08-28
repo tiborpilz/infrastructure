@@ -25,11 +25,22 @@ spec:
             memory: 128Mi
           limits:
             memory: 512Mi
+        extraEnvs:
+          - name: OPENROUTER_OTEL_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: otel-collector-openrouter
+                key: token
         ports:
           otlp:
             enabled: true
           otlp-http:
             enabled: true
+          otlp-public:
+            enabled: true
+            containerPort: 4319
+            servicePort: 4319
+            protocol: TCP
           jaeger-compact:
             enabled: false
           jaeger-thrift:
@@ -39,6 +50,10 @@ spec:
           zipkin:
             enabled: false
         config:
+          extensions:
+            bearertokenauth/openrouter:
+              scheme: Bearer
+              token: ${env:OPENROUTER_OTEL_TOKEN}
           receivers:
             otlp:
               protocols:
@@ -46,12 +61,76 @@ spec:
                   endpoint: 0.0.0.0:4317
                 http:
                   endpoint: 0.0.0.0:4318
+            otlp/openrouter:
+              protocols:
+                http:
+                  endpoint: 0.0.0.0:4319
+                  auth:
+                    authenticator: bearertokenauth/openrouter
+          connectors:
+            # RED metrics off the OpenRouter spans, labelled by GenAI
+            # semconv attributes so Grafana can break down by model.
+            span_metrics/openrouter:
+              namespace: gen_ai
+              histogram:
+                unit: s
+                explicit:
+                  buckets: [100ms, 500ms, 1s, 2s, 5s, 10s, 20s, 30s, 60s, 120s]
+              dimensions:
+                - name: gen_ai.system
+                - name: gen_ai.operation.name
+                - name: gen_ai.request.model
+                - name: gen_ai.response.model
+              exemplars:
+                enabled: true
+              metrics_flush_interval: 15s
+            # Token and cost totals. span_metrics only counts spans and
+            # measures duration, so the numeric usage attributes need their
+            # own connector. Conditions skip spans missing the attribute
+            # rather than summing a zero.
+            sum/openrouter:
+              spans:
+                gen_ai.usage.input_tokens:
+                  source_attribute: gen_ai.usage.input_tokens
+                  conditions:
+                    - attributes["gen_ai.usage.input_tokens"] != nil
+                  attributes:
+                    - key: gen_ai.request.model
+                      default_value: unknown
+                gen_ai.usage.output_tokens:
+                  source_attribute: gen_ai.usage.output_tokens
+                  conditions:
+                    - attributes["gen_ai.usage.output_tokens"] != nil
+                  attributes:
+                    - key: gen_ai.request.model
+                      default_value: unknown
+                gen_ai.usage.cost:
+                  source_attribute: gen_ai.usage.cost
+                  conditions:
+                    - attributes["gen_ai.usage.cost"] != nil
+                  attributes:
+                    - key: gen_ai.request.model
+                      default_value: unknown
           processors:
             memory_limiter:
               check_interval: 5s
               limit_percentage: 80
               spike_limit_percentage: 25
             batch: {}
+            resource/openrouter:
+              attributes:
+                - key: service.name
+                  value: openrouter
+                  action: insert
+            deltatocumulative: {}
+            # OpenRouter documents its token attributes but not its cost
+            # one, so normalise the plausible spellings onto a single key.
+            # Drop the unused statements once a real span confirms theirs.
+            transform/openrouter_cost:
+              error_mode: ignore
+              trace_statements:
+                - set(span.attributes["gen_ai.usage.cost"], span.attributes["gen_ai.usage.total_cost"]) where span.attributes["gen_ai.usage.cost"] == nil and span.attributes["gen_ai.usage.total_cost"] != nil
+                - set(span.attributes["gen_ai.usage.cost"], span.attributes["openrouter.usage.cost"]) where span.attributes["gen_ai.usage.cost"] == nil and span.attributes["openrouter.usage.cost"] != nil
           exporters:
             otlp/jaeger:
               endpoint: jaeger.observability.svc.cluster.local:4317
@@ -64,14 +143,23 @@ spec:
             otlphttp/loki:
               endpoint: http://loki-gateway.observability.svc.cluster.local/otlp
           service:
+            extensions: [health_check, bearertokenauth/openrouter]
             pipelines:
               traces:
                 receivers: [otlp]
                 processors: [memory_limiter, batch]
                 exporters: [otlp/jaeger]
+              traces/openrouter:
+                receivers: [otlp/openrouter]
+                processors: [memory_limiter, resource/openrouter, transform/openrouter_cost, batch]
+                exporters: [otlp/jaeger, span_metrics/openrouter, sum/openrouter]
               metrics:
                 receivers: [otlp]
                 processors: [memory_limiter, batch]
+                exporters: [prometheusremotewrite]
+              metrics/openrouter:
+                receivers: [span_metrics/openrouter, sum/openrouter]
+                processors: [memory_limiter, deltatocumulative, batch]
                 exporters: [prometheusremotewrite]
               logs:
                 receivers: [otlp]
