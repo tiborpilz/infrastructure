@@ -49,6 +49,7 @@
             age
             ssh-to-age
             jq
+            gitleaks
           ]);
 
           shellHook = ''
