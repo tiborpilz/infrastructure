@@ -64,6 +64,14 @@ spec:
               memory: 128Mi
             limits:
               memory: 256Mi
+          sidecar:
+            datasources:
+              # Turns the span-metric exemplars into clickable links to the
+              # originating span in Jaeger.
+              exemplarTraceIdDestinations:
+                datasourceUid: jaeger
+                traceIdLabelName: trace_id
+                urlDisplayLabel: View trace
           grafana.ini:
             server:
               root_url: https://grafana.tibor.sh

@@ -111,6 +111,27 @@ spec:
                   attributes:
                     - key: gen_ai.request.model
                       default_value: unknown
+                gen_ai.usage.input_tokens.cached:
+                  source_attribute: gen_ai.usage.input_tokens.cached
+                  conditions:
+                    - attributes["gen_ai.usage.input_tokens.cached"] != nil
+                  attributes:
+                    - key: gen_ai.request.model
+                      default_value: unknown
+                gen_ai.usage.output_tokens.reasoning:
+                  source_attribute: gen_ai.usage.output_tokens.reasoning
+                  conditions:
+                    - attributes["gen_ai.usage.output_tokens.reasoning"] != nil
+                  attributes:
+                    - key: gen_ai.request.model
+                      default_value: unknown
+                gen_ai.openrouter.first_token_ms:
+                  source_attribute: trace.metadata.openrouter.first_token_ms
+                  conditions:
+                    - attributes["trace.metadata.openrouter.first_token_ms"] != nil
+                  attributes:
+                    - key: gen_ai.request.model
+                      default_value: unknown
           processors:
             memory_limiter:
               check_interval: 5s
@@ -122,15 +143,10 @@ spec:
                 - key: service.name
                   value: openrouter
                   action: insert
-            deltatocumulative: {}
-            # OpenRouter documents its token attributes but not its cost
-            # one, so normalise the plausible spellings onto a single key.
-            # Drop the unused statements once a real span confirms theirs.
-            transform/openrouter_cost:
-              error_mode: ignore
-              trace_statements:
-                - set(span.attributes["gen_ai.usage.cost"], span.attributes["gen_ai.usage.total_cost"]) where span.attributes["gen_ai.usage.cost"] == nil and span.attributes["gen_ai.usage.total_cost"] != nil
-                - set(span.attributes["gen_ai.usage.cost"], span.attributes["openrouter.usage.cost"]) where span.attributes["gen_ai.usage.cost"] == nil and span.attributes["openrouter.usage.cost"] != nil
+            deltatocumulative:
+              # OpenRouter traffic is bursty; the 5m default forgets a stream
+              # between bursts and restarts every counter from zero.
+              max_stale: 1h
           exporters:
             otlp/jaeger:
               endpoint: jaeger.observability.svc.cluster.local:4317
@@ -151,7 +167,7 @@ spec:
                 exporters: [otlp/jaeger]
               traces/openrouter:
                 receivers: [otlp/openrouter]
-                processors: [memory_limiter, resource/openrouter, transform/openrouter_cost, batch]
+                processors: [memory_limiter, resource/openrouter, batch]
                 exporters: [otlp/jaeger, span_metrics/openrouter, sum/openrouter]
               metrics:
                 receivers: [otlp]
