@@ -29,6 +29,24 @@ spec:
                 name: authentik-oidc-clients
                 optional: true
           env:
+            - name: AUTHENTIK_EMAIL__HOST
+              value: smtp.mx.cloudflare.net
+            - name: AUTHENTIK_EMAIL__PORT
+              value: "465"
+            - name: AUTHENTIK_EMAIL__USERNAME
+              value: api_token
+            - name: AUTHENTIK_EMAIL__USE_SSL
+              value: "true"
+            - name: AUTHENTIK_EMAIL__USE_TLS
+              value: "false"
+            - name: AUTHENTIK_EMAIL__FROM
+              value: noreply@tibor.sh
+            - name: AUTHENTIK_EMAIL__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smtp-credentials
+                  key: password
+                  optional: true
             - name: AUTHENTIK_POSTGRESQL__PASSWORD
               valueFrom:
                 secretKeyRef:

@@ -101,7 +101,20 @@ spec:
               ENABLE_BASIC_AUTHENTICATION: true
             packages:
               ENABLED: false
+            mailer:
+              ENABLED: true
+              PROTOCOL: smtps
+              SMTP_ADDR: smtp.mx.cloudflare.net
+              SMTP_PORT: 465
+              USER: api_token
+              FROM: Forgejo <noreply@tibor.sh>
           additionalConfigFromEnvs:
+            - name: FORGEJO__MAILER__PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: smtp-credentials
+                  key: password
+                  optional: true
             - name: FORGEJO__DATABASE__PASSWD
               valueFrom:
                 secretKeyRef:
