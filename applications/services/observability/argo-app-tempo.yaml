@@ -26,6 +26,35 @@ spec:
               wal:
                 path: /var/tempo/wal
           retention: 720h
+          # TraceQL metrics queries (rate(), quantile_over_time(), and the
+          # Traces Drilldown app) are answered by the metrics generator. With
+          # it off, Tempo has no generator in its ring and every such query
+          # fails with "error finding generators: empty ring".
+          #
+          # Only local-blocks is enabled: it is the processor that serves
+          # TraceQL metrics. span-metrics and service-graphs are deliberately
+          # left off because the otel-collector already derives span metrics,
+          # and enabling them here would remote-write a duplicate set.
+          metricsGenerator:
+            enabled: true
+            # local-blocks writes nothing here, but the chart always emits a
+            # remote_write block; point it at the real Prometheus so Tempo is
+            # not retrying a service that does not exist.
+            remoteWriteUrl: http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090/api/v1/write
+            processor:
+              local_blocks:
+                flush_to_storage: true
+            storage:
+              # On the PVC rather than the chart's default /tmp emptyDir, so
+              # generator blocks survive a restart.
+              path: /var/tempo/metrics
+            traces_storage:
+              path: /var/tempo/metrics-traces
+          overrides:
+            defaults:
+              metrics_generator:
+                processors:
+                  - local-blocks
           memBallastSizeMbs: 0
           reportingEnabled: false
           extraArgs:
