@@ -78,6 +78,13 @@ spec:
         grafana:
           enabled: true
           envFromSecret: grafana-secrets
+          # prevent creating a new admin password on every helm render
+          admin:
+            existingSecret: grafana-secrets
+            userKey: GF_SECURITY_ADMIN_USER
+            passwordKey: GF_SECURITY_ADMIN_PASSWORD
+          plugins:
+            - marcusolsson-treemap-panel
           deploymentStrategy:
             type: Recreate
           persistence:
