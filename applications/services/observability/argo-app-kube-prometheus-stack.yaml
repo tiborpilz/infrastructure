@@ -54,6 +54,8 @@ spec:
         grafana:
           enabled: true
           envFromSecret: grafana-secrets
+          deploymentStrategy:
+            type: Recreate
           persistence:
             enabled: true
             storageClassName: ceph-block
