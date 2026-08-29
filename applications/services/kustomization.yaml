@@ -15,3 +15,4 @@ resources:
   - excalidraw/argo-app.yaml
   - outline/argo-app.yaml
   - attic/argo-app.yaml
+  - smtp/argo-app.yaml
