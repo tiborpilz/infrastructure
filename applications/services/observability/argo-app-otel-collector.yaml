@@ -147,6 +147,16 @@ spec:
               attributes:
                 - key: openrouter.trace.id
                   action: delete
+            # OpenRouter's cost attribute name is not stable: spans once carried
+            # both gen_ai.usage.cost and gen_ai.usage.total_cost, and now carry
+            # only total_cost (alongside input_cost/output_cost). Normalise
+            # whichever exists onto one key so the sum connector keeps working
+            # if it changes again - a rename here silently zeroes cost, which
+            # reads as "no spend" rather than as a fault.
+            transform/openrouter_cost:
+              error_mode: ignore
+              trace_statements:
+                - set(span.attributes["gen_ai.usage.cost"], span.attributes["gen_ai.usage.total_cost"]) where span.attributes["gen_ai.usage.cost"] == nil and span.attributes["gen_ai.usage.total_cost"] != nil
             deltatocumulative:
               max_stale: 1h
           exporters:
@@ -173,7 +183,7 @@ spec:
                 exporters: [otlp/tempo]
               traces/openrouter_metrics:
                 receivers: [otlp/openrouter]
-                processors: [memory_limiter, resource/openrouter, resource/openrouter_metrics, batch]
+                processors: [memory_limiter, resource/openrouter, resource/openrouter_metrics, transform/openrouter_cost, batch]
                 exporters: [span_metrics/openrouter, sum/openrouter]
               metrics:
                 receivers: [otlp]
