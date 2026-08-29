@@ -31,7 +31,7 @@
       "gridPos": {
         "x": 0,
         "y": 1,
-        "w": 4,
+        "w": 6,
         "h": 4
       },
       "targets": [
@@ -84,9 +84,9 @@
         "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 4,
+        "x": 6,
         "y": 1,
-        "w": 4,
+        "w": 6,
         "h": 4
       },
       "targets": [
@@ -96,7 +96,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__range]))",
+          "expr": "sum(increase(gen_ai_calls_total{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__range]))",
           "refId": "A",
           "range": false,
           "instant": true
@@ -128,67 +128,13 @@
           }
         },
         "overrides": []
-      }
+      },
+      "description": "Counts only the 'LLM Generation' span. OpenRouter emits three spans per request, so an unfiltered count is ~3x too high."
     },
     {
       "type": "stat",
-      "title": "Input tokens (range)",
+      "title": "Mean cost / request",
       "id": 4,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "gridPos": {
-        "x": 8,
-        "y": 1,
-        "w": 4,
-        "h": 4
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(increase(gen_ai_usage_input_tokens_total{gen_ai_request_model=~\"$model\"}[$__range]))",
-          "refId": "A",
-          "range": false,
-          "instant": true
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "none",
-        "graphMode": "area",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "noValue": "0",
-          "mappings": [],
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "text"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Output tokens (range)",
-      "id": 5,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -196,7 +142,7 @@
       "gridPos": {
         "x": 12,
         "y": 1,
-        "w": 4,
+        "w": 6,
         "h": 4
       },
       "targets": [
@@ -206,62 +152,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(increase(gen_ai_usage_output_tokens_total{gen_ai_request_model=~\"$model\"}[$__range]))",
-          "refId": "A",
-          "range": false,
-          "instant": true
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "none",
-        "graphMode": "area",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "noValue": "0",
-          "mappings": [],
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "text"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "type": "stat",
-      "title": "p95 latency",
-      "id": 6,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "gridPos": {
-        "x": 16,
-        "y": 1,
-        "w": 4,
-        "h": 4
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(gen_ai_duration_seconds_bucket{gen_ai_request_model=~\"$model\"}[$__range])))",
+          "expr": "sum (increase(gen_ai_usage_cost_total{gen_ai_request_model=~\"$model\"}[$__range])) / clamp_min(sum (increase(gen_ai_calls_total{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__range])), 0.0000001)",
           "refId": "A",
           "range": false,
           "instant": true
@@ -283,9 +174,9 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
-          "decimals": 2,
-          "noValue": "No data",
+          "unit": "currencyUSD",
+          "decimals": 5,
+          "noValue": "$0",
           "mappings": [],
           "color": {
             "mode": "fixed",
@@ -294,91 +185,19 @@
         },
         "overrides": []
       }
-    },
-    {
-      "type": "stat",
-      "title": "Error rate",
-      "id": 7,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "gridPos": {
-        "x": 20,
-        "y": 1,
-        "w": 4,
-        "h": 4
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "sum(increase(gen_ai_calls_total{gen_ai_request_model=~\"$model\",status_code=\"STATUS_CODE_ERROR\"}[$__range])) / clamp_min(sum(increase(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__range])), 1)",
-          "refId": "A",
-          "range": false,
-          "instant": true
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "decimals": 2,
-          "noValue": "0%",
-          "mappings": [],
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "text",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0.01
-              },
-              {
-                "color": "red",
-                "value": 0.05
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "description": "Share of spans reporting STATUS_CODE_ERROR."
     },
     {
       "type": "stat",
       "title": "Prompt cache hit rate",
-      "id": 8,
+      "id": 5,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 0,
-        "y": 5,
-        "w": 8,
+        "x": 18,
+        "y": 1,
+        "w": 6,
         "h": 4
       },
       "targets": [
@@ -437,20 +256,20 @@
         },
         "overrides": []
       },
-      "description": "Share of input tokens served from OpenRouter's prompt cache. Cached tokens are billed far cheaper, so this is the biggest lever on spend."
+      "description": "Share of input tokens served from OpenRouter's prompt cache. Cached tokens bill far cheaper, so this is the biggest lever on spend."
     },
     {
       "type": "stat",
       "title": "Mean time to first token",
-      "id": 9,
+      "id": 6,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 8,
+        "x": 0,
         "y": 5,
-        "w": 8,
+        "w": 6,
         "h": 4
       },
       "targets": [
@@ -460,7 +279,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum (increase(gen_ai_openrouter_first_token_ms_total{gen_ai_request_model=~\"$model\"}[$__range])) / clamp_min(sum (increase(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__range])), 0.0000001)",
+          "expr": "sum (increase(gen_ai_openrouter_first_token_ms_total{gen_ai_request_model=~\"$model\"}[$__range])) / clamp_min(sum (increase(gen_ai_calls_total{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__range])), 0.0000001)",
           "refId": "A",
           "range": false,
           "instant": true
@@ -493,20 +312,20 @@
         },
         "overrides": []
       },
-      "description": "How long before the first token arrives - what a user actually waits for, unlike total duration."
+      "description": "What a user actually waits for, unlike total span duration."
     },
     {
       "type": "stat",
-      "title": "Mean cost per request",
-      "id": 10,
+      "title": "p95 generation latency",
+      "id": 7,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 16,
+        "x": 6,
         "y": 5,
-        "w": 8,
+        "w": 6,
         "h": 4
       },
       "targets": [
@@ -516,7 +335,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum (increase(gen_ai_usage_cost_total{gen_ai_request_model=~\"$model\"}[$__range])) / clamp_min(sum (increase(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__range])), 0.0000001)",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(gen_ai_duration_seconds_bucket{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__range])))",
           "refId": "A",
           "range": false,
           "instant": true
@@ -538,9 +357,9 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "currencyUSD",
-          "decimals": 5,
-          "noValue": "$0",
+          "unit": "s",
+          "decimals": 2,
+          "noValue": "No data",
           "mappings": [],
           "color": {
             "mode": "fixed",
@@ -551,9 +370,153 @@
       }
     },
     {
+      "type": "stat",
+      "title": "Provider error rate",
+      "id": 8,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum (increase(gen_ai_calls_total{span_name=~\"provider attempt.*\",status_code=\"STATUS_CODE_ERROR\",gen_ai_request_model=~\"$model\"}[$__range])) / clamp_min(sum (increase(gen_ai_calls_total{span_name=~\"provider attempt.*\",gen_ai_request_model=~\"$model\"}[$__range])), 0.0000001)",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "noValue": "0%",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "Failed upstream provider attempts. Errors appear on 'provider attempt' spans, not on the generation span."
+    },
+    {
+      "type": "stat",
+      "title": "Fallback rate",
+      "id": 9,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 5,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum (increase(gen_ai_calls_total{span_name=~\"provider attempt [2-9].*\",gen_ai_request_model=~\"$model\"}[$__range])) / clamp_min(sum (increase(gen_ai_calls_total{span_name=~\"provider attempt 1.*\",gen_ai_request_model=~\"$model\"}[$__range])), 0.0000001)",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "noValue": "0%",
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.02
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "Share of requests that needed a second or later provider attempt after the first was refused or failed."
+    },
+    {
       "type": "row",
       "title": "Cost",
-      "id": 11,
+      "id": 10,
       "gridPos": {
         "x": 0,
         "y": 9,
@@ -566,7 +529,7 @@
     {
       "type": "timeseries",
       "title": "Spend rate by model",
-      "id": 12,
+      "id": 11,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -632,7 +595,7 @@
     {
       "type": "timeseries",
       "title": "Cost per request by model",
-      "id": 13,
+      "id": 12,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -650,7 +613,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (gen_ai_request_model) (rate(gen_ai_usage_cost_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])) / clamp_min(sum by (gen_ai_request_model) (rate(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])), 0.0000001)",
+          "expr": "sum by (gen_ai_request_model) (rate(gen_ai_usage_cost_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])) / clamp_min(sum by (gen_ai_request_model) (rate(gen_ai_calls_total{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__rate_interval])), 0.0000001)",
           "refId": "A",
           "range": true,
           "legendFormat": "{{gen_ai_request_model}}"
@@ -693,12 +656,12 @@
         },
         "overrides": []
       },
-      "description": "Rising here without rising traffic means prompts are getting longer or cache hits are dropping."
+      "description": "Rising without rising traffic means prompts are getting longer or cache hits are dropping."
     },
     {
       "type": "row",
       "title": "Traffic & latency",
-      "id": 14,
+      "id": 13,
       "gridPos": {
         "x": 0,
         "y": 18,
@@ -711,7 +674,7 @@
     {
       "type": "timeseries",
       "title": "Request rate by model",
-      "id": 15,
+      "id": 14,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -729,7 +692,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (gen_ai_request_model) (rate(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__rate_interval]))",
+          "expr": "sum by (gen_ai_request_model) (rate(gen_ai_calls_total{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__rate_interval]))",
           "refId": "A",
           "range": true,
           "legendFormat": "{{gen_ai_request_model}}"
@@ -775,8 +738,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Latency percentiles",
-      "id": 16,
+      "title": "Generation latency percentiles",
+      "id": 15,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -794,7 +757,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(gen_ai_duration_seconds_bucket{gen_ai_request_model=~\"$model\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(gen_ai_duration_seconds_bucket{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__rate_interval])))",
           "refId": "A",
           "range": true,
           "legendFormat": "p50"
@@ -805,7 +768,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(gen_ai_duration_seconds_bucket{gen_ai_request_model=~\"$model\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(gen_ai_duration_seconds_bucket{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__rate_interval])))",
           "refId": "B",
           "range": true,
           "legendFormat": "p95",
@@ -817,7 +780,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(gen_ai_duration_seconds_bucket{gen_ai_request_model=~\"$model\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(gen_ai_duration_seconds_bucket{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__rate_interval])))",
           "refId": "C",
           "range": true,
           "legendFormat": "p99"
@@ -860,12 +823,12 @@
         },
         "overrides": []
       },
-      "description": "End-to-end span duration. Dots on p95 are exemplars - click one to open that span in Jaeger."
+      "description": "Duration of the 'LLM Generation' span. Dots on p95 are exemplars - click one to open that span in Jaeger."
     },
     {
       "type": "timeseries",
       "title": "Time to first token by model",
-      "id": 17,
+      "id": 16,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -883,7 +846,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (gen_ai_request_model) (rate(gen_ai_openrouter_first_token_ms_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])) / clamp_min(sum by (gen_ai_request_model) (rate(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])), 0.0000001)",
+          "expr": "sum by (gen_ai_request_model) (rate(gen_ai_openrouter_first_token_ms_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])) / clamp_min(sum by (gen_ai_request_model) (rate(gen_ai_calls_total{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__rate_interval])), 0.0000001)",
           "refId": "A",
           "range": true,
           "legendFormat": "{{gen_ai_request_model}}"
@@ -926,12 +889,12 @@
         },
         "overrides": []
       },
-      "description": "Mean TTFT. Diverging from total latency means responses are getting longer, not slower to start."
+      "description": "Diverging from total latency means responses are getting longer, not slower to start."
     },
     {
       "type": "row",
-      "title": "Tokens",
-      "id": 18,
+      "title": "Upstream providers",
+      "id": 17,
       "gridPos": {
         "x": 0,
         "y": 27,
@@ -943,8 +906,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Token throughput",
-      "id": 19,
+      "title": "Request rate by serving provider",
+      "id": 18,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -952,6 +915,173 @@
       "gridPos": {
         "x": 0,
         "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "label_replace(sum by (span_name) (rate(gen_ai_calls_total{span_name=~\"provider attempt.*\",gen_ai_request_model=~\"$model\"}[$__rate_interval])), \"provider\", \"$1\", \"span_name\", \"provider attempt [0-9]+: (.+)\")",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "{{provider}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 3,
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 18,
+            "showPoints": "never",
+            "pointSize": 8,
+            "spanNulls": false,
+            "axisSoftMin": 0,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "description": "Which upstream actually served the request. OpenRouter only exposes this inside the span name, so it is parsed out with label_replace."
+    },
+    {
+      "type": "timeseries",
+      "title": "Provider attempt outcomes",
+      "id": 19,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(gen_ai_calls_total{span_name=~\"provider attempt 1.*\",gen_ai_request_model=~\"$model\"}[$__rate_interval]))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "first attempt"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(gen_ai_calls_total{span_name=~\"provider attempt [2-9].*\",gen_ai_request_model=~\"$model\"}[$__rate_interval]))",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "retry / fallback"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(gen_ai_calls_total{span_name=~\"provider attempt.*\",status_code=\"STATUS_CODE_ERROR\",gen_ai_request_model=~\"$model\"}[$__rate_interval]))",
+          "refId": "C",
+          "range": true,
+          "legendFormat": "failed"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 3,
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "pointSize": 8,
+            "spanNulls": false,
+            "axisSoftMin": 0,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "description": "Retries and failures against total attempts. All three share one axis and one unit."
+    },
+    {
+      "type": "row",
+      "title": "Tokens",
+      "id": 20,
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 24,
+        "h": 1
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Token throughput",
+      "id": 21,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 37,
         "w": 8,
         "h": 8
       },
@@ -973,8 +1103,19 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(gen_ai_usage_output_tokens_total{gen_ai_request_model=~\"$model\"}[$__rate_interval]))",
+          "expr": "sum(rate(gen_ai_usage_input_tokens_cached_total{gen_ai_request_model=~\"$model\"}[$__rate_interval]))",
           "refId": "B",
+          "range": true,
+          "legendFormat": "input (cached)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(gen_ai_usage_output_tokens_total{gen_ai_request_model=~\"$model\"}[$__rate_interval]))",
+          "refId": "C",
           "range": true,
           "legendFormat": "output"
         }
@@ -1016,19 +1157,19 @@
         },
         "overrides": []
       },
-      "description": "Tokens per second. Same unit on one axis, so input and output are directly comparable."
+      "description": "Tokens per second, one axis, directly comparable."
     },
     {
       "type": "timeseries",
       "title": "Prompt cache hit rate by model",
-      "id": 20,
+      "id": 22,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
       "gridPos": {
         "x": 8,
-        "y": 28,
+        "y": 37,
         "w": 8,
         "h": 8
       },
@@ -1082,19 +1223,19 @@
         },
         "overrides": []
       },
-      "description": "A drop here shows up as a cost spike a few minutes later."
+      "description": "A drop here shows up as a cost spike minutes later."
     },
     {
       "type": "timeseries",
       "title": "Output tokens per request",
-      "id": 21,
+      "id": 23,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
       "gridPos": {
         "x": 16,
-        "y": 28,
+        "y": 37,
         "w": 8,
         "h": 8
       },
@@ -1105,7 +1246,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (gen_ai_request_model) (rate(gen_ai_usage_output_tokens_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])) / clamp_min(sum by (gen_ai_request_model) (rate(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])), 0.0000001)",
+          "expr": "sum by (gen_ai_request_model) (rate(gen_ai_usage_output_tokens_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])) / clamp_min(sum by (gen_ai_request_model) (rate(gen_ai_calls_total{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__rate_interval])), 0.0000001)",
           "refId": "A",
           "range": true,
           "legendFormat": "{{gen_ai_request_model}} total"
@@ -1116,7 +1257,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (gen_ai_request_model) (rate(gen_ai_usage_output_tokens_reasoning_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])) / clamp_min(sum by (gen_ai_request_model) (rate(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])), 0.0000001)",
+          "expr": "sum by (gen_ai_request_model) (rate(gen_ai_usage_output_tokens_reasoning_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])) / clamp_min(sum by (gen_ai_request_model) (rate(gen_ai_calls_total{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__rate_interval])), 0.0000001)",
           "refId": "B",
           "range": true,
           "legendFormat": "{{gen_ai_request_model}} reasoning"
@@ -1164,10 +1305,10 @@
     {
       "type": "row",
       "title": "By model",
-      "id": 22,
+      "id": 24,
       "gridPos": {
         "x": 0,
-        "y": 36,
+        "y": 45,
         "w": 24,
         "h": 1
       },
@@ -1177,7 +1318,7 @@
     {
       "type": "table",
       "title": "Per-model breakdown (selected range)",
-      "id": 23,
+      "id": 25,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -1185,7 +1326,7 @@
       "description": "One row per model over the dashboard's time range. Sort by Cost to find where the money goes.",
       "gridPos": {
         "x": 0,
-        "y": 37,
+        "y": 46,
         "w": 24,
         "h": 10
       },
@@ -1196,7 +1337,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (gen_ai_request_model) (increase(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__range]))",
+          "expr": "sum by (gen_ai_request_model) (increase(gen_ai_calls_total{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__range]))",
           "refId": "A",
           "range": false,
           "instant": true,
@@ -1256,7 +1397,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "sum by (gen_ai_request_model) (increase(gen_ai_openrouter_first_token_ms_total{gen_ai_request_model=~\"$model\"}[$__range])) / clamp_min(sum by (gen_ai_request_model) (increase(gen_ai_calls_total{gen_ai_request_model=~\"$model\"}[$__range])), 0.0000001)",
+          "expr": "sum by (gen_ai_request_model) (increase(gen_ai_openrouter_first_token_ms_total{gen_ai_request_model=~\"$model\"}[$__range])) / clamp_min(sum by (gen_ai_request_model) (increase(gen_ai_calls_total{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__range])), 0.0000001)",
           "refId": "F",
           "range": false,
           "instant": true,
@@ -1268,7 +1409,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (gen_ai_request_model, le) (rate(gen_ai_duration_seconds_bucket{gen_ai_request_model=~\"$model\"}[$__range])))",
+          "expr": "histogram_quantile(0.95, sum by (gen_ai_request_model, le) (rate(gen_ai_duration_seconds_bucket{span_name=\"LLM Generation\",gen_ai_request_model=~\"$model\"}[$__range])))",
           "refId": "G",
           "range": false,
           "instant": true,
@@ -1427,9 +1568,9 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(gen_ai_calls_total, gen_ai_request_model)",
+        "definition": "label_values(gen_ai_calls_total{span_name=\"LLM Generation\"}, gen_ai_request_model)",
         "query": {
-          "query": "label_values(gen_ai_calls_total, gen_ai_request_model)",
+          "query": "label_values(gen_ai_calls_total{span_name=\"LLM Generation\"}, gen_ai_request_model)",
           "refId": "StandardVariableQuery"
         },
         "includeAll": true,

@@ -143,9 +143,11 @@ spec:
                 - key: service.name
                   value: openrouter
                   action: insert
+            resource/openrouter_metrics:
+              attributes:
+                - key: openrouter.trace.id
+                  action: delete
             deltatocumulative:
-              # OpenRouter traffic is bursty; the 5m default forgets a stream
-              # between bursts and restarts every counter from zero.
               max_stale: 1h
           exporters:
             otlp/jaeger:
@@ -168,7 +170,11 @@ spec:
               traces/openrouter:
                 receivers: [otlp/openrouter]
                 processors: [memory_limiter, resource/openrouter, batch]
-                exporters: [otlp/jaeger, span_metrics/openrouter, sum/openrouter]
+                exporters: [otlp/jaeger]
+              traces/openrouter_metrics:
+                receivers: [otlp/openrouter]
+                processors: [memory_limiter, resource/openrouter, resource/openrouter_metrics, batch]
+                exporters: [span_metrics/openrouter, sum/openrouter]
               metrics:
                 receivers: [otlp]
                 processors: [memory_limiter, batch]
