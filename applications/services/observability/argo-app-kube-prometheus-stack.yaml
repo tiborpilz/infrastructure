@@ -71,7 +71,7 @@ spec:
               # Turns the span-metric exemplars into clickable links to the
               # originating span in Jaeger.
               exemplarTraceIdDestinations:
-                datasourceUid: jaeger
+                datasourceUid: tempo
                 traceIdLabelName: trace_id
                 urlDisplayLabel: View trace
           grafana.ini:
@@ -100,7 +100,17 @@ spec:
                   - name: TraceID
                     matcherRegex: '(?:trace_id|traceID|trace\.id)"?[:=]"?(\w+)'
                     url: "$${__value.raw}"
-                    datasourceUid: jaeger
+                    datasourceUid: tempo
+            - name: Tempo
+              type: tempo
+              uid: tempo
+              access: proxy
+              url: http://tempo.observability.svc.cluster.local:3200
+              jsonData:
+                tracesToLogsV2:
+                  datasourceUid: loki
+                tracesToMetrics:
+                  datasourceUid: prometheus
             - name: Jaeger
               type: jaeger
               uid: jaeger

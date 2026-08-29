@@ -8,6 +8,8 @@ resources:
   - argo-app-loki.yaml
   - argo-app-alloy.yaml
   - alloy-rbac.yaml
+  - argo-app-tempo.yaml
+  - bucket-tempo.yaml
   - argo-app-jaeger.yaml
   - argo-app-jaeger-oauth2-proxy.yaml
   - argo-app-otel-collector.yaml

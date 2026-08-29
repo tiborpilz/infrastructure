@@ -150,8 +150,8 @@ spec:
             deltatocumulative:
               max_stale: 1h
           exporters:
-            otlp/jaeger:
-              endpoint: jaeger.observability.svc.cluster.local:4317
+            otlp/tempo:
+              endpoint: tempo.observability.svc.cluster.local:4317
               tls:
                 insecure: true
             prometheusremotewrite:
@@ -166,11 +166,11 @@ spec:
               traces:
                 receivers: [otlp]
                 processors: [memory_limiter, batch]
-                exporters: [otlp/jaeger]
+                exporters: [otlp/tempo]
               traces/openrouter:
                 receivers: [otlp/openrouter]
                 processors: [memory_limiter, resource/openrouter, batch]
-                exporters: [otlp/jaeger]
+                exporters: [otlp/tempo]
               traces/openrouter_metrics:
                 receivers: [otlp/openrouter]
                 processors: [memory_limiter, resource/openrouter, resource/openrouter_metrics, batch]

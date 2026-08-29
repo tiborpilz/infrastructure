@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tempo
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://grafana-community.github.io/helm-charts
+    chart: tempo
+    targetRevision: 2.3.0
+    helm:
+      releaseName: tempo
+      valuesObject:
+        fullnameOverride: tempo
+        tempo:
+          storage:
+            trace:
+              backend: s3
+              s3:
+                bucket: ${BUCKET_NAME}
+                endpoint: ${BUCKET_HOST}:${BUCKET_PORT}
+                access_key: ${AWS_ACCESS_KEY_ID}
+                secret_key: ${AWS_SECRET_ACCESS_KEY}
+                insecure: true
+              wal:
+                path: /var/tempo/wal
+          retention: 720h
+          memBallastSizeMbs: 0
+          reportingEnabled: false
+          extraArgs:
+            config.expand-env: "true"
+          extraEnvFrom:
+            - secretRef:
+                name: tempo-storage
+            - configMapRef:
+                name: tempo-storage
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+        persistence:
+          enabled: true
+          storageClassName: ceph-block
+          size: 10Gi
+        tempoQuery:
+          enabled: false
+        serviceMonitor:
+          enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
