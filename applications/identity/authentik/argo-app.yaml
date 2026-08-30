@@ -94,6 +94,12 @@ spec:
                   name: jaeger-oauth2-proxy-secrets
                   key: client-secret
                   optional: true
+            - name: ALERTMANAGER_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-oauth2-proxy-secrets
+                  key: client-secret
+                  optional: true
 
         authentik:
           log_level: debug

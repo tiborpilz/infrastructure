@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - secrets.enc.yaml
+  - alertmanager-secrets.enc.yaml
   - argo-app-kube-prometheus-stack.yaml
   - argo-app-loki.yaml
   - argo-app-alloy.yaml
@@ -12,9 +13,11 @@ resources:
   - bucket-tempo.yaml
   - argo-app-jaeger.yaml
   - argo-app-jaeger-oauth2-proxy.yaml
+  - argo-app-alertmanager-oauth2-proxy.yaml
   - argo-app-otel-collector.yaml
   - httproute-grafana.yaml
   - httproute-jaeger.yaml
+  - httproute-alertmanager.yaml
   - httproute-otel.yaml
 
 # Grafana provisions dashboards from ConfigMaps labelled grafana_dashboard via
