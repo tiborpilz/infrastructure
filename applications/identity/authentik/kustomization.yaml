@@ -15,6 +15,22 @@ resources:
   - secrets.enc.yaml
   - oidc-clients.enc.yaml
 
+# Roll the worker whenever the aggregated blueprint contents change so
+# Authentik discovers and applies additions and updates immediately.
+replacements:
+  - source:
+      kind: ConfigMap
+      name: authentik-blueprints
+      fieldPath: metadata.annotations.blueprints-checksum
+    targets:
+      - select:
+          kind: Application
+          name: authentik
+        fieldPaths:
+          - spec.source.helm.valuesObject.worker.podAnnotations.blueprints-checksum
+        options:
+          create: true
+
 # Rewrites the valkey sidecar StatefulSet embedded in the Application's helm
 # valuesObject (kustomize's images transformer matches any containers[] list).
 images:

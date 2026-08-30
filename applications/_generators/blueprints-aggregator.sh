@@ -13,8 +13,15 @@ mapfile -t FILES < <(
     -path '*/blueprints/*.yaml' | sort
 )
 
+BLUEPRINTS_CHECKSUM="$({
+  for f in "${FILES[@]}"; do
+    printf '%s\0' "${f#${APPS_DIR}/}"
+    sha256sum "${f}"
+  done
+} | sha256sum | cut -d' ' -f1)"
+
 emit_header() {
-  cat <<'EOF'
+  cat <<EOF
 apiVersion: config.kubernetes.io/v1
 kind: ResourceList
 items:
@@ -23,6 +30,8 @@ items:
     metadata:
       name: authentik-blueprints
       namespace: authentik
+      annotations:
+        blueprints-checksum: ${BLUEPRINTS_CHECKSUM}
       labels:
         app.kubernetes.io/managed-by: kustomize-blueprints-aggregator
 EOF
