@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - rbac.yaml
+  - configmap.yaml
+  - script-configmap.yaml
+  - cronjob.yaml
+
+images:
+  # Renovate bumps this tag via the imageName line below.
+  # imageName: docker.io/alpine/kubectl:1.34.1
+  - name: docker.io/alpine/kubectl
+    newTag: "1.34.1"

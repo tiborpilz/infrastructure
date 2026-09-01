@@ -1,0 +1,70 @@
+# Takes a VolumeSnapshot of every PVC listed in the snapshot-scheduler
+# ConfigMap once a day and prunes snapshots older than retention-days.
+#
+# Snapshot names embed a unix epoch suffix ("${pvc}-daily-<epoch>") so pruning
+# is pure integer comparison in POSIX sh — no jq/date-format dependencies.
+# Snapshots carry label backups.tibor.sh/policy=daily.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: snapshot-scheduler
+  namespace: snapshot-scheduler
+spec:
+  schedule: "23 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: snapshot
+              image: docker.io/alpine/kubectl
+              command: ["/bin/sh", "/scripts/run.sh"]
+              env:
+                - name: RETENTION_DAYS
+                  valueFrom:
+                    configMapKeyRef:
+                      name: snapshot-scheduler
+                      key: retention-days
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                - name: config
+                  mountPath: /config
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: scripts
+              configMap:
+                name: snapshot-scheduler-script
+                defaultMode: 0555
+            - name: config
+              configMap:
+                name: snapshot-scheduler
+                defaultMode: 0444
+                items:
+                  - key: pvcs
+                    path: pvcs
+            - name: tmp
+              emptyDir: {}

@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: snapshot-scheduler-script
+  namespace: snapshot-scheduler
+data:
+  run.sh: |
+    #!/bin/sh
+    set -eu
+
+    now=$(date +%s)
+    cutoff=$(( now - RETENTION_DAYS * 86400 ))
+    prefix_label="backups.tibor.sh/policy=daily"
+
+    # class_for STORAGECLASS -> snapshot class name, empty = skip
+    # (hcloud-volumes is deliberately unmapped: the Hetzner CSI driver has no
+    # CreateSnapshot support — see the ConfigMap comment / docs/backups-plan.md)
+    class_for() {
+      case "$1" in
+        ceph-block) echo "ceph-block-retain" ;;
+        ceph-filesystem) echo "ceph-filesystem-retain" ;;
+        *) echo "" ;;
+      esac
+    }
+
+    # 1) Prune expired snapshots (matched by epoch suffix in the name).
+    while IFS= read -r entry; do
+      case "$entry" in ''|\#*) continue ;; esac
+      ns=${entry%%/*}
+      pvc=${entry#*/}
+      prefix="${pvc}-daily-"
+
+      for snap in $(kubectl -n "$ns" get volumesnapshots -l "$prefix_label" -o name 2>/dev/null | sed 's|^.*/||'); do
+        case "$snap" in
+          "$prefix"*) ;;
+          *) continue ;;
+        esac
+        ts=${snap#"$prefix"}
+        case "$ts" in *[!0-9]*|'') continue ;; esac
+        if [ "$ts" -lt "$cutoff" ]; then
+          echo "prune $ns/$snap"
+          kubectl -n "$ns" delete volumesnapshot "$snap"
+        fi
+      done
+    done < /config/pvcs
+
+    # 2) Create today's snapshots.
+    while IFS= read -r entry; do
+      case "$entry" in ''|\#*) continue ;; esac
+      ns=${entry%%/*}
+      pvc=${entry#*/}
+
+      sc=$(kubectl -n "$ns" get pvc "$pvc" -o jsonpath='{.spec.storageClassName}' 2>/dev/null || true)
+      if [ -z "$sc" ]; then
+        echo "skip $ns/$pvc: PVC not found"
+        continue
+      fi
+      cls=$(class_for "$sc")
+      if [ -z "$cls" ]; then
+        echo "skip $ns/$pvc: no snapshot class for storage class $sc"
+        continue
+      fi
+
+      name="${pvc}-daily-${now}"
+      kubectl -n "$ns" create -f - >/dev/null <<EOF
+    apiVersion: snapshot.storage.k8s.io/v1
+    kind: VolumeSnapshot
+    metadata:
+      name: ${name}
+      labels:
+        backups.tibor.sh/policy: daily
+    spec:
+      volumeSnapshotClassName: ${cls}
+      source:
+        persistentVolumeClaimName: ${pvc}
+    EOF
+      echo "snapshot $ns/$pvc -> $name ($cls)"
+    done < /config/pvcs

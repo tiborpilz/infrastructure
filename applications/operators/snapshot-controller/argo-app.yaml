@@ -34,6 +34,23 @@ spec:
               clusterID: rook-ceph
               csi.storage.k8s.io/snapshotter-secret-name: rook-csi-cephfs-provisioner
               csi.storage.k8s.io/snapshotter-secret-namespace: rook-ceph
+          # Retain variants used by the snapshot-scheduler CronJob: snapshots
+          # survive even if the VolumeSnapshot object is deleted before the CSI
+          # driver releases the snapshot content.
+          - name: ceph-block-retain
+            driver: rook-ceph.rbd.csi.ceph.com
+            deletionPolicy: Retain
+            parameters:
+              clusterID: rook-ceph
+              csi.storage.k8s.io/snapshotter-secret-name: rook-csi-rbd-provisioner
+              csi.storage.k8s.io/snapshotter-secret-namespace: rook-ceph
+          - name: ceph-filesystem-retain
+            driver: rook-ceph.cephfs.csi.ceph.com
+            deletionPolicy: Retain
+            parameters:
+              clusterID: rook-ceph
+              csi.storage.k8s.io/snapshotter-secret-name: rook-csi-cephfs-provisioner
+              csi.storage.k8s.io/snapshotter-secret-namespace: rook-ceph
   destination:
     server: https://kubernetes.default.svc
     namespace: snapshot-controller

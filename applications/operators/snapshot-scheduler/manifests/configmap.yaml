@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: snapshot-scheduler
+  namespace: snapshot-scheduler
+data:
+  # PVCs to snapshot, one "namespace/pvc" per line. Kept explicit instead of
+  # label-based so adding a service is a reviewable diff. Observability PVCs
+  # are deliberately absent (rebuildable telemetry).
+  #
+  # Mapping used by the job:
+  #   ceph-block      -> ceph-block-retain        (local, same OSDs)
+  #   ceph-filesystem -> ceph-filesystem-retain   (local, same OSDs)
+  #   hcloud-volumes  -> SKIPPED: the Hetzner CSI driver does not implement
+  #      CreateSnapshot (no API support; hetznercloud/csi-driver#849). PVCs on
+  #      hcloud-volumes need Velero fs-backup instead — see docs/backups-plan.md.
+  pvcs: |
+    harbor/harbor-registry-data
+    harbor/harbor-pg-1
+    attic/attic-db-1
+    outline/outline-db-1
+    outline/outline-data
+    pds/pds-data
+    radicle/radicle-home
+    tangled/spindle-data
+    excalidraw/excalidraw-data
+    woodpecker/data-woodpecker-server-0
+    woodpecker/woodpecker-db-1
+    # Pending the coder app provenance decision (runs in the cluster, not in git):
+    # coder/coder-db-1
+  retention-days: "7"
