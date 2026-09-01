@@ -15,3 +15,13 @@ spec:
       recordTTL: 60
       targets:
         - 2a01:4f8:c01e:339b::1
+    - dnsName: "*.preview.tibor.sh"
+      recordType: A
+      recordTTL: 60
+      targets:
+        - 138.199.128.61
+    - dnsName: "*.preview.tibor.sh"
+      recordType: AAAA
+      recordTTL: 60
+      targets:
+        - 2a01:4f8:c01e:339b::1

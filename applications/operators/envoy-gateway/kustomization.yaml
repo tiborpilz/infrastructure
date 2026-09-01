@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - preview-certificate.yaml
   - argocd-oci-repo.yaml
   - argo-app.yaml
   - envoyproxy.yaml

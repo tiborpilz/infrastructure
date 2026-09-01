@@ -1,0 +1,23 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "preview-app.name" . }}
+  labels:
+    {{- include "preview-app.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: public-envoy
+      namespace: gateway-system
+      sectionName: preview-https
+  hostnames:
+    - {{ required "preview.hostname is required" .Values.preview.hostname | quote }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ include "preview-app.name" . }}
+          port: 80

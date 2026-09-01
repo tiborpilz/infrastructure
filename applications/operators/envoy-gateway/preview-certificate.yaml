@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: preview-tibor-sh-wildcard-tls
+  namespace: gateway-system
+spec:
+  secretName: preview-tibor-sh-wildcard-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.preview.tibor.sh"

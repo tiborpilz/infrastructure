@@ -26,3 +26,19 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: preview-https
+      protocol: HTTPS
+      port: 443
+      hostname: "*.preview.tibor.sh"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: preview-tibor-sh-wildcard-tls
+            kind: Secret
+            group: ""
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              platform.tibor.sh/type: preview

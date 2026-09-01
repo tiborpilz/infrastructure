@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: preview-demo
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - pullRequest:
+        gitea:
+          owner: forgejo_admin
+          repo: preview-demo
+          api: https://git.tibor.sh
+        filters:
+          - targetBranchMatch: main
+        requeueAfterSeconds: 60
+  template:
+    metadata:
+      name: 'preview-demo-pr-{{ .number }}'
+      namespace: argocd
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+      labels:
+        platform.tibor.sh/type: preview
+        platform.tibor.sh/repository: preview-demo
+        platform.tibor.sh/pull-request: '{{ .number }}'
+      annotations:
+        link.argocd.argoproj.io/external-link: 'https://preview-demo-pr-{{ .number }}.preview.tibor.sh'
+    spec:
+      project: previews
+      source:
+        repoURL: https://github.com/tiborpilz/infrastructure
+        targetRevision: HEAD
+        path: charts/preview-app
+        helm:
+          releaseName: preview-demo
+          parameters:
+            - name: image.repository
+              value: harbor.tibor.sh/previews/preview-demo
+            - name: image.tag
+              value: 'pr-{{ .number }}-{{ .head_sha }}'
+            - name: preview.pullRequest
+              value: '{{ .number }}'
+            - name: preview.commit
+              value: '{{ .head_sha }}'
+            - name: preview.branch
+              value: '{{ .branch }}'
+            - name: preview.hostname
+              value: 'preview-demo-pr-{{ .number }}.preview.tibor.sh'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'preview-preview-demo-{{ .number }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=false
+          - ServerSideApply=true

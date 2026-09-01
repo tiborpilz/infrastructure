@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: previews
+  namespace: argocd
+spec:
+  description: Disposable pull-request preview environments
+  sourceRepos:
+    - https://github.com/tiborpilz/infrastructure
+  destinations:
+    - namespace: preview-preview-demo-*
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ResourceQuota
+    - group: ""
+      kind: LimitRange
+    - group: apps
+      kind: Deployment
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+  orphanedResources:
+    warn: true

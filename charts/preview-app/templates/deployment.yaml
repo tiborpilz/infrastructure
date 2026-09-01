@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "preview-app.name" . }}
+  labels:
+    {{- include "preview-app.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "preview-app.name" . }}
+  template:
+    metadata:
+      labels:
+        {{- include "preview-app.labels" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: app
+          image: "{{ required "image.repository is required" .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PREVIEW_PULL_REQUEST
+              value: {{ .Values.preview.pullRequest | quote }}
+            - name: PREVIEW_COMMIT
+              value: {{ .Values.preview.commit | quote }}
+            - name: PREVIEW_BRANCH
+              value: {{ .Values.preview.branch | quote }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: http
+              containerPort: {{ .Values.container.port }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.container.healthPath }}
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.container.healthPath }}
+              port: http
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
