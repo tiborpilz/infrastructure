@@ -27,6 +27,10 @@ spec:
           rbd:
             name: rook-ceph.rbd.csi.ceph.com
             enabled: true
+            # Chart default is "none", which omits the csi-snapshotter sidecar
+            # from the controller plugin — RBD VolumeSnapshots then hang forever
+            # ("Waiting for a snapshot to be created by the CSI driver").
+            snapshotPolicy: volumeSnapshot
           cephfs:
             name: rook-ceph.cephfs.csi.ceph.com
             enabled: true
