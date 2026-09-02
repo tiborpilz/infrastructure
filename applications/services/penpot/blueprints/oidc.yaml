@@ -1,0 +1,35 @@
+version: 1
+metadata:
+  name: penpot-oidc
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+  - model: authentik_providers_oauth2.oauth2provider
+    state: present
+    identifiers:
+      name: penpot
+    attrs:
+      client_id: penpot
+      client_secret: !Env PENPOT_OIDC_CLIENT_SECRET
+      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      authentication_flow: !Find [authentik_flows.flow, [slug, default-authentication-flow]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]
+      redirect_uris:
+        - matching_mode: strict
+          url: https://penpot.tibor.sh/api/auth/oidc/callback
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'openid'"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'profile'"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [name, "authentik default OAuth Mapping: OpenID 'email'"]]
+      sub_mode: hashed_user_id
+  - model: authentik_core.application
+    state: present
+    # The slug is what makes https://auth.tibor.sh/application/o/penpot/ resolve,
+    # which is Penpot's PENPOT_OIDC_BASE_URI and JWKS host.
+    identifiers:
+      slug: penpot
+    attrs:
+      name: Penpot
+      provider: !Find [authentik_providers_oauth2.oauth2provider, [name, penpot]]
+      meta_launch_url: https://penpot.tibor.sh

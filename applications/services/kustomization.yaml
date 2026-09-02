@@ -14,5 +14,6 @@ resources:
   - hubble/argo-app.yaml
   - excalidraw/argo-app.yaml
   - outline/argo-app.yaml
+  - penpot/argo-app.yaml
   - attic/argo-app.yaml
   - smtp/argo-app.yaml

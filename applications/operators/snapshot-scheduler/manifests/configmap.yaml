@@ -20,6 +20,8 @@ data:
     attic/attic-db-1
     outline/outline-db-1
     outline/outline-data
+    penpot/penpot-db-1
+    penpot/penpot-assets
     pds/pds-data
     radicle/radicle-home
     tangled/spindle-data

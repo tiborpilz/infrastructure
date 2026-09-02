@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - secrets.enc.yaml
+  - database.yaml
+  - valkey.yaml
+  - pvc.yaml
+  - configmap.yaml
+  - deployment-backend.yaml
+  - deployment-frontend.yaml
+  - deployment-exporter.yaml
+  - service.yaml
+  - httproute.yaml
+
+images:
+  - name: valkey/valkey
+    newTag: "9-alpine"
+  # The three images are built from one release and share a schema; bump them together.
+  - name: penpotapp/backend
+    newTag: "2.17.2"
+  - name: penpotapp/frontend
+    newTag: "2.17.2"
+  - name: penpotapp/exporter
+    newTag: "2.17.2"

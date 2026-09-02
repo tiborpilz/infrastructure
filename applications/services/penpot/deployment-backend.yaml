@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: penpot-backend
+  namespace: penpot
+  labels:
+    app.kubernetes.io/name: penpot
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1
+  # Single writer against one RWX assets volume; never run two at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: penpot
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: penpot
+        app.kubernetes.io/component: backend
+    spec:
+      securityContext:
+        fsGroup: 1001
+        # Skip the recursive chown of the assets volume once its group is right;
+        # it grows without bound and would otherwise be walked on every start.
+        fsGroupChangePolicy: OnRootMismatch
+        runAsUser: 1001
+        runAsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: penpotapp/backend
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 6060
+          envFrom:
+            - configMapRef:
+                name: penpot-config
+            - configMapRef:
+                name: penpot-backend-config
+          env:
+            - name: PENPOT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: penpot-secrets
+                  key: PENPOT_SECRET_KEY
+            - name: PENPOT_DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: penpot-db-app
+                  key: username
+            - name: PENPOT_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: penpot-db-app
+                  key: password
+            - name: PENPOT_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: penpot-oidc
+                  key: client-secret
+            - name: PENPOT_SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smtp-credentials
+                  key: password
+          volumeMounts:
+            - name: assets
+              mountPath: /opt/data/assets
+          # The backend applies its own schema migrations on boot, which on a
+          # cold database takes well past the usual probe budget.
+          startupProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 3Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: assets
+          persistentVolumeClaim:
+            claimName: penpot-assets

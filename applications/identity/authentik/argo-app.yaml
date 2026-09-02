@@ -82,6 +82,12 @@ spec:
                   name: outline-oidc
                   key: client-secret
                   optional: true
+            - name: PENPOT_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: penpot-oidc
+                  key: client-secret
+                  optional: true
             - name: GRAFANA_OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
