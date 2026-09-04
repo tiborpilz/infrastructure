@@ -4,7 +4,7 @@ terraform {
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
-      version = "~> 0.95"
+      version = "~> 0.112"
     }
     hcloud = {
       source  = "hetznercloud/hcloud"
