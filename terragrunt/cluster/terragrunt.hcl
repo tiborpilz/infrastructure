@@ -48,15 +48,6 @@ inputs = {
     worker-1 = {
       server_type = "cx33"
     }
-    worker-2 = {
-      server_type = "cx23"
-    }
-    worker-3 = {
-      server_type = "cx23"
-    }
-    worker-4 = {
-      server_type = "cx23"
-    }
   }
 
   kubeconfig_path          = "${get_repo_root()}/.kube/${include.env.locals.cluster_name}.kubeconfig"
