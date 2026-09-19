@@ -10,6 +10,7 @@ data:
     disable-registration
     disable-login-with-password
     disable-email-verification
+    enable-access-tokens
     enable-mcp
     enable-smtp
   PENPOT_PUBLIC_URI: https://penpot.tibor.sh
@@ -26,6 +27,9 @@ data:
   PENPOT_OBJECTS_STORAGE_BACKEND: fs
   PENPOT_OBJECTS_STORAGE_FS_DIRECTORY: /opt/data/assets
   PENPOT_TELEMETRY_ENABLED: "false"
+
+  # Grants access to the /dbg endpoints. Matched against the profile email.
+  PENPOT_ADMINS: tibor@pilz.berlin
 
   PENPOT_OIDC_CLIENT_ID: penpot
   PENPOT_OIDC_BASE_URI: https://auth.tibor.sh/application/o/penpot/
