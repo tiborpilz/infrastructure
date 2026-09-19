@@ -10,6 +10,7 @@ data:
     disable-registration
     disable-login-with-password
     disable-email-verification
+    enable-mcp
     enable-smtp
   PENPOT_PUBLIC_URI: https://penpot.tibor.sh
   PENPOT_HTTP_SERVER_MAX_BODY_SIZE: "367001600"
@@ -61,7 +62,6 @@ metadata:
   name: penpot-exporter-config
   namespace: penpot
 data:
-  PENPOT_FLAGS: enable-mcp
   PENPOT_MCP_URI: http://penpot-mcp:4401
   PENPOT_MCP_URI_WS: http://penpot-mcp:4401
   PENPOT_INTERNAL_URI: http://penpot
