@@ -61,5 +61,8 @@ metadata:
   name: penpot-exporter-config
   namespace: penpot
 data:
+  PENPOT_FLAGS: enable-mcp
+  PENPOT_MCP_URI: http://penpot-mcp:4401
+  PENPOT_MCP_URI_WS: http://penpot-mcp:4401
   PENPOT_INTERNAL_URI: http://penpot
   PENPOT_REDIS_URI: redis://penpot-valkey/0

@@ -28,7 +28,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: frontend
-          image: penpotapp/frontend
+          image: penpotapp/frontend:2.17
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

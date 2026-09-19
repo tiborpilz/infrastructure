@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: penpot-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: penpot
+      app.kubernetes.io/component: mcp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: penpot
+        app.kubernetes.io/component: mcp
+    spec:
+      containers:
+        - name: penpot-mcp
+          image: penpotapp/mcp:2.17
+          env:
+            - name: PENPOT_MCP_REMOTE_MODE
+              value: "true"
+
+            - name: PENPOT_MCP_SERVER_HOST
+              value: "0.0.0.0"
+
+            - name: PENPOT_MCP_PLUGIN_SERVER_HOST
+              value: "0.0.0.0"
+
+            - name: PENPOT_MCP_SERVER_PORT
+              value: "4401"
+
+            - name: PENPOT_MCP_WEBSOCKET_PORT
+              value: "4402"
+
+          ports:
+            - name: mcp
+              containerPort: 4401
+            - name: websocket
+              containerPort: 4402

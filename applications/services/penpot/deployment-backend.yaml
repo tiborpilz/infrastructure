@@ -33,7 +33,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: backend
-          image: penpotapp/backend
+          image: penpotapp/backend:2.17
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

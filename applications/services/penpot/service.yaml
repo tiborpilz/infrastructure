@@ -51,3 +51,25 @@ spec:
     - name: http
       port: 6061
       targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: penpot-mcp
+  namespace: penpot
+  labels:
+    app.kubernetes.io/name: penpot
+    app.kubernetes.io/component: mcp
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: penpot
+    app.kubernetes.io/component: mcp
+  ports:
+    - name: mcp
+      port: 4401
+      targetPort: 4401
+
+    - name: websocket
+      port: 4402
+      targetPort: 4402
