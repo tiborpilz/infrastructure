@@ -11,6 +11,7 @@ resources:
   - deployment-backend.yaml
   - deployment-frontend.yaml
   - deployment-exporter.yaml
+  - deployment-mcp.yaml
   - service.yaml
   - httproute.yaml
 
