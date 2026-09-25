@@ -24,7 +24,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: spindle
-          image: docker.io/heywoodlh/spindle
+          image: docker.io/heywoodlh/spindle@sha256:7f2dd3200885a799abbf2c8480ec546d24d48cf75c102d8b929e3b0f8c75b9f7
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
