@@ -9,4 +9,6 @@ resources:
 
 images:
   - name: ghcr.io/siderolabs/talos-backup
-    newTag: "v0.1.0-beta.3"
+    # Untagged main build: beta.3 predates AGE_RECIPIENT_PUBLIC_KEY,
+    # USE_PATH_STYLE and ENABLE_COMPRESSION.
+    newTag: "v0.1.0-beta.3-10-gb9fd478"
