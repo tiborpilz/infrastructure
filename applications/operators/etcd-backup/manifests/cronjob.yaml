@@ -24,6 +24,9 @@ spec:
             - name: talos-backup
               # tag is set via images: in kustomization.yaml
               image: ghcr.io/siderolabs/talos-backup
+              # The snapshot is staged in the working directory; keep it on
+              # the writable /tmp emptyDir.
+              workingDir: /tmp
               env:
                 - name: CLUSTER_NAME
                   value: hcloud-poc

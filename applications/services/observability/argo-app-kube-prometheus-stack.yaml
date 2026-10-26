@@ -15,6 +15,15 @@ spec:
         crds:
           enabled: true
 
+        # Cilium replaces kube-proxy, and Talos binds the scheduler and
+        # controller-manager metrics to localhost, so these are unscrapeable.
+        kubeProxy:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeControllerManager:
+          enabled: false
+
         prometheus:
           prometheusSpec:
             retention: 15d

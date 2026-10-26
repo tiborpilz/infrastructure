@@ -13,10 +13,40 @@
     robinovitch61 = {
       url = "github:robinovitch61/nur-packages";
     };
+
+    tangled = {
+      url = "git+https://tangled.org/tangled.org/core";
+    };
   };
 
-  outputs = { nixpkgs, flake-utils, robinovitch61, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs = { nixpkgs, flake-utils, robinovitch61, tangled, ... }:
+    let
+      spindleVm = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = { inherit tangled; };
+        modules = [
+          tangled.nixosModules.spindle
+          ./nix/spindle-vm.nix
+        ];
+      };
+    in
+    {
+      nixosConfigurations.spindle-vm = spindleVm;
+
+      # KubeVirt containerDisk: the qcow2 must sit under /disk in the image.
+      packages.x86_64-linux.spindle-vm-containerdisk =
+        let
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          image = spindleVm.config.system.build.image;
+        in
+        pkgs.dockerTools.buildImage {
+          name = "spindle-vm";
+          copyToRoot = pkgs.runCommand "spindle-vm-disk" { } ''
+            mkdir -p $out/disk
+            cp ${image}/${spindleVm.config.image.fileName} $out/disk/
+          '';
+        };
+    } // flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
       in
@@ -39,11 +69,13 @@
 
             velero
 
-            kdash
             k9s
-            ktop
+            kubectl-ktop
 
             robinovitch61.legacyPackages.${system}.kl
+
+            skopeo
+            kubevirt
 
             sops
             age

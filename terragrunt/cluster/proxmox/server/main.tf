@@ -47,7 +47,9 @@ resource "proxmox_virtual_environment_vm" "worker" {
 
   cpu {
     cores = each.value.cores
-    type  = "x86-64-v2-AES"
+    # Exposes VT-x/AMD-V so KubeVirt can use /dev/kvm. Needs nested
+    # virtualisation enabled on the Proxmox host.
+    type = "host"
   }
 
   memory {

@@ -10,18 +10,18 @@
   "nix": {
     "enabled": true
   },
-  "packageRules": [
-    {
-      "matchDepNames": ["docker.io/heywoodlh/spindle"],
-      "pinDigests": true
-    }
-  ],
   "customManagers": [
     {
       "customType": "regex",
       "managerFilePatterns": ["/applications/.*\\.ya?ml$/"],
       "matchStrings": ["imageName: (?<depName>[^\\s:]+):(?<currentValue>\\S+)"],
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/applications/.*kustomization\\.ya?ml$/"],
+      "matchStrings": ["https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/download/(?<currentValue>[^/]+)/"],
+      "datasourceTemplate": "github-releases"
     }
   ]
 }

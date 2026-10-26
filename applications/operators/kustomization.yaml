@@ -12,3 +12,4 @@ resources:
   - snapshot-controller
   - snapshot-scheduler
   - gateway-dns
+  - kubevirt

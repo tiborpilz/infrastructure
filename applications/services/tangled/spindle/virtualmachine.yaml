@@ -1,0 +1,56 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: spindle
+  namespace: tangled
+  labels:
+    app.kubernetes.io/name: tangled-spindle
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tangled-spindle
+    spec:
+      domain:
+        # host-passthrough exposes VT-x/AMD-V so the guest can run spindle's
+        # microVM workflows under KVM.
+        cpu:
+          cores: 4
+          model: host-passthrough
+        memory:
+          guest: 10Gi
+        devices:
+          disks:
+            - name: root
+              disk:
+                bus: virtio
+            # Serials name the /dev/disk/by-id paths nix/spindle-vm.nix mounts.
+            - name: state
+              serial: spindle-state
+              disk:
+                bus: virtio
+            - name: scratch
+              serial: scratch
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+              ports:
+                - name: http
+                  port: 6555
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        # Set by setup/push-spindle-vm.sh.
+        - name: root
+          containerDisk:
+            image: harbor.tibor.sh/library/spindle-vm@sha256:0000000000000000000000000000000000000000000000000000000000000000
+        - name: state
+          persistentVolumeClaim:
+            claimName: spindle-state
+        - name: scratch
+          persistentVolumeClaim:
+            claimName: spindle-scratch
