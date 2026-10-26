@@ -8,7 +8,6 @@ resources:
   - woodpecker
   - tangled/argo-app.yaml
   - pds/argo-app.yaml
-  - radicle/argo-app.yaml
   - tekton/argo-app.yaml
   - headlamp/argo-app.yaml
   - hubble/argo-app.yaml
