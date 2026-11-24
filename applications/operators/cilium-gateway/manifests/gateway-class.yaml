@@ -1,0 +1,22 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: cilium
+spec:
+  controllerName: io.cilium/gateway-controller
+  parametersRef:
+    group: cilium.io
+    kind: CiliumGatewayClassConfig
+    name: cilium
+    namespace: gateway-system
+---
+# The class makes Cilium LB-IPAM own the gateway Service instead of the hcloud CCM.
+apiVersion: cilium.io/v2alpha1
+kind: CiliumGatewayClassConfig
+metadata:
+  name: cilium
+  namespace: gateway-system
+spec:
+  service:
+    type: LoadBalancer
+    loadBalancerClass: io.cilium/l2-announcer

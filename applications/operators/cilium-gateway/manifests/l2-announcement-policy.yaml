@@ -1,0 +1,11 @@
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: proxmox
+spec:
+  nodeSelector:
+    matchLabels:
+      node.tibor.sh/tier: proxmox
+  interfaces:
+    - ^ens18$
+  loadBalancerIPs: true

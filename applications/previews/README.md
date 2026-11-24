@@ -39,7 +39,7 @@ project is public so preview namespaces require no registry pull secret.
 
 Pull-request code runs with no service-account token, no Secrets, a read-only
 root filesystem, fixed CPU/memory limits, and default-deny ingress and egress.
-Only traffic from the Gateway namespace can enter the pod. The ApplicationSet
+Only traffic from the Cilium gateway proxy can enter the pod. The ApplicationSet
 keeps the project, source chart, destination prefix, and hostname shape fixed;
 pull-request content controls only the container image.
 

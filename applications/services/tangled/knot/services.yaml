@@ -18,12 +18,11 @@ metadata:
   name: tangled-ssh
   namespace: tangled
   annotations:
-    load-balancer.hetzner.cloud/name: tangled-ssh
-    load-balancer.hetzner.cloud/location: fsn1
-    load-balancer.hetzner.cloud/disable-private-ingress: "true"
+    lbipam.cilium.io/ips: 195.201.170.143
     external-dns.alpha.kubernetes.io/hostname: ssh.knot.tibor.sh
 spec:
   type: LoadBalancer
+  loadBalancerClass: io.cilium/l2-announcer
   selector:
     app.kubernetes.io/name: tangled-knot
   ports:

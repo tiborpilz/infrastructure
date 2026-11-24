@@ -13,6 +13,10 @@ locals {
       enabled = true
     }
 
+    l2announcements = {
+      enabled = true
+    }
+
     defaultLBServiceIPAM = "none"
 
     hubble = {

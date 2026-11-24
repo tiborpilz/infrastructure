@@ -531,18 +531,3 @@ resource "terraform_data" "cluster_autoscaler_bootstrap" {
 
   depends_on = [terraform_data.wait_for_cluster]
 }
-
-resource "terraform_data" "cilium_lb_pool" {
-  triggers_replace = {
-    floating_ip = var.floating_ip_address
-  }
-
-  provisioner "local-exec" {
-    environment = {
-      KUBECONFIG = local_sensitive_file.kubeconfig[0].filename
-    }
-    command = "${path.module}/../scripts/apply-cilium-lb-pool.sh ${var.floating_ip_address}"
-  }
-
-  depends_on = [terraform_data.wait_for_cluster]
-}

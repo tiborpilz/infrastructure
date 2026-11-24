@@ -5,7 +5,7 @@ metadata:
   namespace: headlamp
 spec:
   parentRefs:
-    - name: public-envoy
+    - name: public
       namespace: gateway-system
       sectionName: https
   hostnames:

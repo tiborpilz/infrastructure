@@ -26,5 +26,7 @@ spec:
       kind: HTTPRoute
     - group: networking.k8s.io
       kind: NetworkPolicy
+    - group: cilium.io
+      kind: CiliumNetworkPolicy
   orphanedResources:
     warn: true

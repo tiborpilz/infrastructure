@@ -1,0 +1,14 @@
+# Hetzner additional IPs routed to the Proxmox host, which routes each /32 into
+# vmbr0. One Proxmox node answers ARP for each IP (see the L2 announcement
+# policy) and Cilium forwards to backends on any node. Services pin their
+# address with lbipam.cilium.io/ips.
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: default
+spec:
+  blocks:
+    - start: 195.201.170.143
+      stop: 195.201.170.143
+    - start: 195.201.170.151
+      stop: 195.201.170.151

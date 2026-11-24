@@ -12,5 +12,6 @@ resources:
   - snapshot-controller
   - snapshot-scheduler
   - gateway-dns
+  - cilium-gateway
   - kubevirt
   - talos-ccm
