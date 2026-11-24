@@ -1,4 +1,4 @@
-storageClass: hcloud-volumes
+storageClass: ceph-block
 
 database:
   storageSize: 10Gi
@@ -7,7 +7,7 @@ test:
   enabled: false
 
 global:
-  storageClass: hcloud-volumes
+  storageClass: ceph-block
 
 namespaceOverride: forgejo
 
@@ -15,9 +15,9 @@ persistence:
   enabled: true
   create: true
   mount: true
-  claimName: forgejo-data
+  claimName: forgejo-data-ceph
   size: 20Gi
-  storageClass: hcloud-volumes
+  storageClass: ceph-block
 
 ingress:
   enabled: false
@@ -74,7 +74,7 @@ gitea:
       START_SSH_SERVER: false
     database:
       DB_TYPE: postgres
-      HOST: forgejo-db-rw:5432
+      HOST: forgejo-pg-rw:5432
       NAME: forgejo
       USER: forgejo
       SCHEMA: public
@@ -100,5 +100,5 @@ gitea:
     - name: FORGEJO__DATABASE__PASSWD
       valueFrom:
         secretKeyRef:
-          name: forgejo-db-app
+          name: forgejo-pg-app
           key: password

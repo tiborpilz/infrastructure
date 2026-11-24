@@ -1,17 +1,36 @@
+# forgejo-pg was cloned from the hcloud-backed forgejo-db with pg_basebackup.
+# The bootstrap only runs at creation, so the source no longer needs to exist.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: forgejo-db
+  name: forgejo-pg
   namespace: forgejo
 spec:
   instances: 1
   imageName: ghcr.io/cloudnative-pg/postgresql:17.2
   storage:
     size: 10Gi
-    storageClass: hcloud-volumes
+    storageClass: ceph-block
   bootstrap:
-    initdb:
+    pg_basebackup:
+      source: forgejo-db
       database: forgejo
       owner: forgejo
+  externalClusters:
+    - name: forgejo-db
+      connectionParameters:
+        host: forgejo-db-rw
+        user: streaming_replica
+        dbname: postgres
+        sslmode: verify-full
+      sslKey:
+        name: forgejo-db-replication
+        key: tls.key
+      sslCert:
+        name: forgejo-db-replication
+        key: tls.crt
+      sslRootCert:
+        name: forgejo-db-ca
+        key: ca.crt
   monitoring:
     enablePodMonitor: false
