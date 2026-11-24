@@ -38,11 +38,7 @@ inputs = {
   authentik_secret_key = include.env.locals.secrets.authentik_secret_key
   argocd_age_key       = include.env.locals.argocd_age_key
 
-  control_plane_nodes = {
-    controlplane-1 = {
-      server_type = "cx33"
-    }
-  }
+  control_plane_nodes = {}
 
   worker_nodes = {
     worker-1 = {
@@ -58,14 +54,23 @@ inputs = {
   proxmox_talos_schematic_id = include.env.locals.proxmox_talos_schematic_id
   proxmox_ssh_private_key    = include.env.locals.secrets.proxmox_ssh_private_key
   proxmox_ssh_password       = include.env.locals.secrets.proxmox_ssh_password
+  proxmox_ssh_address        = "proxmox"
 
   proxmox_vm_datastore       = "first"
   proxmox_image_datastore    = "talos-store"
   proxmox_snippets_datastore = "talos-store"
 
   proxmox_workers = {
-    proxmox-1 = { vm_id = 9001, ip = "10.0.10.31", data_disk_size = 200 }
-    proxmox-2 = { vm_id = 9002, ip = "10.0.10.32", data_disk_size = 200 }
-    proxmox-3 = { vm_id = 9003, ip = "10.0.10.33", data_disk_size = 200 }
+    proxmox-1 = { vm_id = 9001, ip = "10.0.10.31", ipv6 = "2a01:4f8:13a:12c4::31", data_disk_size = 200 }
+    proxmox-2 = { vm_id = 9002, ip = "10.0.10.32", ipv6 = "2a01:4f8:13a:12c4::32", data_disk_size = 200 }
+    proxmox-3 = { vm_id = 9003, ip = "10.0.10.33", ipv6 = "2a01:4f8:13a:12c4::33", data_disk_size = 200 }
   }
+
+  proxmox_control_planes = {
+    proxmox-cp-1 = { vm_id = 9010, ip = "10.0.10.21", ipv6 = "2a01:4f8:13a:12c4::21" }
+  }
+  proxmox_vip      = "10.0.10.10"
+  cluster_endpoint = "https://10.0.10.10:6443"
+
+  proxmox_ipv6_gateway = "2a01:4f8:13a:12c4::3"
 }

@@ -88,6 +88,11 @@ variable "proxmox_ipv6_gateway" {
   description = "IPv6 gateway on the Proxmox bridge. Required when any Proxmox node sets ipv6."
   type        = string
   default     = null
+
+  validation {
+    condition     = var.proxmox_ipv6_gateway != null || alltrue([for n in concat(values(var.proxmox_workers), values(var.proxmox_control_planes)) : n.ipv6 == null])
+    error_message = "proxmox_ipv6_gateway is required when any Proxmox node sets ipv6."
+  }
 }
 
 variable "proxmox_ipv6_prefix_length" {

@@ -171,3 +171,89 @@ resource "terraform_data" "node_evict" {
     command = "kubectl delete node \"${self.triggers_replace.node}\" --timeout=60s || true"
   }
 }
+
+# Control planes are kept apart from the worker resources so they can be
+# targeted without touching worker drain/evict state.
+
+resource "proxmox_virtual_environment_file" "control_plane_user_data" {
+  for_each = var.control_planes
+
+  content_type = "snippets"
+  datastore_id = var.snippets_datastore
+  node_name    = var.proxmox_node
+
+  source_raw {
+    data      = var.control_plane_machine_configs[each.key]
+    file_name = "talos-${each.key}-user-data.yaml"
+  }
+}
+
+resource "proxmox_virtual_environment_vm" "control_plane" {
+  for_each = var.control_planes
+
+  name      = each.key
+  node_name = var.proxmox_node
+  vm_id     = each.value.vm_id
+  tags      = ["talos", "kubernetes", "proxmox-control-plane"]
+
+  on_boot         = true
+  stop_on_destroy = true
+
+  boot_order = ["virtio0", "ide3"]
+
+  agent {
+    enabled = true
+  }
+
+  cpu {
+    cores = each.value.cores
+    type  = "x86-64-v2-AES"
+  }
+
+  memory {
+    dedicated = each.value.memory
+  }
+
+  cdrom {
+    file_id   = proxmox_download_file.talos.id
+    interface = "ide3"
+  }
+
+  disk {
+    datastore_id = var.vm_datastore
+    interface    = "virtio0"
+    iothread     = true
+    discard      = "on"
+    size         = each.value.disk_size
+    file_format  = "raw"
+  }
+
+  network_device {
+    bridge = var.network_bridge
+  }
+
+  operating_system {
+    type = "l26"
+  }
+
+  initialization {
+    datastore_id = var.vm_datastore
+
+    user_data_file_id = proxmox_virtual_environment_file.control_plane_user_data[each.key].id
+
+    ip_config {
+      ipv4 {
+        address = "${each.value.ip}/${var.network_cidr}"
+        gateway = var.network_gateway
+      }
+    }
+
+    dns {
+      servers = var.nameservers
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [initialization[0].user_data_file_id]
+  }
+}

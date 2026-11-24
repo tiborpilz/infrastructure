@@ -76,3 +76,22 @@ variable "worker_machine_configs" {
   type        = map(string)
   sensitive   = true
 }
+
+variable "control_planes" {
+  description = "Proxmox control plane VMs keyed by node name. Unlike workers they carry no data disk."
+  type = map(object({
+    vm_id     = number
+    ip        = string
+    cores     = optional(number, 4)
+    memory    = optional(number, 6144)
+    disk_size = optional(number, 40)
+  }))
+  default = {}
+}
+
+variable "control_plane_machine_configs" {
+  description = "Per-node Talos control plane MachineConfig keyed by node name, injected as nocloud user-data. Sensitive — contains cluster bootstrap material."
+  type        = map(string)
+  sensitive   = true
+  default     = {}
+}

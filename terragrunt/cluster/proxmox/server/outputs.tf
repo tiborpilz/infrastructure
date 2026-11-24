@@ -12,5 +12,8 @@ output "workers" {
 
 output "vm_ids" {
   description = "Map of node name to Proxmox VM ID."
-  value       = { for k, vm in proxmox_virtual_environment_vm.worker : k => vm.vm_id }
+  value = merge(
+    { for k, vm in proxmox_virtual_environment_vm.worker : k => vm.vm_id },
+    { for k, vm in proxmox_virtual_environment_vm.control_plane : k => vm.vm_id },
+  )
 }

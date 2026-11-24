@@ -112,6 +112,7 @@ variable "proxmox_workers" {
   type = map(object({
     vm_id          = number
     ip             = string
+    ipv6           = optional(string)
     cores          = optional(number, 4)
     memory         = optional(number, 16384)
     disk_size      = optional(number, 60)
@@ -119,6 +120,32 @@ variable "proxmox_workers" {
     install_disk   = optional(string, "/dev/vda")
   }))
   default = {}
+}
+
+variable "proxmox_control_planes" {
+  description = "Proxmox-hosted control plane VMs keyed by node name (the name becomes the Kubernetes node name)."
+  type = map(object({
+    vm_id        = number
+    ip           = string
+    ipv6         = optional(string)
+    cores        = optional(number, 4)
+    memory       = optional(number, 6144)
+    disk_size    = optional(number, 40)
+    install_disk = optional(string, "/dev/vda")
+  }))
+  default = {}
+}
+
+variable "proxmox_vip" {
+  description = "Talos shared VIP on the Proxmox node subnet, held by one Proxmox control plane at a time. Required when proxmox_control_planes is non-empty."
+  type        = string
+  default     = null
+}
+
+variable "cluster_endpoint" {
+  description = "Cluster API endpoint URL. If null, the talos module defaults to the first hcloud control plane's public IPv4."
+  type        = string
+  default     = null
 }
 
 variable "proxmox_insecure" {
@@ -145,6 +172,12 @@ variable "proxmox_ssh_password" {
   type        = string
   sensitive   = true
   default     = ""
+}
+
+variable "proxmox_ssh_address" {
+  description = "Address the proxmox provider uses for SSH snippet uploads. The host firewall only accepts SSH over Tailscale, so this overrides the public address the API reports for the node."
+  type        = string
+  default     = null
 }
 
 variable "proxmox_node" {
@@ -187,6 +220,18 @@ variable "proxmox_network_cidr" {
   description = "Prefix length for the Proxmox worker subnet."
   type        = number
   default     = 24
+}
+
+variable "proxmox_ipv6_gateway" {
+  description = "IPv6 gateway on the Proxmox bridge. Required when any Proxmox node sets ipv6."
+  type        = string
+  default     = null
+}
+
+variable "proxmox_ipv6_prefix_length" {
+  description = "Prefix length of the IPv6 subnet on the Proxmox bridge."
+  type        = number
+  default     = 64
 }
 
 variable "proxmox_nameservers" {

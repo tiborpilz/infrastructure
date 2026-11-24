@@ -7,6 +7,14 @@ provider "proxmox" {
     agent    = false
     username = var.proxmox_ssh_username
     password = var.proxmox_ssh_password
+
+    dynamic "node" {
+      for_each = var.proxmox_ssh_address != null ? [1] : []
+      content {
+        name    = var.proxmox_node
+        address = var.proxmox_ssh_address
+      }
+    }
   }
 }
 
@@ -66,18 +74,30 @@ module "talos" {
   proxmox_workers = {
     for name, w in var.proxmox_workers : name => {
       ip           = w.ip
+      ipv6         = w.ipv6
       install_disk = w.install_disk
     }
   }
+  proxmox_control_planes = {
+    for name, c in var.proxmox_control_planes : name => {
+      ip           = c.ip
+      ipv6         = c.ipv6
+      install_disk = c.install_disk
+    }
+  }
+  proxmox_vip                = var.proxmox_vip
+  cluster_endpoint           = var.cluster_endpoint
   proxmox_network_gateway    = var.proxmox_network_gateway
   proxmox_network_cidr       = var.proxmox_network_cidr
+  proxmox_ipv6_gateway       = var.proxmox_ipv6_gateway
+  proxmox_ipv6_prefix_length = var.proxmox_ipv6_prefix_length
   proxmox_nameservers        = var.proxmox_nameservers
   proxmox_talos_schematic_id = var.proxmox_talos_schematic_id
 }
 
 module "proxmox_server" {
   source = "./proxmox/server"
-  count  = length(var.proxmox_workers) > 0 ? 1 : 0
+  count  = length(var.proxmox_workers) + length(var.proxmox_control_planes) > 0 ? 1 : 0
 
   proxmox_node       = var.proxmox_node
   image_datastore    = var.proxmox_image_datastore
@@ -102,6 +122,17 @@ module "proxmox_server" {
     }
   }
   worker_machine_configs = module.talos.proxmox_worker_machine_configs
+
+  control_planes = {
+    for name, c in var.proxmox_control_planes : name => {
+      vm_id     = c.vm_id
+      ip        = c.ip
+      cores     = c.cores
+      memory    = c.memory
+      disk_size = c.disk_size
+    }
+  }
+  control_plane_machine_configs = module.talos.proxmox_control_plane_machine_configs
 }
 
 module "dns" {
