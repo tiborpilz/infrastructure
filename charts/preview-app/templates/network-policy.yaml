@@ -1,23 +1,16 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: ingress-from-gateway
+  name: default-deny
 spec:
   podSelector: {}
+  # Default-deny. The CiliumNetworkPolicy below is the only ingress allow.
   policyTypes:
     - Ingress
     - Egress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: gateway-system
-      ports:
-        - protocol: TCP
-          port: {{ .Values.container.port }}
 ---
-# Cilium's gateway proxy carries the reserved "ingress" identity rather than a
-# namespace, so the NetworkPolicy above cannot match it.
+# Cilium's gateway proxy carries the reserved "ingress" identity, which a
+# NetworkPolicy cannot select.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
