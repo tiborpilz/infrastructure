@@ -12,8 +12,5 @@ resources:
   - snapshot-controller
   - snapshot-scheduler
   - gateway-dns
-<<<<<<< HEAD
   - kubevirt
-=======
   - talos-ccm
->>>>>>> d93f6b4 (feat: add talos scm)
