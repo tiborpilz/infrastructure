@@ -6,6 +6,7 @@ env:
       secretKeyRef:
         name: cloudflare-api-token
         key: token
+policy: sync
 sources:
   - service
   - gateway-httproute
