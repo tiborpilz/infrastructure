@@ -35,24 +35,41 @@ variable "nodes" {
   })
 
   validation {
-    condition     = length(var.nodes.control_plane) > 0
-    error_message = "At least one control-plane node is required."
+    condition     = length(var.nodes.control_plane) + length(var.proxmox_control_planes) > 0
+    error_message = "At least one control-plane node (hcloud or Proxmox) is required."
   }
 }
 
 variable "proxmox_workers" {
   description = <<-EOT
     Proxmox-hosted worker nodes keyed by name. These sit behind the Proxmox
-    host's NAT with no inbound reachability, so they are intentionally NOT part
-    of var.nodes: they self-join via nocloud cloud-init (the proxmox/server
-    module injects their MachineConfig as user-data) and connect over KubeSpan.
+    host's IPv4 NAT, so they are intentionally NOT part of var.nodes: they
+    self-join via nocloud cloud-init (the proxmox/server module injects their
+    MachineConfig as user-data) and connect over KubeSpan.
     We only render their per-node config here and hand it to that module.
   EOT
   type = map(object({
     ip           = string
+    ipv6         = optional(string)
     install_disk = optional(string, "/dev/vda")
   }))
   default = {}
+}
+
+variable "proxmox_control_planes" {
+  description = "Proxmox-hosted control plane nodes keyed by name. Like proxmox_workers, they self-join via nocloud user-data and are not part of var.nodes."
+  type = map(object({
+    ip           = string
+    ipv6         = optional(string)
+    install_disk = optional(string, "/dev/vda")
+  }))
+  default = {}
+}
+
+variable "proxmox_vip" {
+  description = "Talos shared VIP on the Proxmox node subnet, configured on every Proxmox control plane."
+  type        = string
+  default     = null
 }
 
 variable "proxmox_network_gateway" {
@@ -65,6 +82,18 @@ variable "proxmox_network_cidr" {
   description = "Prefix length for the Proxmox node subnet, e.g. 24."
   type        = number
   default     = 24
+}
+
+variable "proxmox_ipv6_gateway" {
+  description = "IPv6 gateway on the Proxmox bridge. Required when any Proxmox node sets ipv6."
+  type        = string
+  default     = null
+}
+
+variable "proxmox_ipv6_prefix_length" {
+  description = "Prefix length of the IPv6 subnet on the Proxmox bridge."
+  type        = number
+  default     = 64
 }
 
 variable "proxmox_nameservers" {

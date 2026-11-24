@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: talos-ccm
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: ghcr.io/siderolabs/charts
+    chart: talos-cloud-controller-manager
+    targetRevision: 0.5.8
+    helm:
+      releaseName: talos-cloud-controller-manager
+      valuesObject:
+        # Only the node controller. It sets node addresses (public IPs as
+        # ExternalIP) from the Talos API. Lifecycle stays off so it never
+        # deletes nodes, and kubelet serving certs are not rotated here.
+        enabledControllers:
+          - cloud-node
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

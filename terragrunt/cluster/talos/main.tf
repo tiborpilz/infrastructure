@@ -12,14 +12,18 @@ module "bootstrap" {
 }
 
 locals {
-  control_plane_nodes      = var.nodes.control_plane
-  worker_nodes             = var.nodes.workers
-  first_control_plane_key  = sort(keys(local.control_plane_nodes))[0]
-  first_control_plane_node = local.control_plane_nodes[local.first_control_plane_key]
+  control_plane_nodes = var.nodes.control_plane
+  worker_nodes        = var.nodes.workers
+
+  control_plane_ips = concat(
+    [for k in sort(keys(local.control_plane_nodes)) : local.control_plane_nodes[k].public_ipv4],
+    [for k in sort(keys(var.proxmox_control_planes)) : var.proxmox_control_planes[k].ip],
+  )
+  first_control_plane_ip = local.control_plane_ips[0]
 
   effective_endpoint = coalesce(
     var.cluster_endpoint,
-    "https://${local.first_control_plane_node.public_ipv4}:6443",
+    "https://${local.first_control_plane_ip}:6443",
   )
 
   base_patch = yamlencode({
@@ -53,6 +57,21 @@ locals {
   })
 
   proxmox_subnet = var.proxmox_network_gateway != null ? "${cidrhost("${var.proxmox_network_gateway}/${var.proxmox_network_cidr}", 0)}/${var.proxmox_network_cidr}" : null
+
+  # Static addressing for Proxmox nodes. The optional IPv6 comes from the /64
+  # routed into vmbr0 and is what the Talos CCM reports as ExternalIP.
+  proxmox_interface = {
+    for name, n in merge(var.proxmox_workers, var.proxmox_control_planes) : name => {
+      addresses = compact([
+        "${n.ip}/${var.proxmox_network_cidr}",
+        n.ipv6 != null ? "${n.ipv6}/${var.proxmox_ipv6_prefix_length}" : null,
+      ])
+      routes = concat(
+        [{ network = "0.0.0.0/0", gateway = var.proxmox_network_gateway }],
+        n.ipv6 != null ? [{ network = "::/0", gateway = var.proxmox_ipv6_gateway }] : [],
+      )
+    }
+  }
 
   bootstrap_patch = yamlencode({
     cluster = {
@@ -217,24 +236,79 @@ data "talos_machine_configuration" "proxmox_worker" {
           interfaces = [{
             deviceSelector = { physical = true }
             dhcp           = false
-            addresses      = ["${each.value.ip}/${var.proxmox_network_cidr}"]
-            routes = [{
-              network = "0.0.0.0/0"
-              gateway = var.proxmox_network_gateway
-            }]
+            addresses      = local.proxmox_interface[each.key].addresses
+            routes         = local.proxmox_interface[each.key].routes
           }]
           nameservers = var.proxmox_nameservers
         }
         kubelet = {
           nodeIP    = { validSubnets = [local.proxmox_subnet] }
-          extraArgs = { "provider-id" = "proxmox://${each.key}" } # non-hcloud provider-id makes the hcloud CCM error rather than delete these nodes
+          extraArgs = { "provider-id" = "proxmox://${each.key}" } # non-hcloud provider-id makes the hcloud CCM skip these nodes instead of deleting them
         }
         nodeLabels = {
           "node.tibor.sh/tier" = "proxmox"
         }
       }
+    }),
+    yamlencode({
+      apiVersion = "v1alpha1"
+      kind       = "HostnameConfig"
+      "$patch"   = "delete"
+    }),
+  ]
+}
+
+data "talos_machine_configuration" "proxmox_control_plane" {
+  for_each = var.proxmox_control_planes
+
+  cluster_name       = var.cluster_name
+  cluster_endpoint   = local.effective_endpoint
+  machine_type       = "controlplane"
+  machine_secrets    = talos_machine_secrets.this.machine_secrets
+  talos_version      = "v${var.talos_version}"
+  kubernetes_version = var.kubernetes_version
+
+  # No bootstrap_patch. Proxmox rejects nocloud user-data that large, and the
+  # inline manifests only matter when bootstrapping an empty cluster.
+  config_patches = [
+    local.base_patch,
+    yamlencode({
+      machine = {
+        install = {
+          disk  = each.value.install_disk
+          image = "factory.talos.dev/installer/${var.proxmox_talos_schematic_id}:v${var.talos_version}"
+        }
+        network = {
+          hostname = each.key
+          interfaces = [{
+            deviceSelector = { physical = true }
+            dhcp           = false
+            addresses      = local.proxmox_interface[each.key].addresses
+            routes         = local.proxmox_interface[each.key].routes
+            vip            = { ip = var.proxmox_vip }
+          }]
+          nameservers = var.proxmox_nameservers
+        }
+        kubelet = {
+          nodeIP    = { validSubnets = [local.proxmox_subnet, "!${var.proxmox_vip}/32"] }
+          extraArgs = { "provider-id" = "proxmox://${each.key}" } # non-hcloud provider-id makes the hcloud CCM skip these nodes instead of deleting them
+        }
+        nodeLabels = {
+          "node.tibor.sh/tier" = "proxmox"
+        }
+        features = {
+          kubernetesTalosAPIAccess = {
+            enabled                     = true
+            allowedRoles                = ["os:etcd:backup", "os:reader"]
+            allowedKubernetesNamespaces = ["etcd-backup", "kube-system"]
+          }
+        }
+      }
       cluster = {
-        externalCloudProvider = { enabled = false }
+        allowSchedulingOnControlPlanes = false
+        etcd = {
+          advertisedSubnets = [local.proxmox_subnet, "!${var.proxmox_vip}/32"]
+        }
       }
     }),
     yamlencode({
@@ -268,21 +342,27 @@ resource "talos_machine_configuration_apply" "worker" {
 
 resource "talos_machine_bootstrap" "this" {
   client_configuration = talos_machine_secrets.this.client_configuration
-  node                 = local.first_control_plane_node.public_ipv4
-  endpoint             = local.first_control_plane_node.public_ipv4
+  node                 = local.first_control_plane_ip
+  endpoint             = local.first_control_plane_ip
+
+  # Bootstrap runs once per cluster. Replacing it on a running cluster would
+  # try to bootstrap etcd again when the first control plane changes.
+  lifecycle {
+    ignore_changes = [node, endpoint]
+  }
 }
 
 resource "talos_cluster_kubeconfig" "this" {
   client_configuration = talos_machine_secrets.this.client_configuration
-  node                 = local.first_control_plane_node.public_ipv4
-  endpoint             = local.first_control_plane_node.public_ipv4
+  node                 = local.first_control_plane_ip
+  endpoint             = local.first_control_plane_ip
 }
 
 data "talos_client_configuration" "this" {
   cluster_name         = var.cluster_name
   client_configuration = talos_machine_secrets.this.client_configuration
-  endpoints            = [for n in local.control_plane_nodes : n.public_ipv4]
-  nodes                = [for n in local.control_plane_nodes : n.public_ipv4]
+  endpoints            = local.control_plane_ips
+  nodes                = local.control_plane_ips
 }
 
 resource "local_sensitive_file" "kubeconfig" {

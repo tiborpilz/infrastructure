@@ -52,8 +52,8 @@ output "talos_version" {
 }
 
 output "talos_control_plane_endpoints" {
-  description = "Public IPv4 addresses of the control-plane Talos endpoints (port 50000). Used by downstream layers that talk directly to the Talos API."
-  value       = [for n in local.control_plane_nodes : n.public_ipv4]
+  description = "Control plane Talos endpoint addresses (port 50000): hcloud public IPv4s, then Proxmox node IPs. Used by downstream layers that talk directly to the Talos API."
+  value       = local.control_plane_ips
 }
 
 output "worker_machine_config_template" {
@@ -70,6 +70,12 @@ output "control_plane_machine_config" {
 output "proxmox_worker_machine_configs" {
   description = "Per-node Talos worker MachineConfig for the Proxmox VMs, keyed by node name. The proxmox/server module injects each as nocloud user-data so the NAT'd nodes self-join. Sensitive — contains cluster bootstrap material."
   value       = { for k, c in data.talos_machine_configuration.proxmox_worker : k => c.machine_configuration }
+  sensitive   = true
+}
+
+output "proxmox_control_plane_machine_configs" {
+  description = "Per-node Talos control plane MachineConfig for the Proxmox VMs, keyed by node name. Injected as nocloud user-data like the worker configs. Sensitive — contains cluster bootstrap material."
+  value       = { for k, c in data.talos_machine_configuration.proxmox_control_plane : k => c.machine_configuration }
   sensitive   = true
 }
 
